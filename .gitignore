@@ -1,0 +1,19 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Generated verification output
+TestResults.xml
+unity-*.log
+
+# IDE files
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
