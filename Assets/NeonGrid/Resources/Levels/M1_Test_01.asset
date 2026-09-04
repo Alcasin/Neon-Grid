@@ -21,70 +21,82 @@ MonoBehaviour:
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 1
       y: 0
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 2
       y: 0
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 3
       y: 0
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 0
       y: 1
     tileType: 3
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 1
       y: 1
     tileType: 6
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 2
       y: 1
     tileType: 5
     startingRotation: 1
     isRotatable: 1
+    startingSwitchOn: 0
   - position:
       x: 3
       y: 1
     tileType: 4
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 0
       y: 2
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 1
       y: 2
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 2
       y: 2
     tileType: 4
     startingRotation: 3
     isRotatable: 0
+    startingSwitchOn: 0
   - position:
       x: 3
       y: 2
     tileType: 0
     startingRotation: 0
     isRotatable: 0
+    startingSwitchOn: 0
 

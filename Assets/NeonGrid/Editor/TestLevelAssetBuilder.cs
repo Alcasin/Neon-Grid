@@ -52,6 +52,34 @@ namespace NeonGrid.Editor
                 Set(tiles, 3, 2, 1, TileType.PowerSource, 2, false);
             });
 
+            LevelDefinition m2Test01 = CreateLevel("M2_Test_01", 4, 1, tiles =>
+            {
+                Set(tiles, 4, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 4, 1, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 4, 2, 0, TileType.StraightWire, 1, false);
+                Set(tiles, 4, 3, 0, TileType.OutputLamp, 0, false);
+            });
+
+            LevelDefinition m2Test02 = CreateLevel("M2_Test_02", 5, 2, tiles =>
+            {
+                Set(tiles, 5, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 5, 1, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 2, 0, TileType.AndGate, 0, false);
+                Set(tiles, 5, 3, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 4, 0, TileType.PowerSource, 2, false);
+                Set(tiles, 5, 2, 1, TileType.OutputLamp, 3, false);
+            });
+
+            LevelDefinition m2Test03 = CreateLevel("M2_Test_03", 5, 2, tiles =>
+            {
+                Set(tiles, 5, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 5, 1, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 2, 0, TileType.OrGate, 0, false);
+                Set(tiles, 5, 3, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 4, 0, TileType.PowerSource, 2, false);
+                Set(tiles, 5, 2, 1, TileType.OutputLamp, 3, false);
+            });
+
             AssetDatabase.SaveAssets();
 
             string[] scenePaths =
@@ -59,13 +87,16 @@ namespace NeonGrid.Editor
                 CreateScene("Prototype", milestoneZero),
                 CreateScene("M1_Test_01", test01),
                 CreateScene("M1_Test_02", test02),
-                CreateScene("M1_Test_03", test03)
+                CreateScene("M1_Test_03", test03),
+                CreateScene("M2_Test_01", m2Test01),
+                CreateScene("M2_Test_02", m2Test02),
+                CreateScene("M2_Test_03", m2Test03)
             };
             var buildScenes = new EditorBuildSettingsScene[scenePaths.Length];
             for (int i = 0; i < scenePaths.Length; i++)
                 buildScenes[i] = new EditorBuildSettingsScene(scenePaths[i], true);
             EditorBuildSettings.scenes = buildScenes;
-            Debug.Log("Created Neon Grid Milestone 0 and Milestone 1 test levels and scenes.");
+            Debug.Log("Created Neon Grid Milestone 0, 1, and 2 test levels and scenes.");
         }
 
         private static LevelDefinition CreateLevel(string assetName, int width, int height,
@@ -100,9 +131,10 @@ namespace NeonGrid.Editor
         }
 
         private static void Set(List<TileDefinition> tiles, int width, int x, int y,
-            TileType type, int rotation, bool rotatable)
+            TileType type, int rotation, bool rotatable, bool startingSwitchOn = false)
         {
-            tiles[y * width + x] = new TileDefinition(new GridPosition(x, y), type, rotation, rotatable);
+            tiles[y * width + x] = new TileDefinition(
+                new GridPosition(x, y), type, rotation, rotatable, startingSwitchOn);
         }
     }
 }

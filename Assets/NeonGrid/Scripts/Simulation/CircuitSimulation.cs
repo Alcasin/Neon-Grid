@@ -28,6 +28,15 @@ namespace NeonGrid.Simulation
             return true;
         }
 
+        public bool InteractWithTile(GridPosition position)
+        {
+            if (!Board.TryInteract(position)) return false;
+
+            Recalculate();
+            BoardChanged?.Invoke();
+            return true;
+        }
+
         private void Recalculate()
         {
             powerPropagation.Recalculate(Board);

@@ -73,6 +73,38 @@ namespace NeonGrid.Tests
             Object.DestroyImmediate(texture);
         }
 
+        [Test]
+        public void Switch_UsesDistinctOnOffProgrammerArt()
+        {
+            CircuitTileState offSwitch = new BoardState(1, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), TileType.Switch, 0, false, false)
+            }).GetTile(new GridPosition(0, 0));
+            CircuitTileState onSwitch = new BoardState(1, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), TileType.Switch, 0, false, true)
+            }).GetTile(new GridPosition(0, 0));
+
+            Color offColor = RenderAndReadColor(offSwitch);
+            Color onColor = RenderAndReadColor(onSwitch);
+
+            Assert.That(onColor, Is.Not.EqualTo(offColor));
+            Assert.That(RenderAndReadLabel(offSwitch), Is.EqualTo("OFF"));
+            Assert.That(RenderAndReadLabel(onSwitch), Is.EqualTo("ON"));
+        }
+
+        [TestCase(TileType.AndGate, "AND")]
+        [TestCase(TileType.OrGate, "OR")]
+        public void LogicGate_UsesIdentifyingProgrammerArtLabel(TileType gateType, string expectedLabel)
+        {
+            CircuitTileState gate = new BoardState(1, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), gateType, 0, false)
+            }).GetTile(new GridPosition(0, 0));
+
+            Assert.That(RenderAndReadLabel(gate), Is.EqualTo(expectedLabel));
+        }
+
         private static Color RenderAndReadColor(CircuitTileState state)
         {
             var root = new GameObject("View Test");
@@ -84,6 +116,23 @@ namespace NeonGrid.Tests
             view.Build(sprite);
             view.Refresh(state, sprite);
             Color result = view.CurrentCircuitColor;
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(sprite);
+            Object.DestroyImmediate(texture);
+            return result;
+        }
+
+        private static string RenderAndReadLabel(CircuitTileState state)
+        {
+            var root = new GameObject("Label Test");
+            var texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, Color.white);
+            texture.Apply();
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), Vector2.one * 0.5f, 1f);
+            var view = root.AddComponent<CircuitTileView>();
+            view.Build(sprite);
+            view.Refresh(state, sprite);
+            string result = view.CurrentLabel;
             Object.DestroyImmediate(root);
             Object.DestroyImmediate(sprite);
             Object.DestroyImmediate(texture);

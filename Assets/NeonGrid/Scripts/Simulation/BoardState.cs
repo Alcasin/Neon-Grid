@@ -62,5 +62,10 @@ namespace NeonGrid.Simulation
         {
             return Contains(position) && tiles[position.x, position.y].RotateClockwise();
         }
+
+        internal bool TryInteract(GridPosition position)
+        {
+            return Contains(position) && tiles[position.x, position.y].Interact();
+        }
     }
 }

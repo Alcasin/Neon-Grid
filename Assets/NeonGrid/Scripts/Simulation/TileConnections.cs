@@ -16,7 +16,11 @@ namespace NeonGrid.Simulation
                     return CardinalDirection.Up | CardinalDirection.Right |
                            CardinalDirection.Down | CardinalDirection.Left;
                 case TileType.Diode:
+                case TileType.Switch:
                     return CardinalDirection.Left | CardinalDirection.Right;
+                case TileType.AndGate:
+                case TileType.OrGate:
+                    return CardinalDirection.Left | CardinalDirection.Right | CardinalDirection.Up;
                 case TileType.PowerSource:
                     return CardinalDirection.Right;
                 case TileType.OutputLamp:

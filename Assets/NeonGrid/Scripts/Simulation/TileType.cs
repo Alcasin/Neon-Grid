@@ -9,6 +9,9 @@ namespace NeonGrid.Simulation
         OutputLamp,
         TJunction,
         CrossJunction,
-        Diode
+        Diode,
+        Switch,
+        AndGate,
+        OrGate
     }
 }

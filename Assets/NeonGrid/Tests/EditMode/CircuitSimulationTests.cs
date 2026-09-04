@@ -128,15 +128,10 @@ namespace NeonGrid.Tests
                 Tile(0, 1, TileType.CornerWire, 1, false)
             });
             CircuitTileState seed = board.GetTile(new GridPosition(0, 0));
-            seed.IsPowered = true;
-            var frontier = new Queue<CircuitTileState>();
-            frontier.Enqueue(seed);
-
-            new PowerPropagationService().PropagateFromSeededTiles(board, frontier);
+            new PowerPropagationService().RecalculateFromSeeds(board, new[] { seed });
 
             foreach (CircuitTileState tile in board.AllTiles())
                 Assert.That(tile.IsPowered, Is.True, $"Expected cycle tile {tile.Position} to be reached.");
-            Assert.That(frontier, Is.Empty);
         }
 
         [Test]

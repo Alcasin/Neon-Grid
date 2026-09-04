@@ -14,18 +14,34 @@ namespace NeonGrid.Presentation
         private static readonly Color PoweredLamp = new Color(1f, 0.9f, 0.15f);
         private static readonly Color DirectionMarker = new Color(1f, 0.75f, 0.1f);
         private static readonly Color LockMarker = new Color(0.7f, 0.75f, 0.85f);
+        private static readonly Color SwitchOnColor = new Color(0.15f, 0.9f, 0.35f);
+        private static readonly Color SwitchOffColor = new Color(0.55f, 0.12f, 0.18f);
+        private static readonly Color AndGateColor = new Color(0.15f, 0.35f, 0.85f);
+        private static readonly Color OrGateColor = new Color(0.85f, 0.35f, 0.12f);
 
         private readonly List<SpriteRenderer> arms = new List<SpriteRenderer>();
         private readonly List<SpriteRenderer> markers = new List<SpriteRenderer>();
         private SpriteRenderer center;
         private SpriteRenderer background;
+        private TextMesh label;
 
         public Color CurrentCircuitColor => center != null ? center.color : Color.clear;
+        public string CurrentLabel => label != null ? label.text : string.Empty;
 
         public void Build(Sprite squareSprite)
         {
             background = CreatePart("Background", squareSprite, Vector3.zero, new Vector3(0.9f, 0.9f, 1f), 0);
             center = CreatePart("Center", squareSprite, Vector3.zero, new Vector3(0.30f, 0.30f, 1f), 2);
+            var labelObject = new GameObject("Component Label");
+            labelObject.transform.SetParent(transform, false);
+            labelObject.transform.localPosition = new Vector3(0f, 0f, -0.05f);
+            label = labelObject.AddComponent<TextMesh>();
+            label.anchor = TextAnchor.MiddleCenter;
+            label.alignment = TextAlignment.Center;
+            label.fontSize = 32;
+            label.characterSize = 0.045f;
+            label.color = Color.white;
+            labelObject.GetComponent<MeshRenderer>().sortingOrder = 4;
         }
 
         public void Refresh(CircuitTileState state, Sprite squareSprite)
@@ -40,11 +56,12 @@ namespace NeonGrid.Presentation
 
             Color circuitColor = GetCircuitColor(state);
             center.color = circuitColor;
+            UpdateLabel(state);
 
             foreach (CardinalDirection direction in DirectionUtility.CardinalDirections)
             {
                 if ((state.Connections & direction) == 0) continue;
-                CreateArm(direction, squareSprite, circuitColor);
+                CreateArm(direction, squareSprite, GetPortColor(state, direction));
             }
 
             if (state.TileType == TileType.Diode)
@@ -57,8 +74,45 @@ namespace NeonGrid.Presentation
                 center.transform.localScale = new Vector3(0.48f, 0.48f, 1f);
             else if (state.TileType == TileType.OutputLamp)
                 center.transform.localScale = new Vector3(0.55f, 0.55f, 1f);
+            else if (state.TileType == TileType.Switch || state.TileType == TileType.AndGate ||
+                     state.TileType == TileType.OrGate)
+                center.transform.localScale = new Vector3(0.55f, 0.38f, 1f);
             else
                 center.transform.localScale = new Vector3(0.30f, 0.30f, 1f);
+        }
+
+        private void UpdateLabel(CircuitTileState state)
+        {
+            switch (state.TileType)
+            {
+                case TileType.Switch:
+                    label.text = state.IsSwitchOn ? "ON" : "OFF";
+                    break;
+                case TileType.AndGate:
+                    label.text = "AND";
+                    break;
+                case TileType.OrGate:
+                    label.text = "OR";
+                    break;
+                default:
+                    label.text = string.Empty;
+                    break;
+            }
+        }
+
+        private Color GetPortColor(CircuitTileState state, CardinalDirection direction)
+        {
+            if (state.TileType == TileType.PowerSource) return SourceColor;
+            if (state.TileType == TileType.OutputLamp) return state.IsPowered ? PoweredLamp : InactiveLamp;
+            if (state.TileType == TileType.Switch && !state.IsSwitchOn) return InactiveWire;
+
+            bool inputEnergized = (state.EnergizedInputSides & direction) != 0;
+            bool outputActive = (state.ActiveOutputSides & direction) != 0;
+            if (state.TileType == TileType.Diode || state.TileType == TileType.Switch ||
+                state.TileType == TileType.AndGate || state.TileType == TileType.OrGate)
+                return inputEnergized || outputActive ? PoweredWire : InactiveWire;
+
+            return state.IsPowered ? PoweredWire : InactiveWire;
         }
 
         private void CreateDiodeOutputMarker(CircuitTileState state, Sprite sprite)
@@ -90,13 +144,17 @@ namespace NeonGrid.Presentation
         {
             return tileType == TileType.StraightWire || tileType == TileType.CornerWire ||
                    tileType == TileType.TJunction || tileType == TileType.CrossJunction ||
-                   tileType == TileType.Diode;
+                   tileType == TileType.Diode || tileType == TileType.AndGate ||
+                   tileType == TileType.OrGate;
         }
 
         private Color GetCircuitColor(CircuitTileState state)
         {
             if (state.TileType == TileType.PowerSource) return SourceColor;
             if (state.TileType == TileType.OutputLamp) return state.IsPowered ? PoweredLamp : InactiveLamp;
+            if (state.TileType == TileType.Switch) return state.IsSwitchOn ? SwitchOnColor : SwitchOffColor;
+            if (state.TileType == TileType.AndGate) return AndGateColor;
+            if (state.TileType == TileType.OrGate) return OrGateColor;
             return state.IsPowered ? PoweredWire : InactiveWire;
         }
 

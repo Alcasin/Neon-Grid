@@ -10,70 +10,77 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51047685e6c6a974bb5b9862a50b49ab, type: 3}
-  m_Name: M1_Test_03
+  m_Name: M2_Test_02
   m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.LevelDefinition
-  width: 3
-  height: 3
+  width: 5
+  height: 2
   tiles:
   - position:
       x: 0
       y: 0
-    tileType: 0
+    tileType: 3
     startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
       x: 1
       y: 0
-    tileType: 0
+    tileType: 8
     startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
       x: 2
       y: 0
-    tileType: 0
+    tileType: 9
     startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
-      x: 0
-      y: 1
-    tileType: 4
-    startingRotation: 2
+      x: 3
+      y: 0
+    tileType: 8
+    startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
-      x: 1
-      y: 1
-    tileType: 7
-    startingRotation: 0
-    isRotatable: 1
-    startingSwitchOn: 0
-  - position:
-      x: 2
-      y: 1
+      x: 4
+      y: 0
     tileType: 3
     startingRotation: 2
     isRotatable: 0
     startingSwitchOn: 0
   - position:
       x: 0
-      y: 2
+      y: 1
     tileType: 0
     startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
       x: 1
-      y: 2
+      y: 1
     tileType: 0
     startingRotation: 0
     isRotatable: 0
     startingSwitchOn: 0
   - position:
       x: 2
-      y: 2
+      y: 1
+    tileType: 4
+    startingRotation: 3
+    isRotatable: 0
+    startingSwitchOn: 0
+  - position:
+      x: 3
+      y: 1
+    tileType: 0
+    startingRotation: 0
+    isRotatable: 0
+    startingSwitchOn: 0
+  - position:
+      x: 4
+      y: 1
     tileType: 0
     startingRotation: 0
     isRotatable: 0

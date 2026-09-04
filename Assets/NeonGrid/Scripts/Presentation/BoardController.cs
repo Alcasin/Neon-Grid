@@ -29,7 +29,7 @@ namespace NeonGrid.Presentation
 
         private void OnTileTapped(GridPosition position)
         {
-            simulation.RotateTileClockwise(position);
+            simulation.InteractWithTile(position);
         }
 
         private void OnBoardChanged()
