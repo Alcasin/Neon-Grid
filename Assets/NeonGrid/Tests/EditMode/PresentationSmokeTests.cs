@@ -49,6 +49,30 @@ namespace NeonGrid.Tests
             Assert.That(poweredColor, Is.Not.EqualTo(inactiveColor));
         }
 
+        [Test]
+        public void LockedDiode_ShowsDirectionAndLockProgrammerArtMarkers()
+        {
+            CircuitTileState diode = new BoardState(1, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), TileType.Diode, 0, false)
+            }).GetTile(new GridPosition(0, 0));
+            var root = new GameObject("Marker Test");
+            var texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, Color.white);
+            texture.Apply();
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), Vector2.one * 0.5f, 1f);
+            var view = root.AddComponent<CircuitTileView>();
+
+            view.Build(sprite);
+            view.Refresh(diode, sprite);
+
+            Assert.That(root.transform.Find("Diode Output"), Is.Not.Null);
+            Assert.That(root.transform.Find("Lock Indicator"), Is.Not.Null);
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(sprite);
+            Object.DestroyImmediate(texture);
+        }
+
         private static Color RenderAndReadColor(CircuitTileState state)
         {
             var root = new GameObject("View Test");

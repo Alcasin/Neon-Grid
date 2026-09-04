@@ -40,6 +40,52 @@ namespace NeonGrid.Tests
         }
 
         [Test]
+        public void TJunction_RotationsProduceExpectedConnections()
+        {
+            CircuitSimulation simulation = CreateSimulation(1, 1,
+                Tile(0, 0, TileType.TJunction, 0, true));
+            CircuitTileState tile = simulation.Board.GetTile(new GridPosition(0, 0));
+
+            Assert.That(tile.Connections, Is.EqualTo(
+                CardinalDirection.Up | CardinalDirection.Right | CardinalDirection.Left));
+            simulation.RotateTileClockwise(tile.Position);
+            Assert.That(tile.Connections, Is.EqualTo(
+                CardinalDirection.Up | CardinalDirection.Right | CardinalDirection.Down));
+            simulation.RotateTileClockwise(tile.Position);
+            Assert.That(tile.Connections, Is.EqualTo(
+                CardinalDirection.Right | CardinalDirection.Down | CardinalDirection.Left));
+            simulation.RotateTileClockwise(tile.Position);
+            Assert.That(tile.Connections, Is.EqualTo(
+                CardinalDirection.Up | CardinalDirection.Down | CardinalDirection.Left));
+        }
+
+        [Test]
+        public void FourTJunctionRotations_ReturnToOriginalLogicalOrientation()
+        {
+            CircuitSimulation simulation = CreateSimulation(1, 1,
+                Tile(0, 0, TileType.TJunction, 0, true));
+            CircuitTileState tile = simulation.Board.GetTile(new GridPosition(0, 0));
+            CardinalDirection originalConnections = tile.Connections;
+
+            for (int i = 0; i < 4; i++)
+                simulation.RotateTileClockwise(tile.Position);
+
+            Assert.That(tile.Rotation, Is.Zero);
+            Assert.That(tile.Connections, Is.EqualTo(originalConnections));
+        }
+
+        [Test]
+        public void CrossJunction_ExposesAllFourDirections()
+        {
+            CircuitSimulation simulation = CreateSimulation(1, 1,
+                Tile(0, 0, TileType.CrossJunction, 0, false));
+
+            Assert.That(simulation.Board.GetTile(new GridPosition(0, 0)).Connections, Is.EqualTo(
+                CardinalDirection.Up | CardinalDirection.Right |
+                CardinalDirection.Down | CardinalDirection.Left));
+        }
+
+        [Test]
         public void Power_RequiresMutualOppositeConnections()
         {
             CircuitSimulation simulation = CreateSimulation(2, 1,
@@ -153,6 +199,88 @@ namespace NeonGrid.Tests
         }
 
         [Test]
+        public void NonRotatableWire_StillConductsPowerNormally()
+        {
+            CircuitSimulation simulation = CreateSimulation(3, 1,
+                Tile(0, 0, TileType.PowerSource, 0, false),
+                Tile(1, 0, TileType.StraightWire, 1, false),
+                Tile(2, 0, TileType.OutputLamp, 0, false));
+
+            Assert.That(simulation.Board.GetTile(new GridPosition(1, 0)).IsPowered, Is.True);
+            Assert.That(simulation.Board.GetTile(new GridPosition(2, 0)).IsPowered, Is.True);
+            Assert.That(simulation.IsLevelCompleted, Is.True);
+            Assert.That(simulation.RotateTileClockwise(new GridPosition(1, 0)), Is.False);
+        }
+
+        [Test]
+        public void Diode_PassesPowerFromInputToOutput()
+        {
+            CircuitSimulation simulation = CreateSimulation(3, 1,
+                Tile(0, 0, TileType.PowerSource, 0, false),
+                Tile(1, 0, TileType.Diode, 0, false),
+                Tile(2, 0, TileType.OutputLamp, 0, false));
+
+            Assert.That(simulation.Board.GetTile(new GridPosition(1, 0)).IsPowered, Is.True);
+            Assert.That(simulation.Board.GetTile(new GridPosition(2, 0)).IsPowered, Is.True);
+            Assert.That(simulation.IsLevelCompleted, Is.True);
+        }
+
+        [Test]
+        public void Diode_RejectsPowerFromOutputToInput()
+        {
+            CircuitSimulation simulation = CreateSimulation(3, 1,
+                Tile(0, 0, TileType.OutputLamp, 2, false),
+                Tile(1, 0, TileType.Diode, 0, false),
+                Tile(2, 0, TileType.PowerSource, 2, false));
+
+            Assert.That(simulation.Board.GetTile(new GridPosition(1, 0)).IsPowered, Is.False);
+            Assert.That(simulation.Board.GetTile(new GridPosition(0, 0)).IsPowered, Is.False);
+            Assert.That(simulation.IsLevelCompleted, Is.False);
+        }
+
+        [Test]
+        public void RotatingDiode_ChangesItsInputAndOutputDirections()
+        {
+            CircuitSimulation simulation = CreateSimulation(3, 1,
+                Tile(0, 0, TileType.OutputLamp, 2, false),
+                Tile(1, 0, TileType.Diode, 0, true),
+                Tile(2, 0, TileType.PowerSource, 2, false));
+            CircuitTileState diode = simulation.Board.GetTile(new GridPosition(1, 0));
+
+            simulation.RotateTileClockwise(diode.Position);
+            simulation.RotateTileClockwise(diode.Position);
+
+            Assert.That(TilePowerFlow.GetInputSides(diode.TileType, diode.Rotation),
+                Is.EqualTo(CardinalDirection.Right));
+            Assert.That(TilePowerFlow.GetOutputSides(diode.TileType, diode.Rotation),
+                Is.EqualTo(CardinalDirection.Left));
+            Assert.That(diode.IsPowered, Is.True);
+            Assert.That(simulation.IsLevelCompleted, Is.True);
+        }
+
+        [Test]
+        public void MultipleRequiredLamps_AllMustRemainPoweredForCompletion()
+        {
+            CircuitSimulation simulation = CreateSimulation(3, 2,
+                Tile(0, 0, TileType.PowerSource, 0, false),
+                Tile(1, 0, TileType.TJunction, 0, true),
+                Tile(2, 0, TileType.OutputLamp, 0, false),
+                Tile(1, 1, TileType.OutputLamp, 3, false));
+
+            Assert.That(simulation.IsLevelCompleted, Is.True);
+            Assert.That(simulation.Board.GetTile(new GridPosition(2, 0)).IsPowered, Is.True);
+            Assert.That(simulation.Board.GetTile(new GridPosition(1, 1)).IsPowered, Is.True);
+
+            simulation.RotateTileClockwise(new GridPosition(1, 0));
+            simulation.RotateTileClockwise(new GridPosition(1, 0));
+            simulation.RotateTileClockwise(new GridPosition(1, 0));
+
+            Assert.That(simulation.Board.GetTile(new GridPosition(1, 1)).IsPowered, Is.True);
+            Assert.That(simulation.Board.GetTile(new GridPosition(2, 0)).IsPowered, Is.False);
+            Assert.That(simulation.IsLevelCompleted, Is.False);
+        }
+
+        [Test]
         public void MultipleSources_SeedPropagationIndependently()
         {
             CircuitSimulation simulation = CreateSimulation(4, 1,
@@ -176,6 +304,27 @@ namespace NeonGrid.Tests
             Assert.That(level.Height, Is.EqualTo(4));
             Assert.That(level.Tiles, Has.Count.EqualTo(16));
             Assert.That(new CircuitSimulation(level.CreateBoardState()).IsLevelCompleted, Is.False);
+        }
+
+        [Test]
+        public void MilestoneOneLevelAssets_LoadUnsolvedAndAreManuallySolvable()
+        {
+            AssertLevelSolves("Levels/M1_Test_01", new GridPosition(2, 1), 3);
+            AssertLevelSolves("Levels/M1_Test_02", new GridPosition(1, 0), 3);
+            AssertLevelSolves("Levels/M1_Test_03", new GridPosition(1, 1), 2);
+        }
+
+        private static void AssertLevelSolves(string resourcePath, GridPosition position, int rotations)
+        {
+            LevelDefinition level = Resources.Load<LevelDefinition>(resourcePath);
+            Assert.That(level, Is.Not.Null, $"Missing level data at {resourcePath}.");
+            var simulation = new CircuitSimulation(level.CreateBoardState());
+            Assert.That(simulation.IsLevelCompleted, Is.False, $"{resourcePath} must start unsolved.");
+
+            for (int i = 0; i < rotations; i++)
+                Assert.That(simulation.RotateTileClockwise(position), Is.True);
+
+            Assert.That(simulation.IsLevelCompleted, Is.True, $"{resourcePath} should be manually solvable.");
         }
 
         private static CircuitSimulation CreateSimulation(int width, int height, params TileDefinition[] tiles)

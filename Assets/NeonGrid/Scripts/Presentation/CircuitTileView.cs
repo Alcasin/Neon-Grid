@@ -12,8 +12,11 @@ namespace NeonGrid.Presentation
         private static readonly Color SourceColor = new Color(1f, 0.15f, 0.75f);
         private static readonly Color InactiveLamp = new Color(0.35f, 0.20f, 0.06f);
         private static readonly Color PoweredLamp = new Color(1f, 0.9f, 0.15f);
+        private static readonly Color DirectionMarker = new Color(1f, 0.75f, 0.1f);
+        private static readonly Color LockMarker = new Color(0.7f, 0.75f, 0.85f);
 
         private readonly List<SpriteRenderer> arms = new List<SpriteRenderer>();
+        private readonly List<SpriteRenderer> markers = new List<SpriteRenderer>();
         private SpriteRenderer center;
         private SpriteRenderer background;
 
@@ -32,6 +35,8 @@ namespace NeonGrid.Presentation
 
             foreach (SpriteRenderer arm in arms) Destroy(arm.gameObject);
             arms.Clear();
+            foreach (SpriteRenderer marker in markers) Destroy(marker.gameObject);
+            markers.Clear();
 
             Color circuitColor = GetCircuitColor(state);
             center.color = circuitColor;
@@ -42,12 +47,50 @@ namespace NeonGrid.Presentation
                 CreateArm(direction, squareSprite, circuitColor);
             }
 
+            if (state.TileType == TileType.Diode)
+                CreateDiodeOutputMarker(state, squareSprite);
+
+            if (!state.IsRotatable && IsLockableCircuitTile(state.TileType))
+                CreateLockMarker(squareSprite);
+
             if (state.TileType == TileType.PowerSource)
                 center.transform.localScale = new Vector3(0.48f, 0.48f, 1f);
             else if (state.TileType == TileType.OutputLamp)
                 center.transform.localScale = new Vector3(0.55f, 0.55f, 1f);
             else
                 center.transform.localScale = new Vector3(0.30f, 0.30f, 1f);
+        }
+
+        private void CreateDiodeOutputMarker(CircuitTileState state, Sprite sprite)
+        {
+            CardinalDirection output = TilePowerFlow.GetOutputSides(state.TileType, state.Rotation);
+            Vector3 position;
+            switch (output)
+            {
+                case CardinalDirection.Up: position = new Vector3(0f, 0.23f, 0f); break;
+                case CardinalDirection.Right: position = new Vector3(0.23f, 0f, 0f); break;
+                case CardinalDirection.Down: position = new Vector3(0f, -0.23f, 0f); break;
+                default: position = new Vector3(-0.23f, 0f, 0f); break;
+            }
+
+            SpriteRenderer marker = CreatePart("Diode Output", sprite, position, new Vector3(0.16f, 0.16f, 1f), 3);
+            marker.color = DirectionMarker;
+            markers.Add(marker);
+        }
+
+        private void CreateLockMarker(Sprite sprite)
+        {
+            SpriteRenderer marker = CreatePart("Lock Indicator", sprite,
+                new Vector3(-0.32f, 0.32f, 0f), new Vector3(0.13f, 0.13f, 1f), 3);
+            marker.color = LockMarker;
+            markers.Add(marker);
+        }
+
+        private static bool IsLockableCircuitTile(TileType tileType)
+        {
+            return tileType == TileType.StraightWire || tileType == TileType.CornerWire ||
+                   tileType == TileType.TJunction || tileType == TileType.CrossJunction ||
+                   tileType == TileType.Diode;
         }
 
         private Color GetCircuitColor(CircuitTileState state)

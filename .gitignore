@@ -8,7 +8,7 @@
 [Uu]ser[Ss]ettings/
 
 # Generated verification output
-TestResults.xml
+TestResults*.xml
 unity-*.log
 
 # IDE files

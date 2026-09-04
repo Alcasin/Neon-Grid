@@ -30,12 +30,15 @@ namespace NeonGrid.Simulation
                 foreach (CardinalDirection direction in DirectionUtility.CardinalDirections)
                 {
                     if ((current.Connections & direction) == 0) continue;
+                    if (!TilePowerFlow.CanSendToward(current, direction)) continue;
 
                     GridPosition neighbourPosition = current.Position.Neighbour(direction);
                     if (!board.Contains(neighbourPosition)) continue;
 
                     CircuitTileState neighbour = board.GetTile(neighbourPosition);
-                    if ((neighbour.Connections & direction.Opposite()) == 0) continue;
+                    CardinalDirection neighbourSide = direction.Opposite();
+                    if ((neighbour.Connections & neighbourSide) == 0) continue;
+                    if (!TilePowerFlow.CanReceiveFrom(neighbour, neighbourSide)) continue;
                     if (neighbour.IsPowered) continue;
 
                     neighbour.IsPowered = true;

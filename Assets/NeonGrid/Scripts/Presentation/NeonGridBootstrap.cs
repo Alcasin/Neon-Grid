@@ -3,17 +3,15 @@ using UnityEngine;
 
 namespace NeonGrid.Presentation
 {
-    public static class NeonGridBootstrap
+    public sealed class NeonGridBootstrap : MonoBehaviour
     {
-        private const string PrototypeLevelResourcePath = "Levels/TestLevel4x4";
+        [SerializeField] private LevelDefinition level;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void StartPrototype()
+        private void Awake()
         {
-            LevelDefinition level = Resources.Load<LevelDefinition>(PrototypeLevelResourcePath);
             if (level == null)
             {
-                Debug.LogError($"No LevelDefinition found at Resources/{PrototypeLevelResourcePath}.");
+                Debug.LogError("NeonGridBootstrap requires a LevelDefinition.", this);
                 return;
             }
 
@@ -34,5 +32,12 @@ namespace NeonGrid.Presentation
             var gameObject = new GameObject("Neon Grid Board");
             gameObject.AddComponent<BoardController>().Initialize(level);
         }
+
+#if UNITY_EDITOR
+        public void SetLevel(LevelDefinition levelDefinition)
+        {
+            level = levelDefinition;
+        }
+#endif
     }
 }

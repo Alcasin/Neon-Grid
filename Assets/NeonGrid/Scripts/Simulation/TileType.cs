@@ -6,6 +6,9 @@ namespace NeonGrid.Simulation
         StraightWire,
         CornerWire,
         PowerSource,
-        OutputLamp
+        OutputLamp,
+        TJunction,
+        CrossJunction,
+        Diode
     }
 }
