@@ -58,14 +58,53 @@ namespace NeonGrid.Simulation
                 yield return tiles[x, y];
         }
 
-        internal bool TryRotateClockwise(GridPosition position)
+        public IReadOnlyList<PuzzleAction> GetValidActions()
         {
-            return Contains(position) && tiles[position.x, position.y].RotateClockwise();
+            var actions = new List<PuzzleAction>();
+            foreach (CircuitTileState tile in AllTiles())
+            {
+                if (tile.TryGetPlayerAction(out PuzzleAction action))
+                    actions.Add(action);
+            }
+
+            return actions;
         }
 
-        internal bool TryInteract(GridPosition position)
+        public bool TryGetPlayerAction(GridPosition position, out PuzzleAction action)
         {
-            return Contains(position) && tiles[position.x, position.y].Interact();
+            if (Contains(position))
+                return tiles[position.x, position.y].TryGetPlayerAction(out action);
+
+            action = default;
+            return false;
+        }
+
+        public bool IsActionValid(PuzzleAction action)
+        {
+            if (!Contains(action.Position)) return false;
+            return tiles[action.Position.x, action.Position.y].TryGetPlayerAction(out PuzzleAction expected) &&
+                   expected.ActionType == action.ActionType;
+        }
+
+        public BoardState CreateIndependentCopy()
+        {
+            var definitions = new List<TileDefinition>(Width * Height);
+            foreach (CircuitTileState tile in AllTiles())
+            {
+                definitions.Add(new TileDefinition(
+                    tile.Position,
+                    tile.TileType,
+                    tile.Rotation,
+                    tile.IsRotatable,
+                    tile.IsSwitchOn));
+            }
+
+            return new BoardState(Width, Height, definitions);
+        }
+
+        internal bool TryApplyAction(PuzzleAction action)
+        {
+            return Contains(action.Position) && tiles[action.Position.x, action.Position.y].TryApplyAction(action);
         }
     }
 }

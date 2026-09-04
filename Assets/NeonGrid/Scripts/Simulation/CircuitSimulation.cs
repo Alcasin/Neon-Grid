@@ -21,16 +21,17 @@ namespace NeonGrid.Simulation
 
         public bool RotateTileClockwise(GridPosition position)
         {
-            if (!Board.TryRotateClockwise(position)) return false;
-
-            Recalculate();
-            BoardChanged?.Invoke();
-            return true;
+            return ApplyAction(new PuzzleAction(position, PuzzleActionType.RotateClockwise));
         }
 
         public bool InteractWithTile(GridPosition position)
         {
-            if (!Board.TryInteract(position)) return false;
+            return Board.TryGetPlayerAction(position, out PuzzleAction action) && ApplyAction(action);
+        }
+
+        public bool ApplyAction(PuzzleAction action)
+        {
+            if (!Board.TryApplyAction(action)) return false;
 
             Recalculate();
             BoardChanged?.Invoke();
@@ -41,16 +42,7 @@ namespace NeonGrid.Simulation
         {
             powerPropagation.Recalculate(Board);
 
-            bool hasLamp = false;
-            bool allLampsPowered = true;
-            foreach (CircuitTileState tile in Board.AllTiles())
-            {
-                if (tile.TileType != TileType.OutputLamp) continue;
-                hasLamp = true;
-                if (!tile.IsPowered) allLampsPowered = false;
-            }
-
-            bool completedNow = hasLamp && allLampsPowered;
+            bool completedNow = CircuitCompletion.IsCompleted(Board);
             if (!IsLevelCompleted && completedNow)
             {
                 IsLevelCompleted = true;

@@ -80,6 +80,45 @@ namespace NeonGrid.Editor
                 Set(tiles, 5, 2, 1, TileType.OutputLamp, 3, false);
             });
 
+            CreateLevel("M3_Test_01", 3, 1, tiles =>
+            {
+                Set(tiles, 3, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 3, 1, 0, TileType.StraightWire, 0, true);
+                Set(tiles, 3, 2, 0, TileType.OutputLamp, 0, false);
+            });
+
+            CreateLevel("M3_Test_02", 4, 1, tiles =>
+            {
+                Set(tiles, 4, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 4, 1, 0, TileType.StraightWire, 0, true);
+                Set(tiles, 4, 2, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 4, 3, 0, TileType.OutputLamp, 0, false);
+            });
+
+            CreateLevel("M3_Test_03", 5, 2, tiles =>
+            {
+                Set(tiles, 5, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 5, 1, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 2, 0, TileType.AndGate, 0, false);
+                Set(tiles, 5, 3, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 5, 4, 0, TileType.PowerSource, 2, false);
+                Set(tiles, 5, 2, 1, TileType.OutputLamp, 3, false);
+            });
+
+            CreateLevel("M3_Test_04", 2, 1, tiles =>
+            {
+                Set(tiles, 2, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 2, 1, 0, TileType.OutputLamp, 2, false);
+            });
+
+            CreateLevel("M3_Test_05", 4, 1, tiles =>
+            {
+                Set(tiles, 4, 0, 0, TileType.PowerSource, 0, false);
+                Set(tiles, 4, 1, 0, TileType.StraightWire, 0, true);
+                Set(tiles, 4, 2, 0, TileType.Switch, 0, false, false);
+                Set(tiles, 4, 3, 0, TileType.OutputLamp, 0, false);
+            });
+
             AssetDatabase.SaveAssets();
 
             string[] scenePaths =
@@ -96,7 +135,7 @@ namespace NeonGrid.Editor
             for (int i = 0; i < scenePaths.Length; i++)
                 buildScenes[i] = new EditorBuildSettingsScene(scenePaths[i], true);
             EditorBuildSettings.scenes = buildScenes;
-            Debug.Log("Created Neon Grid Milestone 0, 1, and 2 test levels and scenes.");
+            Debug.Log("Created Neon Grid Milestone 0-2 test scenes and Milestone 0-3 test level assets.");
         }
 
         private static LevelDefinition CreateLevel(string assetName, int width, int height,

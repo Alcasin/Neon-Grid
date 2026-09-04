@@ -1,4 +1,4 @@
-# Neon Grid — Milestones 0–2
+# Neon Grid — Milestones 0–3
 
 Open any scene under `Assets/NeonGrid/Scenes` and press Play. Each scene references its own data-driven `LevelDefinition`; no level layout is selected by gameplay code.
 
@@ -31,3 +31,13 @@ Programmer-art test scenes:
 - `M2_Test_01`: tap the initially OFF switch to power the lamp; tap again to depower it.
 - `M2_Test_02`: either input switch alone leaves AND output OFF; turn both ON to power the lamp.
 - `M2_Test_03`: either input switch activates OR output; both inputs also remain valid.
+
+## Milestone 3 solver and validation
+
+`PuzzleAction` is the shared simulation-domain representation for a clockwise rotation or switch toggle. Runtime interaction and the solver ask `BoardState` for the same valid actions and apply them through the same tile rules.
+
+`PuzzleSearchState` owns an independent board copy. Its canonical key contains only player-changeable rotations and switch states in stable grid order; powered flags and gate input/output bookkeeping are recalculated by the existing propagation service and do not define state identity. `PuzzleSolver` performs deterministic breadth-first search, returning the first (therefore minimum-move) solution or a distinct `Unsolvable` / `SearchLimitReached` status.
+
+Select any `LevelDefinition` asset and click **Validate Level** in its Inspector to run structural checks followed by solver validation. The M3 assets under `Resources/Levels` cover one-move rotation, rotation plus switch, two-input AND, unsolvable, and constrained-search cases.
+
+The current propagation model is a monotonic work queue tailored to the accepted M0–M2 component behavior. Passive tiles are handled by reachability, while AND/OR already rely on explicit energized input sides. Future stateful or multi-input components must define their own input/output evaluation and must not assume a single `powered` or `visited` boolean is sufficient.

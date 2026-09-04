@@ -30,15 +30,39 @@ namespace NeonGrid.Simulation
             return true;
         }
 
-        internal bool Interact()
+        internal bool TryGetPlayerAction(out PuzzleAction action)
         {
             if (TileType == TileType.Switch)
             {
-                IsSwitchOn = !IsSwitchOn;
+                action = new PuzzleAction(Position, PuzzleActionType.ToggleSwitch);
                 return true;
             }
 
-            return RotateClockwise();
+            if (IsRotatable)
+            {
+                action = new PuzzleAction(Position, PuzzleActionType.RotateClockwise);
+                return true;
+            }
+
+            action = default;
+            return false;
+        }
+
+        internal bool TryApplyAction(PuzzleAction action)
+        {
+            if (!Position.Equals(action.Position)) return false;
+
+            switch (action.ActionType)
+            {
+                case PuzzleActionType.RotateClockwise:
+                    return RotateClockwise();
+                case PuzzleActionType.ToggleSwitch:
+                    if (TileType != TileType.Switch) return false;
+                    IsSwitchOn = !IsSwitchOn;
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         internal void ResetTransientPower()
