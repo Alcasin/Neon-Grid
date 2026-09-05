@@ -1,7 +1,10 @@
+using NeonGrid.Data;
 using NeonGrid.Presentation;
+using NeonGrid.Session;
 using NeonGrid.Simulation;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace NeonGrid.Tests
 {
@@ -25,6 +28,59 @@ namespace NeonGrid.Tests
             Assert.That(tapCount, Is.EqualTo(1));
             Assert.That(tappedPosition, Is.EqualTo(new GridPosition(2, 3)));
             Object.DestroyImmediate(gameObject);
+        }
+
+        [Test]
+        public void SessionHudCommands_DoNotCreateAccidentalTileMoves()
+        {
+            LevelDefinition level = Resources.Load<LevelDefinition>("Levels/M3_Test_02");
+            Assert.That(level, Is.Not.Null);
+            var root = new GameObject("M5 Presentation Smoke Test");
+
+            try
+            {
+                var controller = root.AddComponent<BoardController>();
+                controller.Initialize(level);
+                Transform moveLabelTransform = root.transform.Find("Gameplay HUD Canvas/Move Count");
+                Assert.That(moveLabelTransform, Is.Not.Null);
+                Text moveLabel = moveLabelTransform.GetComponent<Text>();
+                RectTransform moveRect = moveLabel.rectTransform;
+
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 0"));
+                Assert.That(moveRect.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(moveRect.anchorMax, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(moveRect.pivot, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(moveRect.anchoredPosition.x, Is.GreaterThanOrEqualTo(0f),
+                    "The left-aligned label must begin inside the canvas instead of extending off-screen.");
+
+                Assert.That(controller.Session.InteractWithTile(new GridPosition(0, 0)), Is.False);
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 0"));
+
+                controller.Session.InteractWithTile(new GridPosition(1, 0));
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 1"));
+
+                Assert.That(controller.Undo(), Is.True);
+                Assert.That(controller.Session.MoveCount, Is.EqualTo(1));
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 1"));
+
+                controller.Restart();
+                Assert.That(controller.Session.MoveCount, Is.Zero);
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 0"));
+
+                controller.Session.InteractWithTile(new GridPosition(2, 0));
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 1"));
+                controller.Restart();
+                Assert.That(moveLabel.text, Is.EqualTo("Moves: 0"));
+
+                controller.Session.AdvanceTime(GameplaySession.HintUnlockSeconds);
+                HintResult hint = controller.RequestHint();
+                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintAvailable));
+                Assert.That(controller.Session.MoveCount, Is.Zero);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         [Test]

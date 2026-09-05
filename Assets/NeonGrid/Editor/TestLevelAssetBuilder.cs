@@ -87,7 +87,7 @@ namespace NeonGrid.Editor
                 Set(tiles, 3, 2, 0, TileType.OutputLamp, 0, false);
             });
 
-            CreateLevel("M3_Test_02", 4, 1, tiles =>
+            LevelDefinition m3Test02 = CreateLevel("M3_Test_02", 4, 1, tiles =>
             {
                 Set(tiles, 4, 0, 0, TileType.PowerSource, 0, false);
                 Set(tiles, 4, 1, 0, TileType.StraightWire, 0, true);
@@ -129,13 +129,14 @@ namespace NeonGrid.Editor
                 CreateScene("M1_Test_03", test03),
                 CreateScene("M2_Test_01", m2Test01),
                 CreateScene("M2_Test_02", m2Test02),
-                CreateScene("M2_Test_03", m2Test03)
+                CreateScene("M2_Test_03", m2Test03),
+                CreateScene("M5_Runtime_Test", m3Test02)
             };
             var buildScenes = new EditorBuildSettingsScene[scenePaths.Length];
             for (int i = 0; i < scenePaths.Length; i++)
                 buildScenes[i] = new EditorBuildSettingsScene(scenePaths[i], true);
             EditorBuildSettings.scenes = buildScenes;
-            Debug.Log("Created Neon Grid Milestone 0-2 test scenes and Milestone 0-3 test level assets.");
+            Debug.Log("Created Neon Grid Milestone 0-5 test fixtures, including the M5 runtime session scene.");
         }
 
         private static LevelDefinition CreateLevel(string assetName, int width, int height,

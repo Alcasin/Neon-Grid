@@ -1,4 +1,5 @@
 using NeonGrid.Data;
+using NeonGrid.Session;
 using NeonGrid.Simulation;
 using UnityEngine;
 
@@ -6,41 +7,87 @@ namespace NeonGrid.Presentation
 {
     public sealed class BoardController : MonoBehaviour
     {
-        private CircuitSimulation simulation;
+        private GameplaySession session;
         private BoardView boardView;
+        private GameplayHudView hudView;
+
+        public GameplaySession Session => session;
 
         public void Initialize(LevelDefinition levelDefinition)
         {
-            simulation = new CircuitSimulation(levelDefinition.CreateBoardState());
+            session = new GameplaySession(levelDefinition);
             boardView = gameObject.AddComponent<BoardView>();
-            boardView.Build(simulation.Board, OnTileTapped);
-            boardView.SetCompleted(simulation.IsLevelCompleted);
+            boardView.Build(session.Board, OnTileTapped);
+            boardView.SetCompleted(session.IsCompleted);
 
-            simulation.BoardChanged += OnBoardChanged;
-            simulation.LevelCompleted += OnLevelCompleted;
+            hudView = gameObject.AddComponent<GameplayHudView>();
+            hudView.Build(() => Undo(), Restart, () => RequestHint());
+            hudView.Refresh(session);
+
+            session.BoardChanged += OnBoardChanged;
+            session.LevelCompleted += OnLevelCompleted;
         }
 
         private void OnDestroy()
         {
-            if (simulation == null) return;
-            simulation.BoardChanged -= OnBoardChanged;
-            simulation.LevelCompleted -= OnLevelCompleted;
+            if (session == null) return;
+            session.BoardChanged -= OnBoardChanged;
+            session.LevelCompleted -= OnLevelCompleted;
+        }
+
+        private void Update()
+        {
+            if (session == null) return;
+            session.AdvanceTime(Time.deltaTime);
+            hudView.Refresh(session);
         }
 
         private void OnTileTapped(GridPosition position)
         {
-            simulation.InteractWithTile(position);
+            session.InteractWithTile(position);
         }
 
         private void OnBoardChanged()
         {
-            boardView.Refresh(simulation.Board);
-            boardView.SetCompleted(simulation.IsLevelCompleted);
+            boardView.Refresh(session.Board);
+            boardView.SetCompleted(session.IsCompleted);
+            ApplyHintHighlight();
+            hudView.Refresh(session);
         }
 
-        private void OnLevelCompleted()
+        private void OnLevelCompleted(SessionCompletionResult result)
         {
             boardView.SetCompleted(true);
+            boardView.HighlightHint(null);
+            hudView.Refresh(session);
+        }
+
+        public bool Undo()
+        {
+            return session != null && session.Undo();
+        }
+
+        public void Restart()
+        {
+            if (session == null) return;
+            session.Restart();
+        }
+
+        public HintResult RequestHint()
+        {
+            if (session == null)
+                return HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid);
+
+            HintResult hint = session.RequestHint();
+            ApplyHintHighlight();
+            hudView.Refresh(session);
+            return hint;
+        }
+
+        private void ApplyHintHighlight()
+        {
+            PuzzleAction? action = session.LastHint.SuggestedAction;
+            boardView.HighlightHint(action.HasValue ? action.Value.Position : (GridPosition?)null);
         }
     }
 }

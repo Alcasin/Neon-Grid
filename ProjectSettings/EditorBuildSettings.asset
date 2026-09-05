@@ -26,5 +26,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/NeonGrid/Scenes/M2_Test_03.unity
     guid: e2bfc26acb708fa4aa96f1b2a84f40ff
+  - enabled: 1
+    path: Assets/NeonGrid/Scenes/M5_Runtime_Test.unity
+    guid: 783cf4d9b23d73d48baddc056971ab30
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

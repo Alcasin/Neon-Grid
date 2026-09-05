@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace NeonGrid.Presentation
@@ -7,6 +9,8 @@ namespace NeonGrid.Presentation
     {
         private Camera targetCamera;
         private InputAction pressAction;
+        private bool boardInputEnabled = true;
+        private readonly List<RaycastResult> uiRaycastResults = new List<RaycastResult>();
 
         public void Initialize(Camera camera)
         {
@@ -37,9 +41,14 @@ namespace NeonGrid.Presentation
             pressAction.Dispose();
         }
 
+        public void SetBoardInputEnabled(bool enabled)
+        {
+            boardInputEnabled = enabled;
+        }
+
         private void OnPressPerformed(InputAction.CallbackContext context)
         {
-            if (targetCamera == null) return;
+            if (!boardInputEnabled || targetCamera == null) return;
 
             Vector2 screenPosition;
             if (context.control.device is Mouse mouse)
@@ -49,10 +58,22 @@ namespace NeonGrid.Presentation
             else
                 return;
 
+            if (IsPointerOverUi(screenPosition)) return;
+
             Ray pointerRay = targetCamera.ScreenPointToRay(screenPosition);
             RaycastHit2D hit = Physics2D.GetRayIntersection(pointerRay);
             if (hit.collider != null && hit.collider.TryGetComponent(out CircuitTileInput tileInput))
                 tileInput.HandleTap();
+        }
+
+        private bool IsPointerOverUi(Vector2 screenPosition)
+        {
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null) return false;
+
+            uiRaycastResults.Clear();
+            eventSystem.RaycastAll(new PointerEventData(eventSystem) { position = screenPosition }, uiRaycastResults);
+            return uiRaycastResults.Count > 0;
         }
     }
 }

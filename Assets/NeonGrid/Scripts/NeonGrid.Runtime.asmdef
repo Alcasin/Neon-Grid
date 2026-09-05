@@ -1,7 +1,7 @@
 {
   "name": "NeonGrid.Runtime",
   "rootNamespace": "NeonGrid",
-  "references": ["Unity.InputSystem"],
+  "references": ["Unity.InputSystem", "Unity.ugui"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

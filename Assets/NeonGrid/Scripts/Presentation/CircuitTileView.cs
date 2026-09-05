@@ -18,15 +18,18 @@ namespace NeonGrid.Presentation
         private static readonly Color SwitchOffColor = new Color(0.55f, 0.12f, 0.18f);
         private static readonly Color AndGateColor = new Color(0.15f, 0.35f, 0.85f);
         private static readonly Color OrGateColor = new Color(0.85f, 0.35f, 0.12f);
+        private static readonly Color HintHighlight = new Color(0.95f, 0.25f, 1f);
 
         private readonly List<SpriteRenderer> arms = new List<SpriteRenderer>();
         private readonly List<SpriteRenderer> markers = new List<SpriteRenderer>();
         private SpriteRenderer center;
         private SpriteRenderer background;
         private TextMesh label;
+        private bool hintHighlighted;
 
         public Color CurrentCircuitColor => center != null ? center.color : Color.clear;
         public string CurrentLabel => label != null ? label.text : string.Empty;
+        public bool IsHintHighlighted => hintHighlighted;
 
         public void Build(Sprite squareSprite)
         {
@@ -49,9 +52,9 @@ namespace NeonGrid.Presentation
             background.color = TileBackground;
             center.gameObject.SetActive(state.TileType != TileType.Empty);
 
-            foreach (SpriteRenderer arm in arms) Destroy(arm.gameObject);
+            foreach (SpriteRenderer arm in arms) DestroyPart(arm.gameObject);
             arms.Clear();
-            foreach (SpriteRenderer marker in markers) Destroy(marker.gameObject);
+            foreach (SpriteRenderer marker in markers) DestroyPart(marker.gameObject);
             markers.Clear();
 
             Color circuitColor = GetCircuitColor(state);
@@ -79,6 +82,20 @@ namespace NeonGrid.Presentation
                 center.transform.localScale = new Vector3(0.55f, 0.38f, 1f);
             else
                 center.transform.localScale = new Vector3(0.30f, 0.30f, 1f);
+        }
+
+        public void SetHintHighlighted(bool highlighted)
+        {
+            hintHighlighted = highlighted;
+            if (!hintHighlighted && background != null)
+                background.color = TileBackground;
+        }
+
+        private void Update()
+        {
+            if (!hintHighlighted || background == null) return;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+            background.color = Color.Lerp(TileBackground, HintHighlight, 0.3f + pulse * 0.5f);
         }
 
         private void UpdateLabel(CircuitTileState state)
@@ -179,6 +196,14 @@ namespace NeonGrid.Presentation
             renderer.sprite = sprite;
             renderer.sortingOrder = order;
             return renderer;
+        }
+
+        private static void DestroyPart(GameObject part)
+        {
+            if (Application.isPlaying)
+                Destroy(part);
+            else
+                DestroyImmediate(part);
         }
     }
 }
