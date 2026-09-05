@@ -15,13 +15,18 @@ namespace NeonGrid.Presentation
 
         public void Initialize(LevelDefinition levelDefinition)
         {
-            session = new GameplaySession(levelDefinition);
+            Initialize(new GameplaySession(levelDefinition), null);
+        }
+
+        public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions)
+        {
+            session = gameplaySession ?? throw new System.ArgumentNullException(nameof(gameplaySession));
             boardView = gameObject.AddComponent<BoardView>();
             boardView.Build(session.Board, OnTileTapped);
             boardView.SetCompleted(session.IsCompleted);
 
             hudView = gameObject.AddComponent<GameplayHudView>();
-            hudView.Build(() => Undo(), Restart, () => RequestHint());
+            hudView.Build(() => Undo(), Restart, () => RequestHint(), resultActions);
             hudView.Refresh(session);
 
             session.BoardChanged += OnBoardChanged;
@@ -38,7 +43,8 @@ namespace NeonGrid.Presentation
         private void Update()
         {
             if (session == null) return;
-            session.AdvanceTime(Time.deltaTime);
+            if (!hudView.IsLeaveConfirmationOpen)
+                session.AdvanceTime(Time.deltaTime);
             hudView.Refresh(session);
         }
 

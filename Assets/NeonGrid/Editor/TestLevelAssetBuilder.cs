@@ -11,12 +11,14 @@ namespace NeonGrid.Editor
     public static class TestLevelAssetBuilder
     {
         private const string LevelDirectory = "Assets/NeonGrid/Resources/Levels";
+        private const string CampaignDirectory = "Assets/NeonGrid/Resources/Campaigns";
         private const string SceneDirectory = "Assets/NeonGrid/Scenes";
 
         [MenuItem("Neon Grid/Rebuild Milestone Test Levels")]
         public static void CreateOrUpdateTestLevel()
         {
             Directory.CreateDirectory(LevelDirectory);
+            Directory.CreateDirectory(CampaignDirectory);
             Directory.CreateDirectory(SceneDirectory);
 
             LevelDefinition milestoneZero = CreateLevel("TestLevel4x4", 4, 4, tiles =>
@@ -80,7 +82,7 @@ namespace NeonGrid.Editor
                 Set(tiles, 5, 2, 1, TileType.OutputLamp, 3, false);
             });
 
-            CreateLevel("M3_Test_01", 3, 1, tiles =>
+            LevelDefinition m3Test01 = CreateLevel("M3_Test_01", 3, 1, tiles =>
             {
                 Set(tiles, 3, 0, 0, TileType.PowerSource, 0, false);
                 Set(tiles, 3, 1, 0, TileType.StraightWire, 0, true);
@@ -119,6 +121,20 @@ namespace NeonGrid.Editor
                 Set(tiles, 4, 3, 0, TileType.OutputLamp, 0, false);
             });
 
+            CampaignDefinition m6Campaign = CreateCampaign("M6_Test_Campaign", "m6_test_campaign",
+                new CampaignChapterDefinition("power_station", "Power Station", new[]
+                {
+                    new CampaignLevelEntry("power_01", "Power Circuit 01", m3Test01),
+                    new CampaignLevelEntry("power_02", "Power Circuit 02", m2Test01),
+                    new CampaignLevelEntry("power_03", "Power Circuit 03", test02)
+                }),
+                new CampaignChapterDefinition("metro", "Metro", new[]
+                {
+                    new CampaignLevelEntry("metro_01", "Metro Circuit 01", test03),
+                    new CampaignLevelEntry("metro_02", "Metro Circuit 02", m3Test02),
+                    new CampaignLevelEntry("metro_03", "Metro Circuit 03", milestoneZero)
+                }));
+
             AssetDatabase.SaveAssets();
 
             string[] scenePaths =
@@ -130,13 +146,30 @@ namespace NeonGrid.Editor
                 CreateScene("M2_Test_01", m2Test01),
                 CreateScene("M2_Test_02", m2Test02),
                 CreateScene("M2_Test_03", m2Test03),
-                CreateScene("M5_Runtime_Test", m3Test02)
+                CreateScene("M5_Runtime_Test", m3Test02),
+                CreateCampaignScene("M6_Campaign_Test", m6Campaign)
             };
             var buildScenes = new EditorBuildSettingsScene[scenePaths.Length];
             for (int i = 0; i < scenePaths.Length; i++)
                 buildScenes[i] = new EditorBuildSettingsScene(scenePaths[i], true);
             EditorBuildSettings.scenes = buildScenes;
-            Debug.Log("Created Neon Grid Milestone 0-5 test fixtures, including the M5 runtime session scene.");
+            Debug.Log("Created Neon Grid Milestone 0-6 test fixtures, including the M6 campaign scene.");
+        }
+
+        private static CampaignDefinition CreateCampaign(string assetName, string campaignId,
+            params CampaignChapterDefinition[] chapters)
+        {
+            string path = $"{CampaignDirectory}/{assetName}.asset";
+            CampaignDefinition campaign = AssetDatabase.LoadAssetAtPath<CampaignDefinition>(path);
+            if (campaign == null)
+            {
+                campaign = ScriptableObject.CreateInstance<CampaignDefinition>();
+                AssetDatabase.CreateAsset(campaign, path);
+            }
+
+            campaign.SetData(campaignId, chapters);
+            EditorUtility.SetDirty(campaign);
+            return campaign;
         }
 
         private static LevelDefinition CreateLevel(string assetName, int width, int height,
@@ -166,6 +199,16 @@ namespace NeonGrid.Editor
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var root = new GameObject("Neon Grid Bootstrap");
             root.AddComponent<Presentation.NeonGridBootstrap>().SetLevel(level);
+            EditorSceneManager.SaveScene(scene, path);
+            return path;
+        }
+
+        private static string CreateCampaignScene(string sceneName, CampaignDefinition campaign)
+        {
+            string path = $"{SceneDirectory}/{sceneName}.unity";
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var root = new GameObject("Neon Grid Campaign");
+            root.AddComponent<Presentation.CampaignRuntimeController>().SetCampaign(campaign);
             EditorSceneManager.SaveScene(scene, path);
             return path;
         }

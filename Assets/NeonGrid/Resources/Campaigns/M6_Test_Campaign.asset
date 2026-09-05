@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9ca009eb0a99949b3649aaba97e6c3, type: 3}
+  m_Name: M6_Test_Campaign
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
+  campaignId: m6_test_campaign
+  chapters:
+  - chapterId: power_station
+    displayName: Power Station
+    levels:
+    - levelId: power_01
+      displayName: Power Circuit 01
+      levelDefinition: {fileID: 11400000, guid: cd75e90444c82b24f8e63f1da02ff8c9, type: 2}
+    - levelId: power_02
+      displayName: Power Circuit 02
+      levelDefinition: {fileID: 11400000, guid: b31ea716a3eef4d44ad625ecd71690fc, type: 2}
+    - levelId: power_03
+      displayName: Power Circuit 03
+      levelDefinition: {fileID: 11400000, guid: 0bde091f47a91aa4f85ffa8065ab747e, type: 2}
+  - chapterId: metro
+    displayName: Metro
+    levels:
+    - levelId: metro_01
+      displayName: Metro Circuit 01
+      levelDefinition: {fileID: 11400000, guid: 27b5fe1f114c3774e97c82ccb812c306, type: 2}
+    - levelId: metro_02
+      displayName: Metro Circuit 02
+      levelDefinition: {fileID: 11400000, guid: e5fc6e8618761b941ad0cd15ad5e3674, type: 2}
+    - levelId: metro_03
+      displayName: Metro Circuit 03
+      levelDefinition: {fileID: 11400000, guid: 49eefea1315946e468ae7a39b291fcb9, type: 2}
+
