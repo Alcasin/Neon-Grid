@@ -118,14 +118,20 @@ namespace NeonGrid.Validation
         public LevelValidationReport ValidateWithSolver(LevelDefinition level, PuzzleSolverOptions options = null)
         {
             if (level == null) throw new ArgumentNullException(nameof(level));
-            LevelValidationResult structural = Validate(level);
+            return ValidateWithSolver(level.Width, level.Height, level.Tiles, options);
+        }
+
+        public LevelValidationReport ValidateWithSolver(int width, int height,
+            IReadOnlyList<TileDefinition> tiles, PuzzleSolverOptions options = null)
+        {
+            LevelValidationResult structural = Validate(width, height, tiles);
             if (!structural.IsValid)
                 return new LevelValidationReport(structural, null);
 
             BoardState board;
             try
             {
-                board = level.CreateBoardState();
+                board = new BoardState(width, height, tiles);
             }
             catch (ArgumentException exception)
             {

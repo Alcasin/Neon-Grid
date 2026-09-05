@@ -1,4 +1,4 @@
-# Neon Grid — Milestones 0–3
+# Neon Grid — Milestones 0–4
 
 Open any scene under `Assets/NeonGrid/Scenes` and press Play. Each scene references its own data-driven `LevelDefinition`; no level layout is selected by gameplay code.
 
@@ -41,3 +41,11 @@ Programmer-art test scenes:
 Select any `LevelDefinition` asset and click **Validate Level** in its Inspector to run structural checks followed by solver validation. The M3 assets under `Resources/Levels` cover one-move rotation, rotation plus switch, two-input AND, unsolvable, and constrained-search cases.
 
 The current propagation model is a monotonic work queue tailored to the accepted M0–M2 component behavior. Passive tiles are handled by reachability, while AND/OR already rely on explicit energized input sides. Future stateful or multi-input components must define their own input/output evaluation and must not assume a single `powered` or `visited` boolean is sufficient.
+
+## Milestone 4 level authoring
+
+Open **Neon Grid > Level Editor** to create or load a `LevelDefinition`, edit its visual grid, rotate and configure selected cells, resize safely, and validate or solve the current unsaved working copy. Edits remain isolated until **Save Level** is used. Saving records one Unity Undo operation and is blocked while structural validation errors remain.
+
+The editor preview is generated directly from `TileType`, `TileConnections`, and `TilePowerFlow`; it does not use scene GameObjects or production art. Palette entries are enumerated from the domain `TileType` values.
+
+`TestLevelAssetBuilder` remains responsible only for deterministic milestone fixtures and their regression scenes. Future manually authored production levels should use the Level Editor instead of adding level-specific builder code.
