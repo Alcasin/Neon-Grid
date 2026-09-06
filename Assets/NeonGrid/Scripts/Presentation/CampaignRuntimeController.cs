@@ -23,7 +23,8 @@ namespace NeonGrid.Presentation
                 return;
             }
 
-            Initialize(campaign, new CampaignSaveStore(CampaignSaveStore.GetDefaultSavePath()));
+            Initialize(campaign,
+                new CampaignSaveStore(CampaignSaveStore.GetDefaultSavePath(campaign.CampaignId)));
         }
 
         public void Initialize(CampaignDefinition definition, ICampaignProgressStore store)

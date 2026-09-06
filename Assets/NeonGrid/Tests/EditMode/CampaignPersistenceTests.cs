@@ -216,6 +216,71 @@ namespace NeonGrid.Tests
             Assert.That(store.Load(fixture.Campaign).Status, Is.EqualTo(CampaignLoadStatus.NoSaveFound));
         }
 
+        [Test]
+        public void CampaignSpecificPaths_IsolateCampaignsWithOverlappingLevelIds()
+        {
+            CampaignDefinition campaignA = fixture.CreateCampaign("campaign_a",
+                fixture.Chapter("chapter_a", "A", "power_01"));
+            CampaignDefinition campaignB = fixture.CreateCampaign("campaign_b",
+                fixture.Chapter("chapter_b", "B", "power_01"));
+            var storeA = new CampaignSaveStore(
+                CampaignSaveStore.BuildSavePath(temporaryDirectory, campaignA.CampaignId));
+            var storeB = new CampaignSaveStore(
+                CampaignSaveStore.BuildSavePath(temporaryDirectory, campaignB.CampaignId));
+
+            var progressA = new CampaignProgressService(campaignA);
+            Record(progressA, "power_01", 5, 20f, 1);
+            Assert.That(storeA.Save(progressA).Succeeded, Is.True);
+
+            CampaignLoadResult freshB = storeB.Load(campaignB);
+            Assert.That(freshB.Status, Is.EqualTo(CampaignLoadStatus.NoSaveFound));
+            Assert.That(freshB.Progress.GetLevelProgress("power_01").Completed, Is.False);
+
+            var progressB = freshB.Progress;
+            Record(progressB, "power_01", 2, 8f, 3);
+            Assert.That(storeB.Save(progressB).Succeeded, Is.True);
+
+            CampaignLoadResult reloadedA = storeA.Load(campaignA);
+            CampaignLoadResult reloadedB = storeB.Load(campaignB);
+            Assert.That(reloadedA.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
+            Assert.That(reloadedB.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
+            Assert.That(reloadedA.Progress.GetLevelProgress("power_01").BestMoves, Is.EqualTo(5));
+            Assert.That(reloadedA.Progress.GetLevelProgress("power_01").BestStars, Is.EqualTo(1));
+            Assert.That(reloadedB.Progress.GetLevelProgress("power_01").BestMoves, Is.EqualTo(2));
+            Assert.That(reloadedB.Progress.GetLevelProgress("power_01").BestStars, Is.EqualTo(3));
+            Assert.That(storeA.SavePath, Is.Not.EqualTo(storeB.SavePath));
+        }
+
+        [Test]
+        public void MismatchedCampaignId_ReturnsExplicitStatusAndFreshProgress()
+        {
+            CampaignDefinition campaignA = fixture.CreateCampaign("campaign_a",
+                fixture.Chapter("chapter_a", "A", "power_01"));
+            CampaignDefinition campaignB = fixture.CreateCampaign("campaign_b",
+                fixture.Chapter("chapter_b", "B", "power_01"));
+            var store = new CampaignSaveStore(savePath);
+            var progressA = new CampaignProgressService(campaignA);
+            Record(progressA, "power_01", 2, 8f, 3);
+            Assert.That(store.Save(progressA).Succeeded, Is.True);
+
+            CampaignLoadResult load = store.Load(campaignB);
+
+            Assert.That(load.Status, Is.EqualTo(CampaignLoadStatus.CampaignMismatch));
+            Assert.That(load.Diagnostics, Is.Not.Empty);
+            Assert.That(load.Progress.GetLevelProgress("power_01").Completed, Is.False);
+            Assert.That(load.Progress.TotalStars, Is.Zero);
+        }
+
+        [TestCase("../campaign")]
+        [TestCase("campaign\\other")]
+        [TestCase("campaign:other")]
+        [TestCase("Campaign")]
+        public void CampaignSpecificPath_RejectsUnsafeCampaignId(string campaignId)
+        {
+            Assert.Throws<ArgumentException>(() =>
+                CampaignSaveStore.BuildSavePath(temporaryDirectory, campaignId));
+        }
+
         private void WriteData(CampaignSaveData data)
         {
             File.WriteAllText(savePath, JsonUtility.ToJson(data, true));

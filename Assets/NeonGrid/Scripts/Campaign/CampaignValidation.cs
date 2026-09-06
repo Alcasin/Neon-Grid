@@ -14,6 +14,7 @@ namespace NeonGrid.Campaign
     {
         MissingCampaign,
         EmptyCampaignId,
+        InvalidCampaignId,
         MissingChapters,
         NullChapter,
         EmptyChapterId,
@@ -78,6 +79,9 @@ namespace NeonGrid.Campaign
             if (string.IsNullOrWhiteSpace(campaign.CampaignId))
                 report.Add(CampaignValidationSeverity.Error, CampaignValidationCode.EmptyCampaignId,
                     "CampaignId must be non-empty.");
+            else if (!CampaignIdRules.IsSafeStableId(campaign.CampaignId))
+                report.Add(CampaignValidationSeverity.Error, CampaignValidationCode.InvalidCampaignId,
+                    "CampaignId may contain only lowercase letters, digits, underscores, and hyphens.");
 
             IReadOnlyList<CampaignChapterDefinition> chapters = campaign.Chapters;
             if (chapters == null || chapters.Count == 0)
@@ -155,6 +159,24 @@ namespace NeonGrid.Campaign
             }
 
             return report;
+        }
+    }
+
+    internal static class CampaignIdRules
+    {
+        public static bool IsSafeStableId(string campaignId)
+        {
+            if (string.IsNullOrWhiteSpace(campaignId)) return false;
+            for (int index = 0; index < campaignId.Length; index++)
+            {
+                char character = campaignId[index];
+                bool valid = character >= 'a' && character <= 'z' ||
+                             character >= '0' && character <= '9' ||
+                             character == '_' || character == '-';
+                if (!valid) return false;
+            }
+
+            return true;
         }
     }
 }

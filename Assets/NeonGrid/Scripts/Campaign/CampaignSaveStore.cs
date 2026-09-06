@@ -13,7 +13,8 @@ namespace NeonGrid.Campaign
         NoSaveFound,
         Loaded,
         Corrupt,
-        UnsupportedVersion
+        UnsupportedVersion,
+        CampaignMismatch
     }
 
     public enum CampaignSaveStatus
@@ -72,9 +73,21 @@ namespace NeonGrid.Campaign
             SavePath = Path.GetFullPath(savePath);
         }
 
-        public static string GetDefaultSavePath()
+        public static string GetDefaultSavePath(string campaignId)
         {
-            return Path.Combine(Application.persistentDataPath, "NeonGrid", SaveFileName);
+            return BuildSavePath(Application.persistentDataPath, campaignId);
+        }
+
+        internal static string BuildSavePath(string persistentDataPath, string campaignId)
+        {
+            if (string.IsNullOrWhiteSpace(persistentDataPath))
+                throw new ArgumentException("A persistent-data root is required.", nameof(persistentDataPath));
+            if (!CampaignIdRules.IsSafeStableId(campaignId))
+                throw new ArgumentException(
+                    "CampaignId may contain only lowercase letters, digits, underscores, and hyphens.",
+                    nameof(campaignId));
+            return Path.Combine(Path.GetFullPath(persistentDataPath), "NeonGrid", campaignId,
+                SaveFileName);
         }
 
         public CampaignLoadResult Load(CampaignDefinition campaign)
@@ -103,7 +116,7 @@ namespace NeonGrid.Campaign
                 return FailedLoad(CampaignLoadStatus.UnsupportedVersion, fresh,
                     $"Save version {data.version} is unsupported; expected {CurrentVersion}.");
             if (!string.Equals(data.campaignId, campaign.CampaignId, StringComparison.Ordinal))
-                return FailedLoad(CampaignLoadStatus.Corrupt, fresh,
+                return FailedLoad(CampaignLoadStatus.CampaignMismatch, fresh,
                     $"Save CampaignId '{data.campaignId}' does not match '{campaign.CampaignId}'.");
             if (!TryValidateEntries(data.levelProgressEntries, out string validationError))
                 return FailedLoad(CampaignLoadStatus.Corrupt, fresh, validationError);

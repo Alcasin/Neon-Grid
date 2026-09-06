@@ -24,6 +24,17 @@ namespace NeonGrid.Tests
             AssertError(campaign, CampaignValidationCode.EmptyCampaignId);
         }
 
+        [TestCase("../campaign")]
+        [TestCase("campaign\\other")]
+        [TestCase("campaign:other")]
+        [TestCase("Campaign")]
+        public void UnsafeCampaignId_IsRejected(string campaignId)
+        {
+            CampaignDefinition campaign = fixture.CreateCampaign(campaignId,
+                fixture.Chapter("chapter", "Chapter", "power_01"));
+            AssertError(campaign, CampaignValidationCode.InvalidCampaignId);
+        }
+
         [Test]
         public void MissingCampaignAndMissingChapterList_AreRejected()
         {
