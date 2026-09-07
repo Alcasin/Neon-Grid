@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
 using NeonGrid.Presentation;
+using NeonGrid.Session;
 using NeonGrid.Simulation;
 using NeonGrid.Validation;
 using NUnit.Framework;
@@ -17,6 +21,13 @@ namespace NeonGrid.Tests
         [TestCase("PS_01", 1)]
         [TestCase("PS_02", 1)]
         [TestCase("PS_03", 4)]
+        [TestCase("PS_04", 5)]
+        [TestCase("PS_05", 4)]
+        [TestCase("PS_06", 3)]
+        [TestCase("PS_07", 4)]
+        [TestCase("PS_08", 4)]
+        [TestCase("PS_09", 2)]
+        [TestCase("PS_10", 5)]
         public void ProductionLevel_LoadsValidAndMatchesExactSolverMinimum(
             string assetName, int expectedMinimumMoves)
         {
@@ -48,35 +59,193 @@ namespace NeonGrid.Tests
             CampaignChapterDefinition chapter = campaign.Chapters[0];
             Assert.That(chapter.ChapterId, Is.EqualTo("power_station"));
             Assert.That(chapter.DisplayName, Is.EqualTo("Power Station"));
-            Assert.That(chapter.Levels, Has.Count.EqualTo(3));
+            Assert.That(chapter.Levels, Has.Count.EqualTo(10));
             Assert.That(chapter.Levels.Select(level => level.LevelId),
-                Is.EqualTo(new[] { "power_01", "power_02", "power_03" }));
+                Is.EqualTo(Enumerable.Range(1, 10).Select(index => $"power_{index:D2}")));
             Assert.That(chapter.Levels.Select(level => level.DisplayName),
-                Is.EqualTo(new[] { "Power Circuit 01", "Power Circuit 02", "Power Circuit 03" }));
-            Assert.That(chapter.Levels[0].LevelDefinition, Is.SameAs(LoadLevel("PS_01")));
-            Assert.That(chapter.Levels[1].LevelDefinition, Is.SameAs(LoadLevel("PS_02")));
-            Assert.That(chapter.Levels[2].LevelDefinition, Is.SameAs(LoadLevel("PS_03")));
+                Is.EqualTo(Enumerable.Range(1, 10).Select(index => $"Power Circuit {index:D2}")));
+            for (int index = 0; index < chapter.Levels.Count; index++)
+                Assert.That(chapter.Levels[index].LevelDefinition,
+                    Is.SameAs(LoadLevel($"PS_{index + 1:D2}")));
+
+            AssertTutorial(chapter.Levels[0], "Tap a wire to rotate it.",
+                new GridPosition(1, 0));
+            AssertTutorial(chapter.Levels[1], "Corner wires redirect the current.",
+                new GridPosition(1, 0));
+            Assert.That(chapter.Levels[2].Tutorial, Is.Null,
+                "PS_03 intentionally tests transferred learning without a tutorial.");
+            Assert.That(chapter.Levels[3].Tutorial, Is.Null);
+            Assert.That(chapter.Levels[4].Tutorial, Is.Null);
+            AssertTutorial(chapter.Levels[5],
+                "T-junctions split power into multiple paths.", new GridPosition(2, 2));
+            Assert.That(chapter.Levels[6].Tutorial, Is.Null);
+            Assert.That(chapter.Levels[7].Tutorial, Is.Null);
+            AssertTutorial(chapter.Levels[8],
+                "Diodes only allow power in one direction.", new GridPosition(2, 2));
+            Assert.That(chapter.Levels[9].Tutorial, Is.Null);
 
             var progress = new CampaignProgressService(campaign);
-            Assert.That(progress.MaximumCampaignStars, Is.EqualTo(9));
+            Assert.That(progress.MaximumCampaignStars, Is.EqualTo(30));
             Assert.That(progress.IsLevelUnlocked("power_01"), Is.True);
-            Assert.That(progress.IsLevelUnlocked("power_02"), Is.False);
-            Assert.That(progress.IsLevelUnlocked("power_03"), Is.False);
+            for (int index = 1; index < chapter.Levels.Count; index++)
+                Assert.That(progress.IsLevelUnlocked(chapter.Levels[index].LevelId), Is.False);
 
-            CampaignProgressUpdate first = Record(progress, chapter.Levels[0]);
-            Assert.That(first.Accepted, Is.True);
-            Assert.That(progress.IsLevelUnlocked("power_02"), Is.True);
-            Assert.That(progress.IsLevelUnlocked("power_03"), Is.False);
+            for (int index = 0; index < chapter.Levels.Count; index++)
+            {
+                CampaignProgressUpdate update = Record(progress, chapter.Levels[index]);
+                Assert.That(update.Accepted, Is.True);
+                Assert.That(update.ChapterJustRestored, Is.EqualTo(index == 9));
+                if (index + 1 < chapter.Levels.Count)
+                    Assert.That(progress.IsLevelUnlocked(chapter.Levels[index + 1].LevelId), Is.True);
+                if (index == 5)
+                {
+                    Assert.That(progress.IsLevelUnlocked("power_07"), Is.True);
+                    Assert.That(progress.GetChapterState("power_station"),
+                        Is.EqualTo(CampaignChapterState.Available));
+                }
+            }
 
-            CampaignProgressUpdate second = Record(progress, chapter.Levels[1]);
-            Assert.That(second.Accepted, Is.True);
-            Assert.That(progress.IsLevelUnlocked("power_03"), Is.True);
-
-            CampaignProgressUpdate third = Record(progress, chapter.Levels[2]);
-            Assert.That(third.Accepted, Is.True);
-            Assert.That(third.ChapterJustRestored, Is.True);
             Assert.That(progress.GetChapterState("power_station"),
                 Is.EqualTo(CampaignChapterState.Restored));
+        }
+
+        [Test]
+        public void VerticalSliceNavigation_UsesTenLevelOrderingAndRestoresOnlyAfterPs10()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            var progress = new CampaignProgressService(campaign);
+            var flow = new CampaignFlowCoordinator(campaign, progress, new MemoryStore());
+            CampaignChapterDefinition chapter = campaign.Chapters[0];
+            for (int index = 0; index < 5; index++) Record(progress, chapter.Levels[index]);
+
+            Assert.That(flow.OpenChapter("power_station"), Is.True);
+            Assert.That(flow.StartLevel("power_06"), Is.True);
+
+            for (int index = 5; index <= 8; index++)
+            {
+                Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo($"power_{index + 1:D2}"));
+                Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.False);
+                Solve(flow.ActiveSession);
+                AssertNormalNavigation(flow.ResultNavigation, true);
+                Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.False);
+                Assert.That(flow.StartNextLevel(), Is.True);
+            }
+
+            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("power_10"));
+            Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.True);
+            Solve(flow.ActiveSession);
+            Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.True);
+            Assert.That(progress.GetChapterState("power_station"),
+                Is.EqualTo(CampaignChapterState.Restored));
+            Assert.That(flow.ResultNavigation.ShowRetry, Is.True);
+            Assert.That(flow.ResultNavigation.ShowLevels, Is.False);
+            Assert.That(flow.ResultNavigation.ShowMap, Is.True);
+            Assert.That(flow.ResultNavigation.ShowNext, Is.False);
+
+            Assert.That(flow.Retry(), Is.True);
+            Solve(flow.ActiveSession);
+            Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.False);
+            AssertNormalNavigation(flow.ResultNavigation, false);
+        }
+
+        [Test]
+        public void PreviousThreeLevelSave_LoadsStableProgressAndLeavesNewLevelsFresh()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            string directory = Path.Combine(Path.GetTempPath(), "NeonGridM7Tests",
+                Guid.NewGuid().ToString("N"));
+            string savePath = Path.Combine(directory, CampaignSaveStore.SaveFileName);
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var entries = new List<LevelProgressSaveEntry>();
+                for (int index = 1; index <= 3; index++)
+                    entries.Add(new LevelProgressSaveEntry($"power_{index:D2}", true,
+                        index, index + 1, index * 10f));
+                var priorSave = new CampaignSaveData
+                {
+                    version = CampaignSaveStore.CurrentVersion,
+                    campaignId = "power_station_vertical_slice",
+                    levelProgressEntries = entries
+                };
+                File.WriteAllText(savePath, JsonUtility.ToJson(priorSave, true));
+
+                CampaignLoadResult load = new CampaignSaveStore(savePath).Load(campaign);
+
+                Assert.That(load.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
+                Assert.That(load.Diagnostics, Is.Empty);
+                for (int index = 1; index <= 3; index++)
+                {
+                    LevelProgress restored = load.Progress.GetLevelProgress($"power_{index:D2}");
+                    Assert.That(restored.Completed, Is.True);
+                    Assert.That(restored.BestStars, Is.EqualTo(index));
+                    Assert.That(restored.BestMoves, Is.EqualTo(index + 1));
+                    Assert.That(restored.BestTimeSeconds, Is.EqualTo(index * 10f));
+                }
+
+                for (int index = 4; index <= 10; index++)
+                    Assert.That(load.Progress.GetLevelProgress($"power_{index:D2}").Completed,
+                        Is.False);
+                Assert.That(load.Progress.IsLevelUnlocked("power_04"), Is.True);
+                Assert.That(load.Progress.IsLevelUnlocked("power_05"), Is.False);
+                Assert.That(load.Progress.IsLevelUnlocked("power_06"), Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(directory)) Directory.Delete(directory, true);
+            }
+        }
+
+        [Test]
+        public void PreviousSixLevelSave_PreservesBestsUnlocksPs07AndIsNotRestored()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            string directory = Path.Combine(Path.GetTempPath(), "NeonGridM7Tests",
+                Guid.NewGuid().ToString("N"));
+            string savePath = Path.Combine(directory, CampaignSaveStore.SaveFileName);
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var entries = new List<LevelProgressSaveEntry>();
+                for (int index = 1; index <= 6; index++)
+                    entries.Add(new LevelProgressSaveEntry($"power_{index:D2}", true,
+                        (index - 1) % 3 + 1, index + 2, index * 7f));
+                File.WriteAllText(savePath, JsonUtility.ToJson(new CampaignSaveData
+                {
+                    version = CampaignSaveStore.CurrentVersion,
+                    campaignId = "power_station_vertical_slice",
+                    levelProgressEntries = entries
+                }, true));
+
+                CampaignLoadResult load = new CampaignSaveStore(savePath).Load(campaign);
+
+                Assert.That(load.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
+                Assert.That(load.Diagnostics, Is.Empty);
+                for (int index = 1; index <= 6; index++)
+                {
+                    LevelProgress restored = load.Progress.GetLevelProgress($"power_{index:D2}");
+                    Assert.That(restored.Completed, Is.True);
+                    Assert.That(restored.BestStars, Is.EqualTo((index - 1) % 3 + 1));
+                    Assert.That(restored.BestMoves, Is.EqualTo(index + 2));
+                    Assert.That(restored.BestTimeSeconds, Is.EqualTo(index * 7f));
+                }
+
+                for (int index = 7; index <= 10; index++)
+                    Assert.That(load.Progress.GetLevelProgress($"power_{index:D2}").Completed,
+                        Is.False);
+                Assert.That(load.Progress.IsLevelUnlocked("power_07"), Is.True);
+                Assert.That(load.Progress.IsLevelUnlocked("power_08"), Is.False);
+                Assert.That(load.Progress.GetChapterState("power_station"),
+                    Is.EqualTo(CampaignChapterState.Available),
+                    "Restoration must be derived from all ten current campaign entries.");
+            }
+            finally
+            {
+                if (Directory.Exists(directory)) Directory.Delete(directory, true);
+            }
         }
 
         [Test]
@@ -119,6 +288,57 @@ namespace NeonGrid.Tests
         {
             return progress.RecordCompletion(level.LevelId,
                 CampaignTestFixture.Result(level.LevelDefinition, 1, 1f, 1));
+        }
+
+        private static void Solve(GameplaySession session)
+        {
+            PuzzleSolverResult solution = new PuzzleSolver().Solve(session.Board);
+            Assert.That(solution.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            foreach (PuzzleAction action in solution.Solution)
+                Assert.That(session.PerformAction(action), Is.True);
+            Assert.That(session.IsCompleted, Is.True);
+        }
+
+        private static void AssertNormalNavigation(CampaignResultNavigationState navigation,
+            bool showNext)
+        {
+            Assert.That(navigation.ShowRetry, Is.True);
+            Assert.That(navigation.ShowLevels, Is.True);
+            Assert.That(navigation.ShowMap, Is.False);
+            Assert.That(navigation.ShowNext, Is.EqualTo(showNext));
+        }
+
+        private static void AssertTutorial(CampaignLevelEntry level, string message,
+            GridPosition target)
+        {
+            Assert.That(level.Tutorial, Is.Not.Null);
+            Assert.That(level.Tutorial.Steps, Has.Count.EqualTo(1));
+            TutorialStepDefinition step = level.Tutorial.Steps[0];
+            Assert.That(step.Message, Is.EqualTo(message));
+            Assert.That(step.TargetPosition, Is.EqualTo(target));
+            Assert.That(step.CompletionCondition,
+                Is.EqualTo(TutorialCompletionCondition.RotateClockwise));
+        }
+
+        private sealed class MemoryStore : ICampaignProgressStore
+        {
+            public string SavePath => "memory://production-power-station";
+
+            public CampaignLoadResult Load(CampaignDefinition definition)
+            {
+                return new CampaignLoadResult(CampaignLoadStatus.NoSaveFound,
+                    new CampaignProgressService(definition), Array.Empty<string>());
+            }
+
+            public CampaignSaveResult Save(CampaignProgressService progress)
+            {
+                return new CampaignSaveResult(CampaignSaveStatus.Saved, SavePath);
+            }
+
+            public CampaignSaveResult Delete()
+            {
+                return new CampaignSaveResult(CampaignSaveStatus.Saved, SavePath);
+            }
         }
     }
 }

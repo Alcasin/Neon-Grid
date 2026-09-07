@@ -2,6 +2,7 @@ using System.Linq;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
 using NUnit.Framework;
+using NeonGrid.Simulation;
 using UnityEngine;
 
 namespace NeonGrid.Tests
@@ -139,12 +140,75 @@ namespace NeonGrid.Tests
             Assert.That(report.Issues, Is.Empty);
         }
 
+        [Test]
+        public void Tutorial_NullStepAndEmptyMessageAreRejected()
+        {
+            CampaignDefinition nullStep = CampaignWithTutorial(fixture.Level("power_01"),
+                new LevelTutorialDefinition(new TutorialStepDefinition[] { null }));
+            AssertError(nullStep, CampaignValidationCode.NullTutorialStep);
+
+            CampaignDefinition emptyMessage = CampaignWithTutorial(fixture.Level("power_01"),
+                Tutorial(" ", new GridPosition(1, 0)));
+            AssertError(emptyMessage, CampaignValidationCode.EmptyTutorialMessage);
+        }
+
+        [Test]
+        public void Tutorial_OutOfBoundsAndEmptyTargetsAreRejected()
+        {
+            CampaignDefinition outOfBounds = CampaignWithTutorial(fixture.Level("power_01"),
+                Tutorial("Rotate", new GridPosition(3, 0)));
+            AssertError(outOfBounds, CampaignValidationCode.TutorialTargetOutOfBounds);
+
+            LevelDefinition sparse = ScriptableObject.CreateInstance<LevelDefinition>();
+            try
+            {
+                sparse.SetData(2, 1, new[]
+                {
+                    new TileDefinition(new GridPosition(0, 0), TileType.PowerSource, 0, false)
+                });
+                CampaignDefinition empty = CampaignWithTutorial(sparse,
+                    Tutorial("Rotate", new GridPosition(1, 0)));
+                AssertError(empty, CampaignValidationCode.TutorialTargetEmpty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(sparse);
+            }
+        }
+
+        [Test]
+        public void Tutorial_RotateConditionRequiresRotatableTarget()
+        {
+            CampaignDefinition campaign = CampaignWithTutorial(fixture.Level("power_01"),
+                Tutorial("Rotate", new GridPosition(0, 0)));
+            AssertError(campaign, CampaignValidationCode.TutorialCompletionIncompatible);
+        }
+
         private static void AssertError(CampaignDefinition campaign, CampaignValidationCode code)
         {
             CampaignValidationReport report = new CampaignValidator().Validate(campaign);
             Assert.That(report.IsValid, Is.False);
             Assert.That(report.Issues.Any(issue => issue.Code == code &&
                                                   issue.Severity == CampaignValidationSeverity.Error), Is.True);
+        }
+
+        private CampaignDefinition CampaignWithTutorial(LevelDefinition level,
+            LevelTutorialDefinition tutorial)
+        {
+            return fixture.CreateCampaign("tutorial_campaign",
+                new CampaignChapterDefinition("chapter", "Chapter", new[]
+                {
+                    new CampaignLevelEntry("tutorial_level", "Tutorial Level", level, tutorial)
+                }));
+        }
+
+        private static LevelTutorialDefinition Tutorial(string message, GridPosition target)
+        {
+            return new LevelTutorialDefinition(new[]
+            {
+                new TutorialStepDefinition(message, target,
+                    TutorialCompletionCondition.RotateClockwise)
+            });
         }
     }
 }

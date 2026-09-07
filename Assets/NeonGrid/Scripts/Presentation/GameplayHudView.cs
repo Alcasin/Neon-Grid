@@ -17,9 +17,11 @@ namespace NeonGrid.Presentation
         private static readonly Color AccentColor = new Color(0.05f, 0.9f, 1f);
 
         private Text moveText;
+        private Text levelIdentityText;
         private Text timerText;
         private Text hintText;
-        private Text completionText;
+        private Text completionTitleText;
+        private Text completionStatsText;
         private Button undoButton;
         private Button restartButton;
         private Button hintButton;
@@ -30,6 +32,9 @@ namespace NeonGrid.Presentation
         private Button nextButton;
         private GameObject completionPanel;
         private GameObject leaveConfirmationPanel;
+        private GameObject tutorialPanel;
+        private GameObject canvasObject;
+        private Font font;
         private GameplayResultActions resultActions;
         private GameplaySession displayedSession;
 
@@ -38,16 +43,16 @@ namespace NeonGrid.Presentation
 
         public void Build(Action undo, Action restart, Action requestHint)
         {
-            Build(undo, restart, requestHint, null);
+            Build(undo, restart, requestHint, null, null);
         }
 
         public void Build(Action undo, Action restart, Action requestHint,
-            GameplayResultActions resultActions)
+            GameplayResultActions resultActions, int? levelOrdinal = null)
         {
             this.resultActions = resultActions;
             EnsureEventSystem();
 
-            GameObject canvasObject = new GameObject("Gameplay HUD Canvas");
+            canvasObject = new GameObject("Gameplay HUD Canvas");
             canvasObject.transform.SetParent(transform, false);
             Canvas canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -58,70 +63,138 @@ namespace NeonGrid.Presentation
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            moveText = CreateText(canvasObject.transform, "Move Count", font, 36, TextAnchor.MiddleRight,
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-32f, -32f), new Vector2(300f, 70f));
+            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            moveText = CreateText(canvasObject.transform, "Move Count", font,
+                ProgrammerUiMetrics.HudMovesFontSize, TextAnchor.MiddleRight,
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-32f, -ProgrammerUiMetrics.TopHudInset), new Vector2(300f, 70f));
             moveText.rectTransform.pivot = new Vector2(1f, 1f);
-            moveText.rectTransform.anchoredPosition = new Vector2(-32f, -32f);
-            timerText = CreateText(canvasObject.transform, "Timer", font, 36, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(300f, 70f));
+            moveText.rectTransform.anchoredPosition =
+                new Vector2(-32f, -ProgrammerUiMetrics.TopHudInset);
+
+            bool showLevelIdentity = levelOrdinal.HasValue && levelOrdinal.Value > 0;
+            if (showLevelIdentity)
+            {
+                levelIdentityText = CreateText(canvasObject.transform, "Level Identity", font,
+                    ProgrammerUiMetrics.HudLevelIdentityFontSize, TextAnchor.MiddleCenter,
+                    new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                    new Vector2(0f, -ProgrammerUiMetrics.HudLevelIdentityTopInset),
+                    new Vector2(360f, ProgrammerUiMetrics.HudLevelIdentityHeight));
+                levelIdentityText.rectTransform.pivot = new Vector2(0.5f, 1f);
+                levelIdentityText.rectTransform.anchoredPosition =
+                    new Vector2(0f, -ProgrammerUiMetrics.HudLevelIdentityTopInset);
+                levelIdentityText.text = $"LEVEL {levelOrdinal.Value}";
+            }
+
+            timerText = CreateText(canvasObject.transform, "Timer", font,
+                ProgrammerUiMetrics.HudPrimaryFontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, showLevelIdentity
+                    ? -ProgrammerUiMetrics.HudTimeTopInset
+                    : -ProgrammerUiMetrics.TopHudInset),
+                new Vector2(300f, showLevelIdentity ? 48f : 70f));
             timerText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            timerText.rectTransform.anchoredPosition = new Vector2(0f, -32f);
-            hintText = CreateText(canvasObject.transform, "Hint Status", font, 28, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 152f), new Vector2(900f, 90f));
+            timerText.rectTransform.anchoredPosition = new Vector2(0f,
+                showLevelIdentity
+                    ? -ProgrammerUiMetrics.HudTimeTopInset
+                    : -ProgrammerUiMetrics.TopHudInset);
+            hintText = CreateText(canvasObject.transform, "Hint Status", font,
+                ProgrammerUiMetrics.HintStatusFontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, ProgrammerUiMetrics.HintStatusCenterY),
+                new Vector2(960f, ProgrammerUiMetrics.HintStatusHeight));
 
             undoButton = CreateButton(canvasObject.transform, "Undo Button", "UNDO", font,
-                new Vector2(0.15f, 0f), new Vector2(0.15f, 0f), new Vector2(0f, 52f), undo);
+                new Vector2(0.15f, 0f), new Vector2(0.15f, 0f),
+                new Vector2(0f, ProgrammerUiMetrics.BottomControlsCenterY), undo);
             restartButton = CreateButton(canvasObject.transform, "Restart Button", "RESTART", font,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 52f), restart);
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, ProgrammerUiMetrics.BottomControlsCenterY), restart);
             hintButton = CreateButton(canvasObject.transform, "Hint Button", "HINT", font,
-                new Vector2(0.85f, 0f), new Vector2(0.85f, 0f), new Vector2(0f, 52f), requestHint);
+                new Vector2(0.85f, 0f), new Vector2(0.85f, 0f),
+                new Vector2(0f, ProgrammerUiMetrics.BottomControlsCenterY), requestHint);
 
             if (resultActions != null)
                 backButton = CreateButton(canvasObject.transform, "Back To Levels Button", "< LEVELS", font,
-                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(32f, -32f),
-                    RequestLeave, new Vector2(240f, 76f));
+                    new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(32f, -ProgrammerUiMetrics.TopHudInset),
+                    RequestLeave, new Vector2(240f, 90f));
             if (backButton != null)
                 backButton.GetComponent<RectTransform>().pivot = new Vector2(0f, 1f);
 
             completionPanel = CreatePanel(canvasObject.transform, "Completion Panel",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
-                resultActions == null ? new Vector2(720f, 520f) : new Vector2(720f, 650f));
-            completionText = CreateText(completionPanel.transform, "Completion Text", font, 42,
-                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            completionText.rectTransform.offsetMin = new Vector2(32f, resultActions == null ? 32f : 150f);
-            completionText.rectTransform.offsetMax = new Vector2(-32f, -32f);
+                resultActions == null ? new Vector2(760f, 600f) : new Vector2(760f, 700f));
+            completionTitleText = CreateText(completionPanel.transform, "Completion Title", font,
+                ProgrammerUiMetrics.CompletionTitleFontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f),
+                new Vector2(700f, 110f));
+            completionTitleText.text = "LEVEL COMPLETE";
+            completionStatsText = CreateText(completionPanel.transform, "Completion Stats", font,
+                ProgrammerUiMetrics.CompletionStatsFontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, resultActions == null ? -15f : 60f), new Vector2(680f, 320f));
 
             if (resultActions != null)
             {
                 retryButton = CreateButton(completionPanel.transform, "Retry Button", "RETRY", font,
                     new Vector2(0.2f, 0f), new Vector2(0.2f, 0f), new Vector2(0f, 62f),
-                    resultActions.Retry, new Vector2(170f, 82f));
+                    resultActions.Retry, new Vector2(170f, 96f));
                 levelsButton = CreateButton(completionPanel.transform, "Levels Button", "LEVELS", font,
                     new Vector2(0.4f, 0f), new Vector2(0.4f, 0f), new Vector2(0f, 62f),
-                    resultActions.Levels, new Vector2(170f, 82f));
+                    resultActions.Levels, new Vector2(170f, 96f));
                 mapButton = CreateButton(completionPanel.transform, "Map Button", "MAP", font,
                     new Vector2(0.6f, 0f), new Vector2(0.6f, 0f), new Vector2(0f, 62f),
-                    resultActions.Map, new Vector2(170f, 82f));
+                    resultActions.Map, new Vector2(170f, 96f));
                 nextButton = CreateButton(completionPanel.transform, "Next Button", "NEXT", font,
                     new Vector2(0.8f, 0f), new Vector2(0.8f, 0f), new Vector2(0f, 62f),
-                    resultActions.Next, new Vector2(170f, 82f));
+                    resultActions.Next, new Vector2(170f, 96f));
 
                 leaveConfirmationPanel = CreatePanel(canvasObject.transform, "Leave Confirmation",
                     Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                CreateText(leaveConfirmationPanel.transform, "Message", font, 42,
+                CreateText(leaveConfirmationPanel.transform, "Message", font,
+                    ProgrammerUiMetrics.ModalMessageFontSize,
                     TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                    new Vector2(0f, 100f), new Vector2(900f, 240f)).text =
+                    new Vector2(0f, 110f), new Vector2(940f, 260f)).text =
                     "Leave this level?\nCurrent attempt progress will be lost.";
                 CreateButton(leaveConfirmationPanel.transform, "Cancel Button", "CANCEL", font,
                     new Vector2(0.32f, 0.5f), new Vector2(0.32f, 0.5f), new Vector2(0f, -100f),
-                    CancelLeave, new Vector2(260f, 100f));
+                    CancelLeave, new Vector2(280f, 110f));
                 CreateButton(leaveConfirmationPanel.transform, "Leave Button", "LEAVE", font,
                     new Vector2(0.68f, 0.5f), new Vector2(0.68f, 0.5f), new Vector2(0f, -100f),
-                    ConfirmLeave, new Vector2(260f, 100f));
+                    ConfirmLeave, new Vector2(280f, 110f));
                 leaveConfirmationPanel.SetActive(false);
             }
             completionPanel.SetActive(false);
+        }
+
+        public void ShowTutorial(string message)
+        {
+            if (tutorialPanel == null)
+            {
+                tutorialPanel = CreatePanel(canvasObject.transform, "Tutorial Panel",
+                    new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                    new Vector2(0f, ProgrammerUiMetrics.TutorialCenterY),
+                    new Vector2(960f, ProgrammerUiMetrics.TutorialPanelHeight));
+                tutorialPanel.GetComponent<Image>().raycastTarget = false;
+                Text tutorialText = CreateText(tutorialPanel.transform, "Tutorial Message", font,
+                    ProgrammerUiMetrics.TutorialFontSize,
+                    TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                tutorialText.rectTransform.offsetMin = new Vector2(28f, 12f);
+                tutorialText.rectTransform.offsetMax = new Vector2(-28f, -12f);
+            }
+
+            tutorialPanel.transform.Find("Tutorial Message").GetComponent<Text>().text = message;
+        }
+
+        public void HideTutorial()
+        {
+            if (tutorialPanel == null) return;
+            if (Application.isPlaying)
+                Destroy(tutorialPanel);
+            else
+                DestroyImmediate(tutorialPanel);
+            tutorialPanel = null;
         }
 
         public void Refresh(GameplaySession session)
@@ -142,7 +215,8 @@ namespace NeonGrid.Presentation
                 backButton.gameObject.SetActive(result == null);
             if (result != null)
             {
-                completionText.text = FormatCompletion(result);
+                HideTutorial();
+                completionStatsText.text = FormatCompletionStats(result);
                 if (leaveConfirmationPanel != null)
                     leaveConfirmationPanel.SetActive(false);
                 if (resultActions != null)
@@ -220,13 +294,13 @@ namespace NeonGrid.Presentation
             return $"Hint: {verb} tile ({action.Position.x + 1},{action.Position.y + 1})";
         }
 
-        private static string FormatCompletion(SessionCompletionResult result)
+        private static string FormatCompletionStats(SessionCompletionResult result)
         {
             string optimal = result.OptimalMoves.HasValue ? result.OptimalMoves.Value.ToString() : "Unknown";
             string stars = result.StarRating.Status == StarEvaluationStatus.Rated
                 ? result.StarRating.Stars.ToString()
                 : "Unknown";
-            return $"LEVEL COMPLETE\n\nMoves: {result.TotalMoves}\nOptimal: {optimal}\n" +
+            return $"Moves: {result.TotalMoves}\nOptimal: {optimal}\n" +
                    $"Time: {FormatTime(result.ElapsedSeconds)}\nStars: {stars}";
         }
 
@@ -297,7 +371,8 @@ namespace NeonGrid.Presentation
             button.colors = colors;
             button.onClick.AddListener(() => command?.Invoke());
 
-            Text text = CreateText(buttonObject.transform, "Label", font, 32, TextAnchor.MiddleCenter,
+            Text text = CreateText(buttonObject.transform, "Label", font,
+                ProgrammerUiMetrics.PrimaryButtonFontSize, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             text.rectTransform.offsetMin = Vector2.zero;
             text.rectTransform.offsetMax = Vector2.zero;

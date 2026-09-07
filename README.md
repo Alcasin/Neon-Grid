@@ -49,3 +49,9 @@ Open **Neon Grid > Level Editor** to create or load a `LevelDefinition`, edit it
 The editor preview is generated directly from `TileType`, `TileConnections`, and `TilePowerFlow`; it does not use scene GameObjects or production art. Palette entries are enumerated from the domain `TileType` values.
 
 `TestLevelAssetBuilder` remains responsible only for deterministic milestone fixtures and their regression scenes. Future manually authored production levels should use the Level Editor instead of adding level-specific builder code.
+
+## Milestone 7 tutorial boundary
+
+Tutorial sequences are optional serialized metadata on campaign level entries. Their runtime state is presentation-local to one attempt and observes successful authoritative `PuzzleAction` values; it never changes circuit state or move accounting. Campaign completion history decides whether a new attempt receives its tutorial, so completed replays skip it and resetting campaign progress restores it without a separate tutorial save format.
+
+Hint and tutorial targets share one reason-based tile highlight layer. They retain independent state when active together; tutorial green has visual priority when both reasons target the same tile, while hint magenta remains visible on a different tile.

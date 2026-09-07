@@ -51,16 +51,23 @@ namespace NeonGrid.Data
         [SerializeField] private string levelId;
         [SerializeField] private string displayName;
         [SerializeField] private LevelDefinition levelDefinition;
+        [SerializeField] private LevelTutorialDefinition tutorial = new LevelTutorialDefinition();
 
         public string LevelId => levelId;
         public string DisplayName => displayName;
         public LevelDefinition LevelDefinition => levelDefinition;
+        public LevelTutorialDefinition Tutorial => tutorial?.Steps != null && tutorial.Steps.Count > 0
+            ? tutorial
+            : null;
 
-        public CampaignLevelEntry(string levelId, string displayName, LevelDefinition levelDefinition)
+        public CampaignLevelEntry(string levelId, string displayName, LevelDefinition levelDefinition,
+            LevelTutorialDefinition tutorial = null)
         {
             this.levelId = levelId;
             this.displayName = displayName;
             this.levelDefinition = levelDefinition;
+            if (tutorial != null)
+                this.tutorial = tutorial;
         }
     }
 }

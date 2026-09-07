@@ -48,6 +48,7 @@ namespace NeonGrid.Campaign
         public CampaignChapterDefinition SelectedChapter { get; private set; }
         public CampaignLevelEntry ActiveLevel { get; private set; }
         public GameplaySession ActiveSession { get; private set; }
+        public LevelTutorialDefinition ActiveTutorial { get; private set; }
         public CampaignProgressUpdate LastProgressUpdate { get; private set; }
         public CampaignSaveResult LastSaveResult { get; private set; }
         public string PendingRestorationChapterId { get; private set; }
@@ -157,6 +158,10 @@ namespace NeonGrid.Campaign
         {
             DetachSession();
             ActiveLevel = entry;
+            LevelProgress historicalProgress = Progress.GetLevelProgress(entry.LevelId);
+            ActiveTutorial = historicalProgress != null && !historicalProgress.Completed
+                ? entry.Tutorial
+                : null;
             LastProgressUpdate = null;
             ResultNavigation = default;
             ActiveSession = new GameplaySession(entry.LevelDefinition);
@@ -186,6 +191,7 @@ namespace NeonGrid.Campaign
             if (ActiveSession != null)
                 ActiveSession.LevelCompleted -= HandleSessionCompleted;
             ActiveSession = null;
+            ActiveTutorial = null;
         }
 
         private static bool Contains(CampaignChapterDefinition chapter, string levelId)

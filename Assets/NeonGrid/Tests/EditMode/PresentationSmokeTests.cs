@@ -84,6 +84,264 @@ namespace NeonGrid.Tests
             }
         }
 
+        [TestCase(0, "LEVEL 1")]
+        [TestCase(4, "LEVEL 5")]
+        [TestCase(8, "LEVEL 9")]
+        [TestCase(9, "LEVEL 10")]
+        public void CampaignGameplayHud_DisplaysOrdinalFromProductionChapterOrdering(
+            int levelIndex, string expectedLabel)
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            CampaignChapterDefinition chapter = campaign.Chapters[0];
+            CampaignLevelEntry entry = chapter.Levels[levelIndex];
+            var root = new GameObject("M7 Level Identity Smoke Test");
+
+            try
+            {
+                int ordinal = CampaignRuntimeController.FindLevelOrdinal(chapter, entry);
+                var controller = root.AddComponent<BoardController>();
+                controller.Initialize(new GameplaySession(entry.LevelDefinition),
+                    new GameplayResultActions(() => { }, () => { }, () => { }, () => { },
+                        () => { }, () => default), entry.Tutorial, ordinal);
+
+                Transform canvas = root.transform.Find("Gameplay HUD Canvas");
+                Text identity = canvas.Find("Level Identity").GetComponent<Text>();
+                Text timer = canvas.Find("Timer").GetComponent<Text>();
+                Assert.That(identity.text, Is.EqualTo(expectedLabel));
+                Assert.That(identity.text, Does.Not.Match(@"LEVEL 0\d"));
+                Assert.That(canvas.Find("Move Count"), Is.Not.Null);
+                Assert.That(canvas.Find("Back To Levels Button"), Is.Not.Null);
+                Assert.That(identity.rectTransform.anchorMin, Is.EqualTo(new Vector2(0.5f, 1f)));
+                Assert.That(timer.rectTransform.anchorMin, Is.EqualTo(new Vector2(0.5f, 1f)));
+                Assert.That(identity.rectTransform.anchoredPosition.x, Is.Zero);
+                Assert.That(timer.rectTransform.anchoredPosition.x, Is.Zero);
+                Assert.That(identity.fontSize, Is.GreaterThan(timer.fontSize));
+                Assert.That(timer.fontSize,
+                    Is.GreaterThan(canvas.Find("Move Count").GetComponent<Text>().fontSize));
+                float identityBottom = identity.rectTransform.anchoredPosition.y -
+                                       identity.rectTransform.sizeDelta.y;
+                Assert.That(timer.rectTransform.anchoredPosition.y,
+                    Is.LessThanOrEqualTo(identityBottom),
+                    "Time must be directly below the centered level identity.");
+                AssertInsideCanvas(identity.rectTransform, 1080f, 1920f);
+                AssertInsideCanvas(timer.rectTransform, 1080f, 1920f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void CampaignGameplayOrdinal_DoesNotDependOnNumericStableId()
+        {
+            LevelDefinition level = Resources.Load<LevelDefinition>("Levels/M3_Test_02");
+            var first = new CampaignLevelEntry("alpha_node", "Intro", level);
+            var second = new CampaignLevelEntry("final_node", "Final", level);
+            var chapter = new CampaignChapterDefinition("chapter", "Chapter", new[]
+            {
+                first,
+                second
+            });
+
+            Assert.That(CampaignRuntimeController.FindLevelOrdinal(chapter, first), Is.EqualTo(1));
+            Assert.That(CampaignRuntimeController.FindLevelOrdinal(chapter, second), Is.EqualTo(2));
+        }
+
+        [Test]
+        public void TutorialPresentation_TracksAcceptedActionsAndCoexistsWithHintHighlight()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            LevelDefinition level = campaign.Chapters[0].Levels[2].LevelDefinition;
+            LevelTutorialDefinition tutorial = campaign.Chapters[0].Levels[0].Tutorial;
+            var root = new GameObject("M7 Tutorial Presentation Smoke Test");
+
+            try
+            {
+                var controller = root.AddComponent<BoardController>();
+                controller.Initialize(new GameplaySession(level),
+                    new GameplayResultActions(() => { }, () => { }, () => { }, () => { },
+                        () => { }, () => default), tutorial);
+                Transform canvas = root.transform.Find("Gameplay HUD Canvas");
+                Transform panel = canvas.Find("Tutorial Panel");
+                CircuitTileView targetView = root.transform.Find("Tile 1,0")
+                    .GetComponent<CircuitTileView>();
+
+                Assert.That(panel, Is.Not.Null);
+                Assert.That(panel.Find("Tutorial Message").GetComponent<Text>().text,
+                    Is.EqualTo("Tap a wire to rotate it."));
+                Assert.That(panel.GetComponent<Image>().raycastTarget, Is.False,
+                    "The callout must not block board input.");
+                Assert.That(panel.Find("Tutorial Message").GetComponent<Text>().raycastTarget, Is.False);
+                Assert.That(targetView.IsTutorialHighlighted, Is.True);
+                Assert.That(canvas.Find("Move Count"), Is.Not.Null);
+                Assert.That(canvas.Find("Timer"), Is.Not.Null);
+                Assert.That(canvas.Find("Undo Button"), Is.Not.Null);
+                Assert.That(canvas.Find("Restart Button"), Is.Not.Null);
+                Assert.That(canvas.Find("Hint Button"), Is.Not.Null);
+                Assert.That(canvas.Find("Back To Levels Button"), Is.Not.Null);
+
+                RectTransform tutorialRect = panel.GetComponent<RectTransform>();
+                RectTransform timerRect = canvas.Find("Timer").GetComponent<RectTransform>();
+                float tutorialTop = tutorialRect.anchoredPosition.y +
+                                    tutorialRect.sizeDelta.y * (1f - tutorialRect.pivot.y);
+                float timerBottom = timerRect.anchoredPosition.y -
+                                    timerRect.sizeDelta.y * timerRect.pivot.y;
+                Assert.That(tutorialTop, Is.LessThan(timerBottom),
+                    "The tutorial callout must sit below the top HUD without overlap.");
+                float tutorialBottomInset = -tutorialRect.anchoredPosition.y +
+                                            tutorialRect.sizeDelta.y * tutorialRect.pivot.y;
+                Assert.That(tutorialBottomInset,
+                    Is.LessThanOrEqualTo(GameplayLayoutMetrics.TopHudReservedPixels),
+                    "The tutorial must remain entirely within the accepted top reservation.");
+                AssertInsideCanvas(tutorialRect, 1080f, 1920f);
+
+                canvas.Find("Back To Levels Button").GetComponent<Button>().onClick.Invoke();
+                Transform leaveConfirmation = canvas.Find("Leave Confirmation");
+                Assert.That(leaveConfirmation.gameObject.activeSelf, Is.True);
+                leaveConfirmation.Find("Cancel Button").GetComponent<Button>().onClick.Invoke();
+                Assert.That(leaveConfirmation.gameObject.activeSelf, Is.False);
+                Assert.That(controller.Tutorial.IsActive, Is.True);
+                Assert.That(canvas.Find("Tutorial Panel"), Is.Not.Null,
+                    "Cancelling leave must preserve attempt-local tutorial state.");
+
+                Assert.That(controller.PerformPlayerAction(new GridPosition(0, 0)), Is.False);
+                Assert.That(controller.Tutorial.IsActive, Is.True);
+                Assert.That(controller.Session.MoveCount, Is.Zero);
+
+                Assert.That(controller.PerformPlayerAction(new GridPosition(2, 0)), Is.True,
+                    "An unrelated valid action remains available during onboarding.");
+                Assert.That(controller.Tutorial.IsActive, Is.True);
+                Assert.That(canvas.Find("Tutorial Panel"), Is.Not.Null);
+
+                Assert.That(controller.PerformPlayerAction(new GridPosition(1, 0)), Is.True);
+                Assert.That(controller.Tutorial.IsActive, Is.False);
+                Assert.That(canvas.Find("Tutorial Panel"), Is.Null);
+                Assert.That(targetView.IsTutorialHighlighted, Is.False);
+                Assert.That(controller.Session.MoveCount, Is.EqualTo(2));
+
+                Assert.That(controller.Undo(), Is.True);
+                Assert.That(controller.Tutorial.IsActive, Is.False,
+                    "Undo must not reopen an attempt-local completed step.");
+                Assert.That(canvas.Find("Tutorial Panel"), Is.Null);
+
+                controller.Restart();
+                Assert.That(controller.Tutorial.IsActive, Is.True);
+                Assert.That(canvas.Find("Tutorial Panel"), Is.Not.Null);
+                Assert.That(controller.Session.MoveCount, Is.Zero);
+
+                controller.Session.AdvanceTime(GameplaySession.HintUnlockSeconds);
+                HintResult hint = controller.RequestHint();
+                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintAvailable));
+                Assert.That(targetView.IsTutorialHighlighted, Is.True,
+                    "Requesting a hint must not clear tutorial state.");
+                CircuitTileView hintView = root.transform.Find(
+                    $"Tile {hint.SuggestedAction.Value.Position.x},{hint.SuggestedAction.Value.Position.y}")
+                    .GetComponent<CircuitTileView>();
+                Assert.That(hintView.IsHintHighlighted, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void GameplayReadability_UsesRoleHierarchyAndKeepsCriticalPanelsInBounds()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            LevelDefinition level = Resources.Load<LevelDefinition>("Levels/M3_Test_02");
+            var session = new GameplaySession(level);
+            var root = new GameObject("M7 Readability Smoke Test");
+
+            try
+            {
+                var hud = root.AddComponent<GameplayHudView>();
+                hud.Build(() => { }, () => { }, () => { },
+                    new GameplayResultActions(() => { }, () => { }, () => { }, () => { },
+                        () => { }, () => CampaignResultNavigationState.Normal(true)));
+                hud.ShowTutorial("T-junctions split power into multiple paths.");
+                hud.Refresh(session);
+
+                Transform canvas = root.transform.Find("Gameplay HUD Canvas");
+                Text tutorial = canvas.Find("Tutorial Panel/Tutorial Message").GetComponent<Text>();
+                Text timer = canvas.Find("Timer").GetComponent<Text>();
+                Text moves = canvas.Find("Move Count").GetComponent<Text>();
+                Text hint = canvas.Find("Hint Status").GetComponent<Text>();
+                Assert.That(tutorial.fontSize, Is.GreaterThan(timer.fontSize));
+                Assert.That(timer.fontSize, Is.GreaterThan(moves.fontSize));
+                Assert.That(moves.fontSize, Is.GreaterThan(hint.fontSize));
+                Canvas.ForceUpdateCanvases();
+                Assert.That(tutorial.preferredWidth,
+                    Is.LessThanOrEqualTo(tutorial.rectTransform.rect.width),
+                    "The longest current tutorial must remain on one readable line.");
+                AssertInsideCanvas(canvas.Find("Tutorial Panel").GetComponent<RectTransform>(),
+                    1080f, 1920f);
+
+                canvas.Find("Back To Levels Button").GetComponent<Button>().onClick.Invoke();
+                Transform modal = canvas.Find("Leave Confirmation");
+                Text modalMessage = modal.Find("Message").GetComponent<Text>();
+                Text cancelLabel = modal.Find("Cancel Button/Label").GetComponent<Text>();
+                Assert.That(modalMessage.fontSize, Is.GreaterThan(cancelLabel.fontSize));
+                Assert.That(modal.Find("Cancel Button").GetComponent<RectTransform>().sizeDelta.y,
+                    Is.GreaterThanOrEqualTo(100f));
+                Assert.That(modal.Find("Leave Button").GetComponent<RectTransform>().sizeDelta.y,
+                    Is.GreaterThanOrEqualTo(100f));
+                modal.Find("Cancel Button").GetComponent<Button>().onClick.Invoke();
+
+                session.InteractWithTile(new GridPosition(1, 0));
+                session.InteractWithTile(new GridPosition(2, 0));
+                hud.Refresh(session);
+
+                Transform completion = canvas.Find("Completion Panel");
+                Text title = completion.Find("Completion Title").GetComponent<Text>();
+                Text stats = completion.Find("Completion Stats").GetComponent<Text>();
+                Assert.That(title.text, Is.EqualTo("LEVEL COMPLETE"));
+                Assert.That(stats.text, Does.Contain("Moves:"));
+                Assert.That(stats.text, Does.Contain("Optimal:"));
+                Assert.That(stats.text, Does.Contain("Time:"));
+                Assert.That(stats.text, Does.Contain("Stars:"));
+                Assert.That(title.fontSize, Is.GreaterThan(stats.fontSize));
+                Assert.That(stats.fontSize, Is.GreaterThan(hint.fontSize));
+                Assert.That(completion.Find("Retry Button/Label").GetComponent<Text>().fontSize,
+                    Is.GreaterThan(hint.fontSize));
+                Assert.That(completion.Find("Retry Button").GetComponent<RectTransform>().sizeDelta.y,
+                    Is.GreaterThanOrEqualTo(90f));
+                AssertInsideCanvas(completion.GetComponent<RectTransform>(), 1080f, 1920f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void GameplayWithoutTutorial_HasNoTutorialUiOrHighlight()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            CampaignLevelEntry ps03 = campaign.Chapters[0].Levels[2];
+            var root = new GameObject("M7 No Tutorial Presentation Smoke Test");
+
+            try
+            {
+                var controller = root.AddComponent<BoardController>();
+                controller.Initialize(new GameplaySession(ps03.LevelDefinition), null, ps03.Tutorial);
+
+                Assert.That(controller.Tutorial.IsActive, Is.False);
+                Assert.That(root.transform.Find("Gameplay HUD Canvas/Tutorial Panel"), Is.Null);
+                foreach (CircuitTileView view in root.GetComponentsInChildren<CircuitTileView>())
+                    Assert.That(view.IsTutorialHighlighted, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
         [Test]
         public void CampaignMapAndLevelSelection_ReflectProgressServiceState()
         {
@@ -91,11 +349,14 @@ namespace NeonGrid.Tests
             Assert.That(campaign, Is.Not.Null);
             var progress = new CampaignProgressService(campaign);
             var root = new GameObject("M6 Campaign Presentation Smoke Test");
+            string startedLevelId = null;
+            int backToMapCount = 0;
 
             try
             {
                 var view = root.AddComponent<CampaignRuntimeView>();
-                view.Build(campaign, progress, _ => { }, _ => { }, () => { });
+                view.Build(campaign, progress, _ => { }, id => startedLevelId = id,
+                    () => backToMapCount++);
                 view.ShowMap();
 
                 Transform map = root.transform.Find("Campaign Canvas/Campaign Map");
@@ -104,12 +365,35 @@ namespace NeonGrid.Tests
                 Assert.That(map.Find("Chapter 1").GetComponent<Button>().interactable, Is.True);
                 Assert.That(map.Find("Chapter 2/Label").GetComponent<Text>().text, Does.Contain("LOCKED"));
                 Assert.That(map.Find("Chapter 2").GetComponent<Button>().interactable, Is.False);
+                Text mapTitle = map.Find("Title").GetComponent<Text>();
+                Text stars = map.Find("Total Stars").GetComponent<Text>();
+                Text chapterLabel = map.Find("Chapter 1/Label").GetComponent<Text>();
+                Assert.That(mapTitle.fontSize, Is.GreaterThan(stars.fontSize));
+                Assert.That(stars.fontSize, Is.GreaterThan(chapterLabel.fontSize));
+                AssertInsideCanvas(mapTitle.rectTransform, 1080f, 1920f);
+                AssertInsideCanvas(stars.rectTransform, 1080f, 1920f);
+                AssertInsideCanvas(map.Find("Chapter 1").GetComponent<RectTransform>(),
+                    1080f, 1920f);
 
                 view.ShowChapter(campaign.Chapters[0]);
                 Transform selection = root.transform.Find("Campaign Canvas/Level Selection");
-                Assert.That(selection.Find("Generated Level 1").GetComponent<Button>().interactable, Is.True);
-                Assert.That(selection.Find("Generated Level 2").GetComponent<Button>().interactable, Is.False);
-                Assert.That(selection.Find("Generated Level 3").GetComponent<Button>().interactable, Is.False);
+                Transform row = selection.Find("Generated Level Grid/Generated Level Row 1");
+                Button first = row.Find("Generated Level 1").GetComponent<Button>();
+                Button second = row.Find("Generated Level 2").GetComponent<Button>();
+                Button third = row.Find("Generated Level 3").GetComponent<Button>();
+                Assert.That(first.interactable, Is.True);
+                Assert.That(second.interactable, Is.False);
+                Assert.That(third.interactable, Is.False);
+                Assert.That(second.transform.Find("Lock Icon"), Is.Not.Null);
+                Assert.That(first.transform.Find("State").GetComponent<Text>().text, Is.Empty,
+                    "An incomplete level must not display fake star results.");
+                first.onClick.Invoke();
+                Assert.That(startedLevelId, Is.EqualTo(campaign.Chapters[0].Levels[0].LevelId));
+
+                Button back = selection.Find("Back To Map").GetComponent<Button>();
+                Assert.That(back, Is.Not.Null);
+                back.onClick.Invoke();
+                Assert.That(backToMapCount, Is.EqualTo(1));
 
                 CampaignLevelEntry completedLevel = campaign.Chapters[0].Levels[0];
                 progress.RecordCompletion(completedLevel.LevelId,
@@ -117,10 +401,102 @@ namespace NeonGrid.Tests
                 view.ShowChapter(campaign.Chapters[0]);
 
                 selection = root.transform.Find("Campaign Canvas/Level Selection");
-                Assert.That(selection.Find("Generated Level 1/Label").GetComponent<Text>().text,
-                    Does.Contain("COMPLETED"));
-                Assert.That(selection.Find("Generated Level 2").GetComponent<Button>().interactable,
+                row = selection.Find("Generated Level Grid/Generated Level Row 1");
+                Assert.That(row.Find("Generated Level 1/State").GetComponent<Text>().text,
+                    Is.EqualTo("★★★"));
+                Assert.That(row.Find("Generated Level 1").GetComponent<Button>().interactable,
+                    Is.True, "Completed levels must remain replayable.");
+                Assert.That(row.Find("Generated Level 2").GetComponent<Button>().interactable,
                     Is.True, "Returning to the selected chapter must refresh newly unlocked levels.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void PowerStationChapter_RendersTenTilesAsThreeThreeThreeOne()
+        {
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            var progress = new CampaignProgressService(campaign);
+            var root = new GameObject("M7 Ten Level Grid Smoke Test");
+
+            try
+            {
+                var view = root.AddComponent<CampaignRuntimeView>();
+                view.Build(campaign, progress, _ => { }, _ => { }, () => { });
+                view.ShowChapter(campaign.Chapters[0]);
+
+                Transform selection = root.transform.Find("Campaign Canvas/Level Selection");
+                Transform grid = selection.Find("Generated Level Grid");
+                Text chapterTitle = selection.Find("Generated Chapter Title").GetComponent<Text>();
+                Assert.That(grid, Is.Not.Null);
+                Assert.That(grid.GetComponent<VerticalLayoutGroup>(), Is.Not.Null);
+                Assert.That(grid.childCount, Is.EqualTo(4));
+                Assert.That(grid.GetChild(0).childCount, Is.EqualTo(3));
+                Assert.That(grid.GetChild(1).childCount, Is.EqualTo(3));
+                Assert.That(grid.GetChild(2).childCount, Is.EqualTo(3));
+                Assert.That(grid.GetChild(3).childCount, Is.EqualTo(1));
+                Assert.That(grid.GetChild(3).GetComponent<HorizontalLayoutGroup>().childAlignment,
+                    Is.EqualTo(TextAnchor.MiddleCenter));
+                Assert.That(chapterTitle.fontSize,
+                    Is.GreaterThan(grid.GetChild(0).Find("Generated Level 1/Level Number")
+                        .GetComponent<Text>().fontSize),
+                    "The chapter name must be the selector's primary heading.");
+                VerticalLayoutGroup verticalLayout = grid.GetComponent<VerticalLayoutGroup>();
+                float horizontalSpacing = grid.GetChild(0).GetComponent<HorizontalLayoutGroup>().spacing;
+                Assert.That(verticalLayout.spacing, Is.GreaterThan(horizontalSpacing),
+                    "Selector rows should be opened vertically without changing card columns.");
+                RectTransform finalRow = grid.GetChild(3).GetComponent<RectTransform>();
+                RectTransform finalTile = grid.GetChild(3).GetChild(0).GetComponent<RectTransform>();
+                Assert.That(finalTile.anchoredPosition.x,
+                    Is.EqualTo(finalRow.rect.width * 0.5f).Within(0.1f));
+                Assert.That(selection.GetComponentInChildren<ScrollRect>(true), Is.Null,
+                    "The chapter grid must not depend on scrolling.");
+                RectTransform gridRect = grid.GetComponent<RectTransform>();
+                RectTransform backRect = selection.Find("Back To Map").GetComponent<RectTransform>();
+                float gridBottom = 1920f + gridRect.anchoredPosition.y - gridRect.sizeDelta.y;
+                float backTop = backRect.anchoredPosition.y +
+                                backRect.sizeDelta.y * (1f - backRect.pivot.y);
+                Assert.That(gridBottom, Is.GreaterThan(backTop),
+                    "BACK TO MAP must remain below the grid with a positive visual gap.");
+                AssertInsideCanvas(backRect, 1080f, 1920f);
+
+                foreach (Transform row in grid)
+                {
+                    Assert.That(row.GetComponent<HorizontalLayoutGroup>(), Is.Not.Null);
+                    foreach (Transform tile in row)
+                    {
+                        RectTransform rect = tile.GetComponent<RectTransform>();
+                        Assert.That(rect.sizeDelta.x, Is.EqualTo(rect.sizeDelta.y));
+                        Assert.That(rect.sizeDelta.x, Is.LessThan(300f),
+                            "Level entries must be compact tiles rather than full-width strips.");
+                    }
+                }
+
+                Button first = grid.GetChild(0).Find("Generated Level 1").GetComponent<Button>();
+                Assert.That(first.interactable, Is.True);
+                for (int index = 2; index <= 10; index++)
+                {
+                    int rowIndex = (index - 1) / 3;
+                    Button locked = grid.GetChild(rowIndex).Find($"Generated Level {index}")
+                        .GetComponent<Button>();
+                    Assert.That(locked.interactable, Is.False);
+                    Assert.That(locked.transform.Find("Lock Icon"), Is.Not.Null);
+                }
+
+                CampaignLevelEntry completed = campaign.Chapters[0].Levels[0];
+                progress.RecordCompletion(completed.LevelId,
+                    CampaignTestFixture.Result(completed.LevelDefinition, 2, 10f, 2));
+                view.ShowChapter(campaign.Chapters[0]);
+                grid = selection.Find("Generated Level Grid");
+                Assert.That(grid.GetChild(0).Find("Generated Level 1/State")
+                    .GetComponent<Text>().text, Is.EqualTo("★★☆"));
+                Assert.That(grid.GetChild(0).Find("Generated Level 2").GetComponent<Button>()
+                    .interactable, Is.True);
+                Assert.That(selection.Find("Back To Map"), Is.Not.Null);
             }
             finally
             {
@@ -313,6 +689,9 @@ namespace NeonGrid.Tests
                 RectTransform backRect = canvas.Find("Back To Levels Button").GetComponent<RectTransform>();
                 RectTransform timerRect = canvas.Find("Timer").GetComponent<RectTransform>();
                 RectTransform moveRect = canvas.Find("Move Count").GetComponent<RectTransform>();
+                RectTransform undoRect = canvas.Find("Undo Button").GetComponent<RectTransform>();
+                RectTransform restartRect = canvas.Find("Restart Button").GetComponent<RectTransform>();
+                RectTransform hintRect = canvas.Find("Hint Button").GetComponent<RectTransform>();
                 Assert.That(backRect.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
                 Assert.That(backRect.anchorMax, Is.EqualTo(new Vector2(0f, 1f)));
                 Assert.That(backRect.pivot, Is.EqualTo(new Vector2(0f, 1f)));
@@ -329,6 +708,20 @@ namespace NeonGrid.Tests
                 AssertInsideCanvas(backRect, 1080f, 1920f);
                 AssertInsideCanvas(timerRect, 1080f, 1920f);
                 AssertInsideCanvas(moveRect, 1080f, 1920f);
+                AssertInsideCanvas(undoRect, 1080f, 1920f);
+                AssertInsideCanvas(restartRect, 1080f, 1920f);
+                AssertInsideCanvas(hintRect, 1080f, 1920f);
+                float controlsBottom = undoRect.anchoredPosition.y -
+                                       undoRect.sizeDelta.y * undoRect.pivot.y;
+                float controlsTop = undoRect.anchoredPosition.y +
+                                    undoRect.sizeDelta.y * (1f - undoRect.pivot.y);
+                RectTransform hintStatusRect = canvas.Find("Hint Status").GetComponent<RectTransform>();
+                float hintStatusBottom = hintStatusRect.anchoredPosition.y -
+                                         hintStatusRect.sizeDelta.y * hintStatusRect.pivot.y;
+                Assert.That(controlsBottom, Is.GreaterThan(28f),
+                    "Bottom controls must have more safe-area breathing room than the prior layout.");
+                Assert.That(hintStatusBottom, Is.GreaterThan(controlsTop),
+                    "Hint status must remain separated above the bottom controls.");
                 Assert.That(backBounds.y, Is.LessThan(timerBounds.x),
                     "Back/Levels must not overlap the centered timer.");
                 Assert.That(timerBounds.y, Is.LessThan(moveBounds.x),

@@ -19,17 +19,20 @@ namespace NeonGrid.Presentation
         private static readonly Color AndGateColor = new Color(0.15f, 0.35f, 0.85f);
         private static readonly Color OrGateColor = new Color(0.85f, 0.35f, 0.12f);
         private static readonly Color HintHighlight = new Color(0.95f, 0.25f, 1f);
+        private static readonly Color TutorialHighlight = new Color(0.1f, 1f, 0.55f);
 
         private readonly List<SpriteRenderer> arms = new List<SpriteRenderer>();
         private readonly List<SpriteRenderer> markers = new List<SpriteRenderer>();
         private SpriteRenderer center;
         private SpriteRenderer background;
         private TextMesh label;
-        private bool hintHighlighted;
+        private TileHighlightReason highlightReasons;
 
         public Color CurrentCircuitColor => center != null ? center.color : Color.clear;
         public string CurrentLabel => label != null ? label.text : string.Empty;
-        public bool IsHintHighlighted => hintHighlighted;
+        public bool IsHintHighlighted => (highlightReasons & TileHighlightReason.Hint) != 0;
+        public bool IsTutorialHighlighted => (highlightReasons & TileHighlightReason.Tutorial) != 0;
+        public TileHighlightReason HighlightReasons => highlightReasons;
 
         public void Build(Sprite squareSprite)
         {
@@ -86,16 +89,27 @@ namespace NeonGrid.Presentation
 
         public void SetHintHighlighted(bool highlighted)
         {
-            hintHighlighted = highlighted;
-            if (!hintHighlighted && background != null)
+            SetHighlightReasons(highlighted
+                ? highlightReasons | TileHighlightReason.Hint
+                : highlightReasons & ~TileHighlightReason.Hint);
+        }
+
+        public void SetHighlightReasons(TileHighlightReason reasons)
+        {
+            highlightReasons = reasons;
+            if (highlightReasons == TileHighlightReason.None && background != null)
                 background.color = TileBackground;
         }
 
         private void Update()
         {
-            if (!hintHighlighted || background == null) return;
+            if (highlightReasons == TileHighlightReason.None || background == null) return;
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
-            background.color = Color.Lerp(TileBackground, HintHighlight, 0.3f + pulse * 0.5f);
+            // Tutorial takes visual priority if tutorial and hint target the same tile.
+            Color highlight = (highlightReasons & TileHighlightReason.Tutorial) != 0
+                ? TutorialHighlight
+                : HintHighlight;
+            background.color = Color.Lerp(TileBackground, highlight, 0.3f + pulse * 0.5f);
         }
 
         private void UpdateLabel(CircuitTileState state)

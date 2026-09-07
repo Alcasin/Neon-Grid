@@ -24,7 +24,6 @@ namespace NeonGrid.Presentation
             }
 
             camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(level.Width, level.Height) * 0.72f;
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.backgroundColor = new Color(0.008f, 0.012f, 0.03f);
             camera.clearFlags = CameraClearFlags.SolidColor;

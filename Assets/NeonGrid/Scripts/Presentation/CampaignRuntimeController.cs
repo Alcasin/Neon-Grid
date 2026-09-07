@@ -104,18 +104,28 @@ namespace NeonGrid.Presentation
         {
             DestroyBoard();
             campaignView.SetVisible(false);
-            ConfigureCamera(Flow.ActiveLevel.LevelDefinition);
+            ConfigureCamera();
             boardRoot = new GameObject($"Campaign Gameplay - {Flow.ActiveLevel.LevelId}");
             boardRoot.transform.SetParent(transform, false);
             var resultActions = new GameplayResultActions(Retry, ShowCurrentChapter, ShowMap, Next,
                 ShowCurrentChapter, () => Flow.ResultNavigation);
-            boardRoot.AddComponent<BoardController>().Initialize(Flow.ActiveSession, resultActions);
+            boardRoot.AddComponent<BoardController>().Initialize(Flow.ActiveSession, resultActions,
+                Flow.ActiveTutorial, FindLevelOrdinal(Flow.SelectedChapter, Flow.ActiveLevel));
         }
 
-        private static void ConfigureCamera(LevelDefinition level)
+        internal static int FindLevelOrdinal(CampaignChapterDefinition chapter,
+            CampaignLevelEntry level)
         {
-            Camera camera = EnsureDisplayCamera();
-            camera.orthographicSize = Mathf.Max(level.Width, level.Height) * 0.72f;
+            if (chapter?.Levels == null || level == null) return 0;
+            for (int index = 0; index < chapter.Levels.Count; index++)
+                if (object.ReferenceEquals(chapter.Levels[index], level))
+                    return index + 1;
+            return 0;
+        }
+
+        private static void ConfigureCamera()
+        {
+            EnsureDisplayCamera();
         }
 
         internal static Camera EnsureDisplayCamera()

@@ -10,6 +10,8 @@ namespace NeonGrid.Presentation
         private readonly Dictionary<GridPosition, CircuitTileView> tileViews = new Dictionary<GridPosition, CircuitTileView>();
         private Sprite squareSprite;
         private BoardPointerInput pointerInput;
+        private GridPosition? hintPosition;
+        private GridPosition? tutorialPosition;
 
         public void Build(BoardState board, Action<GridPosition> onTileTapped)
         {
@@ -42,13 +44,51 @@ namespace NeonGrid.Presentation
 
         public void HighlightHint(GridPosition? position)
         {
-            foreach (KeyValuePair<GridPosition, CircuitTileView> pair in tileViews)
-                pair.Value.SetHintHighlighted(position.HasValue && pair.Key.Equals(position.Value));
+            hintPosition = position;
+            ApplyHighlights();
+        }
+
+        public void HighlightTutorial(GridPosition? position)
+        {
+            tutorialPosition = position;
+            ApplyHighlights();
         }
 
         public void SetCompleted(bool completed)
         {
             pointerInput?.SetBoardInputEnabled(!completed);
+        }
+
+        public Bounds GetWorldBounds()
+        {
+            BoxCollider2D[] colliders = GetComponentsInChildren<BoxCollider2D>();
+            if (colliders.Length == 0) return new Bounds(transform.position, Vector3.zero);
+
+            Bounds bounds = GetWorldBounds(colliders[0]);
+            for (int index = 1; index < colliders.Length; index++)
+                bounds.Encapsulate(GetWorldBounds(colliders[index]));
+            return bounds;
+        }
+
+        private static Bounds GetWorldBounds(BoxCollider2D collider)
+        {
+            Vector3 scale = collider.transform.lossyScale;
+            var size = new Vector3(Mathf.Abs(collider.size.x * scale.x),
+                Mathf.Abs(collider.size.y * scale.y), 0f);
+            return new Bounds(collider.transform.TransformPoint(collider.offset), size);
+        }
+
+        private void ApplyHighlights()
+        {
+            foreach (KeyValuePair<GridPosition, CircuitTileView> pair in tileViews)
+            {
+                TileHighlightReason reasons = TileHighlightReason.None;
+                if (hintPosition.HasValue && pair.Key.Equals(hintPosition.Value))
+                    reasons |= TileHighlightReason.Hint;
+                if (tutorialPosition.HasValue && pair.Key.Equals(tutorialPosition.Value))
+                    reasons |= TileHighlightReason.Tutorial;
+                pair.Value.SetHighlightReasons(reasons);
+            }
         }
 
         private static Sprite CreateSquareSprite()

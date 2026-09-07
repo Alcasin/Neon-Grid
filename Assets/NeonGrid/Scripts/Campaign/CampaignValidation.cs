@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NeonGrid.Data;
+using NeonGrid.Simulation;
 
 namespace NeonGrid.Campaign
 {
@@ -24,7 +25,12 @@ namespace NeonGrid.Campaign
         EmptyLevelId,
         DuplicateLevelId,
         MissingLevelDefinition,
-        DuplicateLevelDefinitionReference
+        DuplicateLevelDefinitionReference,
+        NullTutorialStep,
+        EmptyTutorialMessage,
+        TutorialTargetOutOfBounds,
+        TutorialTargetEmpty,
+        TutorialCompletionIncompatible
     }
 
     public sealed class CampaignValidationIssue
@@ -155,10 +161,85 @@ namespace NeonGrid.Campaign
                     {
                         levelAssets.Add(entry.LevelDefinition, entry.LevelId);
                     }
+
+                    ValidateTutorial(entry, report);
                 }
             }
 
             return report;
+        }
+
+        private static void ValidateTutorial(CampaignLevelEntry entry,
+            CampaignValidationReport report)
+        {
+            if (entry.Tutorial?.Steps == null) return;
+
+            for (int stepIndex = 0; stepIndex < entry.Tutorial.Steps.Count; stepIndex++)
+            {
+                TutorialStepDefinition step = entry.Tutorial.Steps[stepIndex];
+                string context = $"Tutorial step {stepIndex + 1} for level '{entry.LevelId}'";
+                if (step == null)
+                {
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.NullTutorialStep, $"{context} is null.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(step.Message))
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.EmptyTutorialMessage,
+                        $"{context} must have a non-empty message.");
+
+                LevelDefinition level = entry.LevelDefinition;
+                if (level == null) continue;
+                if (step.TargetPosition.x < 0 || step.TargetPosition.x >= level.Width ||
+                    step.TargetPosition.y < 0 || step.TargetPosition.y >= level.Height)
+                {
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.TutorialTargetOutOfBounds,
+                        $"{context} targets {step.TargetPosition}, outside the referenced level.");
+                    continue;
+                }
+
+                TileDefinition target = FindTile(level, step.TargetPosition);
+                if (target == null || target.tileType == TileType.Empty)
+                {
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.TutorialTargetEmpty,
+                        $"{context} targets an Empty tile at {step.TargetPosition}.");
+                    continue;
+                }
+
+                if (!IsCompletionCompatible(step.CompletionCondition, target))
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.TutorialCompletionIncompatible,
+                        $"{context} completion '{step.CompletionCondition}' is incompatible with " +
+                        $"the {target.tileType} tile at {step.TargetPosition}.");
+            }
+        }
+
+        private static TileDefinition FindTile(LevelDefinition level, GridPosition position)
+        {
+            if (level.Tiles == null) return null;
+            foreach (TileDefinition tile in level.Tiles)
+                if (tile != null && tile.position.Equals(position))
+                    return tile;
+            return null;
+        }
+
+        private static bool IsCompletionCompatible(TutorialCompletionCondition condition,
+            TileDefinition target)
+        {
+            switch (condition)
+            {
+                case TutorialCompletionCondition.RotateClockwise:
+                    return target.isRotatable && target.tileType != TileType.Empty &&
+                           target.tileType != TileType.Switch;
+                case TutorialCompletionCondition.ToggleSwitch:
+                    return target.tileType == TileType.Switch;
+                default:
+                    return false;
+            }
         }
     }
 

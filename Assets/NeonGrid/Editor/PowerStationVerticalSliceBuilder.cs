@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
+using NeonGrid.Simulation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -29,6 +30,13 @@ namespace NeonGrid.Editor
             LevelDefinition ps01 = LoadProductionLevel("PS_01");
             LevelDefinition ps02 = LoadProductionLevel("PS_02");
             LevelDefinition ps03 = LoadProductionLevel("PS_03");
+            LevelDefinition ps04 = LoadProductionLevel("PS_04");
+            LevelDefinition ps05 = LoadProductionLevel("PS_05");
+            LevelDefinition ps06 = LoadProductionLevel("PS_06");
+            LevelDefinition ps07 = LoadProductionLevel("PS_07");
+            LevelDefinition ps08 = LoadProductionLevel("PS_08");
+            LevelDefinition ps09 = LoadProductionLevel("PS_09");
+            LevelDefinition ps10 = LoadProductionLevel("PS_10");
 
             CampaignDefinition campaign = AssetDatabase.LoadAssetAtPath<CampaignDefinition>(CampaignPath);
             if (campaign == null)
@@ -42,9 +50,22 @@ namespace NeonGrid.Editor
             {
                 new CampaignChapterDefinition("power_station", "Power Station", new[]
                 {
-                    new CampaignLevelEntry("power_01", "Power Circuit 01", ps01),
-                    new CampaignLevelEntry("power_02", "Power Circuit 02", ps02),
-                    new CampaignLevelEntry("power_03", "Power Circuit 03", ps03)
+                    new CampaignLevelEntry("power_01", "Power Circuit 01", ps01,
+                        Tutorial("Tap a wire to rotate it.", new GridPosition(1, 0))),
+                    new CampaignLevelEntry("power_02", "Power Circuit 02", ps02,
+                        Tutorial("Corner wires redirect the current.", new GridPosition(1, 0))),
+                    new CampaignLevelEntry("power_03", "Power Circuit 03", ps03),
+                    new CampaignLevelEntry("power_04", "Power Circuit 04", ps04),
+                    new CampaignLevelEntry("power_05", "Power Circuit 05", ps05),
+                    new CampaignLevelEntry("power_06", "Power Circuit 06", ps06,
+                        Tutorial("T-junctions split power into multiple paths.",
+                            new GridPosition(2, 2))),
+                    new CampaignLevelEntry("power_07", "Power Circuit 07", ps07),
+                    new CampaignLevelEntry("power_08", "Power Circuit 08", ps08),
+                    new CampaignLevelEntry("power_09", "Power Circuit 09", ps09,
+                        Tutorial("Diodes only allow power in one direction.",
+                            new GridPosition(2, 2))),
+                    new CampaignLevelEntry("power_10", "Power Circuit 10", ps10)
                 })
             });
 
@@ -67,6 +88,15 @@ namespace NeonGrid.Editor
             if (level == null)
                 throw new InvalidOperationException($"Required production level is missing: {path}");
             return level;
+        }
+
+        private static LevelTutorialDefinition Tutorial(string message, GridPosition target)
+        {
+            return new LevelTutorialDefinition(new[]
+            {
+                new TutorialStepDefinition(message, target,
+                    TutorialCompletionCondition.RotateClockwise)
+            });
         }
 
         private static void CreateRuntimeScene(CampaignDefinition campaign)

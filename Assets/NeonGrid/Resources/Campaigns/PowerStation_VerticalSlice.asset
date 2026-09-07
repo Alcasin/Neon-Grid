@@ -20,9 +20,70 @@ MonoBehaviour:
     - levelId: power_01
       displayName: Power Circuit 01
       levelDefinition: {fileID: 11400000, guid: 24d6b5a6f9ac7ea4d932b35d6f3dc956, type: 2}
+      tutorial:
+        steps:
+        - message: Tap a wire to rotate it.
+          targetPosition:
+            x: 1
+            y: 0
+          completionCondition: 0
     - levelId: power_02
       displayName: Power Circuit 02
       levelDefinition: {fileID: 11400000, guid: 6ef32ab7ddf40584dae2049c8619d469, type: 2}
+      tutorial:
+        steps:
+        - message: Corner wires redirect the current.
+          targetPosition:
+            x: 1
+            y: 0
+          completionCondition: 0
     - levelId: power_03
       displayName: Power Circuit 03
       levelDefinition: {fileID: 11400000, guid: eed73d85e6671504db936a904119a2b4, type: 2}
+      tutorial:
+        steps: []
+    - levelId: power_04
+      displayName: Power Circuit 04
+      levelDefinition: {fileID: 11400000, guid: 75c249eec4e965f4aa0098a33c4c0ca7, type: 2}
+      tutorial:
+        steps: []
+    - levelId: power_05
+      displayName: Power Circuit 05
+      levelDefinition: {fileID: 11400000, guid: 819aba00532a7b642b8b7c570a9b9335, type: 2}
+      tutorial:
+        steps: []
+    - levelId: power_06
+      displayName: Power Circuit 06
+      levelDefinition: {fileID: 11400000, guid: 8e4b4d75334a2e241ab0d27b9cc27bc8, type: 2}
+      tutorial:
+        steps:
+        - message: T-junctions split power into multiple paths.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 0
+    - levelId: power_07
+      displayName: Power Circuit 07
+      levelDefinition: {fileID: 11400000, guid: 5ba7a73386d55124bb92539abc69f9d8, type: 2}
+      tutorial:
+        steps: []
+    - levelId: power_08
+      displayName: Power Circuit 08
+      levelDefinition: {fileID: 11400000, guid: 165d0c0ef9e483b4f8a6f7a0b2c092f6, type: 2}
+      tutorial:
+        steps: []
+    - levelId: power_09
+      displayName: Power Circuit 09
+      levelDefinition: {fileID: 11400000, guid: b2ed3f5f2e30a5944843310ae52d9b5a, type: 2}
+      tutorial:
+        steps:
+        - message: Diodes only allow power in one direction.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 0
+    - levelId: power_10
+      displayName: Power Circuit 10
+      levelDefinition: {fileID: 11400000, guid: bc3b3039f1ff0d9499cea78c9637b65e, type: 2}
+      tutorial:
+        steps: []
