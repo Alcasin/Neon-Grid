@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
 using NeonGrid.Presentation;
@@ -18,9 +20,32 @@ namespace NeonGrid.Tests
 {
     public sealed class ProductionSubstationSliceTests
     {
+        [TestCase("S_01", "AC62A981D072576E081A9F28B948CABACAD2B734569BA256A53ECAD1863301CD")]
+        [TestCase("S_02", "BA5B2A015404D24782A221E41847E2F74C0A52F6A3343AF6AA25C015F5679642")]
+        [TestCase("S_03", "6FA4E85600075FC5065FB09C2203985421ED8E9CCB80E0D272B8DF8BF248FA8D")]
+        [TestCase("S_04", "82EAE1DED6B3A1E4AB99BBB9D7D74CC301F74ECCF95C618CAF1B3EA83393E929")]
+        [TestCase("S_05", "23B6A453134000A8B998C5C965B42C03326464E1087843413DD1237D8F0C98EE")]
+        [TestCase("S_06", "53D848BC4FDA43BDE3F7D847DF271A7E96AE3E1C0AF63AF6FCEE1A6756930BEA")]
+        public void ProductionLevel_AssetHashRemainsImmutable(string assetName,
+            string expectedHash)
+        {
+            string path = Path.GetFullPath(
+                $"Assets/NeonGrid/Resources/Levels/Substation/{assetName}.asset");
+            using (FileStream stream = File.OpenRead(path))
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                string actualHash = BitConverter.ToString(sha256.ComputeHash(stream))
+                    .Replace("-", string.Empty);
+                Assert.That(actualHash, Is.EqualTo(expectedHash));
+            }
+        }
+
         [TestCase("S_01", 3)]
         [TestCase("S_02", 7)]
         [TestCase("S_03", 3)]
+        [TestCase("S_04", 3)]
+        [TestCase("S_05", 3)]
+        [TestCase("S_06", 3)]
         public void ProductionLevel_LoadsValidAndMatchesExactSolverMinimum(
             string assetName, int expectedMinimumMoves)
         {
@@ -36,7 +61,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void Campaign_UsesThreeProductionAssetsAndUnlocksSequentially()
+        public void Campaign_UsesSixProductionAssetsAndUnlocksSequentially()
         {
             CampaignDefinition campaign = LoadCampaign();
             CampaignValidationReport validation = new CampaignValidator().Validate(campaign);
@@ -49,14 +74,16 @@ namespace NeonGrid.Tests
             CampaignChapterDefinition chapter = campaign.Chapters[0];
             Assert.That(chapter.ChapterId, Is.EqualTo("substation"));
             Assert.That(chapter.DisplayName, Is.EqualTo("Substation"));
-            Assert.That(chapter.Levels, Has.Count.EqualTo(3));
+            Assert.That(chapter.Levels, Has.Count.EqualTo(6));
             Assert.That(chapter.Levels.Select(level => level.LevelId), Is.EqualTo(new[]
             {
-                "substation_01", "substation_02", "substation_03"
+                "substation_01", "substation_02", "substation_03",
+                "substation_04", "substation_05", "substation_06"
             }));
             Assert.That(chapter.Levels.Select(level => level.DisplayName), Is.EqualTo(new[]
             {
-                "Substation Circuit 1", "Substation Circuit 2", "Substation Circuit 3"
+                "Substation Circuit 1", "Substation Circuit 2", "Substation Circuit 3",
+                "Substation Circuit 4", "Substation Circuit 5", "Substation Circuit 6"
             }));
             for (int index = 0; index < chapter.Levels.Count; index++)
                 Assert.That(chapter.Levels[index].LevelDefinition,
@@ -64,34 +91,38 @@ namespace NeonGrid.Tests
             Assert.That(chapter.Levels[0].Tutorial, Is.Null);
             Assert.That(chapter.Levels[1].Tutorial, Is.Null);
             AssertSwitchTutorial(chapter.Levels[2]);
+            for (int index = 3; index < chapter.Levels.Count; index++)
+                Assert.That(chapter.Levels[index].Tutorial, Is.Null);
 
             var progress = new CampaignProgressService(campaign);
-            Assert.That(progress.MaximumCampaignStars, Is.EqualTo(9));
+            Assert.That(progress.MaximumCampaignStars, Is.EqualTo(18));
             Assert.That(progress.IsLevelUnlocked("substation_01"), Is.True);
-            Assert.That(progress.IsLevelUnlocked("substation_02"), Is.False);
-            Assert.That(progress.IsLevelUnlocked("substation_03"), Is.False);
+            for (int index = 1; index < chapter.Levels.Count; index++)
+                Assert.That(progress.IsLevelUnlocked(chapter.Levels[index].LevelId), Is.False);
 
-            CampaignProgressUpdate first = Record(progress, chapter.Levels[0], 1);
-            Assert.That(first.Accepted, Is.True);
-            Assert.That(first.ChapterJustRestored, Is.False);
-            Assert.That(progress.IsLevelUnlocked("substation_02"), Is.True,
-                "One star must be sufficient because stars do not gate progression.");
+            for (int index = 0; index < chapter.Levels.Count; index++)
+            {
+                CampaignProgressUpdate update = Record(progress, chapter.Levels[index], 1);
+                Assert.That(update.Accepted, Is.True);
+                Assert.That(update.ChapterJustRestored, Is.EqualTo(index == 5));
+                if (index + 1 < chapter.Levels.Count)
+                    Assert.That(progress.IsLevelUnlocked(chapter.Levels[index + 1].LevelId),
+                        Is.True, "Completing the preceding level must unlock the next level.");
+                if (index == 2)
+                {
+                    Assert.That(progress.IsLevelUnlocked("substation_04"), Is.True);
+                    Assert.That(progress.GetChapterState("substation"),
+                        Is.EqualTo(CampaignChapterState.Available),
+                        "Completing the former final level must not restore the expanded chapter.");
+                }
+            }
 
-            CampaignProgressUpdate second = Record(progress, chapter.Levels[1], 1);
-            Assert.That(second.Accepted, Is.True);
-            Assert.That(second.ChapterJustRestored, Is.False);
-            Assert.That(progress.IsLevelUnlocked("substation_03"), Is.True);
             Assert.That(progress.GetChapterState("substation"),
-                Is.EqualTo(CampaignChapterState.Available));
-
-            CampaignProgressUpdate third = Record(progress, chapter.Levels[2], 1);
-            Assert.That(third.Accepted, Is.True);
-            Assert.That(third.ChapterJustRestored, Is.True,
-                "S_03 is final only in this isolated three-level development campaign.");
+                Is.EqualTo(CampaignChapterState.Restored));
         }
 
         [Test]
-        public void Navigation_UsesGenericTemporaryThreeLevelFinalBehavior()
+        public void Navigation_UsesSixLevelOrderingAndRestoresOnlyAfterS06()
         {
             CampaignDefinition campaign = LoadCampaign();
             var flow = new CampaignFlowCoordinator(campaign,
@@ -99,23 +130,82 @@ namespace NeonGrid.Tests
 
             Assert.That(flow.OpenChapter("substation"), Is.True);
             Assert.That(flow.StartLevel("substation_01"), Is.True);
-            Solve(flow.ActiveSession);
-            AssertNormalNavigation(flow.ResultNavigation, true);
+            for (int index = 0; index <= 4; index++)
+            {
+                Assert.That(flow.ActiveLevel.LevelId,
+                    Is.EqualTo($"substation_{index + 1:D2}"));
+                Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.False);
+                Solve(flow.ActiveSession);
+                Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.False);
+                AssertNormalNavigation(flow.ResultNavigation, true);
+                Assert.That(flow.StartNextLevel(), Is.True);
+            }
 
-            Assert.That(flow.StartNextLevel(), Is.True);
-            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("substation_02"));
-            Solve(flow.ActiveSession);
-            AssertNormalNavigation(flow.ResultNavigation, true);
-
-            Assert.That(flow.StartNextLevel(), Is.True);
-            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("substation_03"));
+            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("substation_06"));
             Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.True);
             Solve(flow.ActiveSession);
             Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.True);
+            Assert.That(flow.Progress.GetChapterState("substation"),
+                Is.EqualTo(CampaignChapterState.Restored));
             Assert.That(flow.ResultNavigation.ShowRetry, Is.True);
             Assert.That(flow.ResultNavigation.ShowLevels, Is.False);
             Assert.That(flow.ResultNavigation.ShowMap, Is.True);
             Assert.That(flow.ResultNavigation.ShowNext, Is.False);
+
+            Assert.That(flow.Retry(), Is.True);
+            Solve(flow.ActiveSession);
+            Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.False);
+            AssertNormalNavigation(flow.ResultNavigation, false);
+        }
+
+        [Test]
+        public void PreviousThreeLevelSave_PreservesBestsUnlocksS04AndIsNotRestored()
+        {
+            CampaignDefinition campaign = LoadCampaign();
+            string directory = Path.Combine(Path.GetTempPath(), "NeonGridM8Tests",
+                Guid.NewGuid().ToString("N"));
+            string savePath = Path.Combine(directory, CampaignSaveStore.SaveFileName);
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var entries = new List<LevelProgressSaveEntry>();
+                for (int index = 1; index <= 3; index++)
+                    entries.Add(new LevelProgressSaveEntry($"substation_{index:D2}", true,
+                        index, index + 4, index * 11f));
+                File.WriteAllText(savePath, JsonUtility.ToJson(new CampaignSaveData
+                {
+                    version = CampaignSaveStore.CurrentVersion,
+                    campaignId = "substation_vertical_slice",
+                    levelProgressEntries = entries
+                }, true));
+
+                CampaignLoadResult load = new CampaignSaveStore(savePath).Load(campaign);
+
+                Assert.That(load.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
+                Assert.That(load.Diagnostics, Is.Empty);
+                for (int index = 1; index <= 3; index++)
+                {
+                    LevelProgress restored = load.Progress.GetLevelProgress(
+                        $"substation_{index:D2}");
+                    Assert.That(restored.Completed, Is.True);
+                    Assert.That(restored.BestStars, Is.EqualTo(index));
+                    Assert.That(restored.BestMoves, Is.EqualTo(index + 4));
+                    Assert.That(restored.BestTimeSeconds, Is.EqualTo(index * 11f));
+                }
+
+                for (int index = 4; index <= 6; index++)
+                    Assert.That(load.Progress.GetLevelProgress($"substation_{index:D2}").Completed,
+                        Is.False);
+                Assert.That(load.Progress.IsLevelUnlocked("substation_04"), Is.True);
+                Assert.That(load.Progress.IsLevelUnlocked("substation_05"), Is.False);
+                Assert.That(load.Progress.IsLevelUnlocked("substation_06"), Is.False);
+                Assert.That(load.Progress.GetChapterState("substation"),
+                    Is.EqualTo(CampaignChapterState.Available));
+            }
+            finally
+            {
+                if (Directory.Exists(directory)) Directory.Delete(directory, true);
+            }
         }
 
         [Test]
@@ -236,6 +326,9 @@ namespace NeonGrid.Tests
         [TestCase(0, "LEVEL 1")]
         [TestCase(1, "LEVEL 2")]
         [TestCase(2, "LEVEL 3")]
+        [TestCase(3, "LEVEL 4")]
+        [TestCase(4, "LEVEL 5")]
+        [TestCase(5, "LEVEL 6")]
         public void GameplayHud_UsesSubstationChapterOrdinal(int levelIndex, string expectedLabel)
         {
             CampaignDefinition campaign = LoadCampaign();
@@ -262,7 +355,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void Selector_ReusesCompactThreeColumnArchitecture()
+        public void Selector_UsesTwoRowsOfThreeWithoutScrolling()
         {
             CampaignDefinition campaign = LoadCampaign();
             var progress = new CampaignProgressService(campaign);
@@ -275,11 +368,14 @@ namespace NeonGrid.Tests
                 view.ShowChapter(campaign.Chapters[0]);
                 Transform selection = root.transform.Find("Campaign Canvas/Level Selection");
                 Transform grid = selection.Find("Generated Level Grid");
-                Assert.That(grid.childCount, Is.EqualTo(1));
-                Assert.That(grid.GetChild(0).childCount, Is.EqualTo(3));
-                foreach (Transform tile in grid.GetChild(0))
-                    Assert.That(tile.GetComponent<RectTransform>().sizeDelta,
-                        Is.EqualTo(new Vector2(220f, 220f)));
+                Assert.That(grid.childCount, Is.EqualTo(2));
+                foreach (Transform row in grid)
+                {
+                    Assert.That(row.childCount, Is.EqualTo(3));
+                    foreach (Transform tile in row)
+                        Assert.That(tile.GetComponent<RectTransform>().sizeDelta,
+                            Is.EqualTo(new Vector2(220f, 220f)));
+                }
                 Assert.That(selection.GetComponentInChildren<ScrollRect>(true), Is.Null);
                 Assert.That(selection.Find("Back To Map"), Is.Not.Null);
             }

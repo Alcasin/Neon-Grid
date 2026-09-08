@@ -30,6 +30,9 @@ namespace NeonGrid.Editor
             LevelDefinition s01 = LoadProductionLevel("S_01");
             LevelDefinition s02 = LoadProductionLevel("S_02");
             LevelDefinition s03 = LoadProductionLevel("S_03");
+            LevelDefinition s04 = LoadProductionLevel("S_04");
+            LevelDefinition s05 = LoadProductionLevel("S_05");
+            LevelDefinition s06 = LoadProductionLevel("S_06");
 
             CampaignDefinition campaign =
                 AssetDatabase.LoadAssetAtPath<CampaignDefinition>(CampaignPath);
@@ -47,7 +50,10 @@ namespace NeonGrid.Editor
                     new CampaignLevelEntry("substation_01", "Substation Circuit 1", s01),
                     new CampaignLevelEntry("substation_02", "Substation Circuit 2", s02),
                     new CampaignLevelEntry("substation_03", "Substation Circuit 3", s03,
-                        SwitchTutorial())
+                        SwitchTutorial()),
+                    new CampaignLevelEntry("substation_04", "Substation Circuit 4", s04),
+                    new CampaignLevelEntry("substation_05", "Substation Circuit 5", s05),
+                    new CampaignLevelEntry("substation_06", "Substation Circuit 6", s06)
                 })
             });
 
@@ -58,7 +64,7 @@ namespace NeonGrid.Editor
 
             EditorUtility.SetDirty(campaign);
             AssetDatabase.SaveAssets();
-            CreateRuntimeScene(campaign);
+            EnsureRuntimeScene(campaign);
             EnsureSceneInBuildSettings();
             AssetDatabase.SaveAssets();
             Debug.Log(
@@ -83,8 +89,11 @@ namespace NeonGrid.Editor
             });
         }
 
-        private static void CreateRuntimeScene(CampaignDefinition campaign)
+        private static void EnsureRuntimeScene(CampaignDefinition campaign)
         {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null)
+                return;
+
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var root = new GameObject("Substation Vertical Slice");

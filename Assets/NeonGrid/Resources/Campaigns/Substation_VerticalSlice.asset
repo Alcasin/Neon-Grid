@@ -37,3 +37,18 @@ MonoBehaviour:
             x: 2
             y: 1
           completionCondition: 1
+    - levelId: substation_04
+      displayName: Substation Circuit 4
+      levelDefinition: {fileID: 11400000, guid: f60415b0a4511e949b8c0c43a66fc5ac, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_05
+      displayName: Substation Circuit 5
+      levelDefinition: {fileID: 11400000, guid: 3a2d7bf98854a004da9db229047f8335, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_06
+      displayName: Substation Circuit 6
+      levelDefinition: {fileID: 11400000, guid: 70ba464329c1d964cb32edbee6c844a1, type: 2}
+      tutorial:
+        steps: []
