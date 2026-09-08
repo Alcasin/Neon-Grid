@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9ca009eb0a99949b3649aaba97e6c3, type: 3}
+  m_Name: Substation_VerticalSlice
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
+  campaignId: substation_vertical_slice
+  chapters:
+  - chapterId: substation
+    displayName: Substation
+    levels:
+    - levelId: substation_01
+      displayName: Substation Circuit 1
+      levelDefinition: {fileID: 11400000, guid: 2d44c7e1b12115446bd44ceaca532557, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_02
+      displayName: Substation Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 782c8652e6c117e408c449dde543589e, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_03
+      displayName: Substation Circuit 3
+      levelDefinition: {fileID: 11400000, guid: 8124ce478f2afd54abb2e363af1f80e4, type: 2}
+      tutorial:
+        steps:
+        - message: Switches can open or close a circuit.
+          targetPosition:
+            x: 2
+            y: 1
+          completionCondition: 1

@@ -35,5 +35,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/NeonGrid/Scenes/M7_PowerStation_VerticalSlice.unity
     guid: 38a35b3109fd4524fa65d13f00d7c2aa
+  - enabled: 1
+    path: Assets/NeonGrid/Scenes/M8_Substation_VerticalSlice.unity
+    guid: 793adb931dc764246a1f666927028cf6
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

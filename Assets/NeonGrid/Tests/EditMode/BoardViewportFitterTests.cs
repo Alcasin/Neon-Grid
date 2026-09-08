@@ -41,8 +41,25 @@ namespace NeonGrid.Tests
         [TestCase("PS_10")]
         public void ProductionBoardGeneratedBounds_FitPortraitWithoutClipping(string assetName)
         {
-            LevelDefinition level = Resources.Load<LevelDefinition>(
-                $"Levels/PowerStation/{assetName}");
+            AssertProductionBoardFits($"Levels/PowerStation/{assetName}", assetName,
+                1080, 1920);
+        }
+
+        [TestCase("S_01", 1080, 1920)]
+        [TestCase("S_02", 1080, 2340)]
+        [TestCase("S_03", 720, 1280)]
+        public void SubstationProductionBounds_UseGenericPortraitFit(
+            string assetName, int screenWidth, int screenHeight)
+        {
+            AssertProductionBoardFits($"Levels/Substation/{assetName}", assetName,
+                screenWidth, screenHeight);
+        }
+
+        private static void AssertProductionBoardFits(string resourcePath, string assetName,
+            int screenWidth, int screenHeight)
+        {
+            LevelDefinition level = Resources.Load<LevelDefinition>(resourcePath);
+            Assert.That(level, Is.Not.Null);
             var root = new GameObject($"{assetName} Viewport Fit Test");
 
             try
@@ -51,7 +68,7 @@ namespace NeonGrid.Tests
                 view.Build(level.CreateBoardState(), _ => { });
                 Physics2D.SyncTransforms();
                 Bounds generatedBounds = view.GetWorldBounds();
-                float aspect = 1080f / 1920f;
+                float aspect = screenWidth / (float)screenHeight;
                 Rect viewport = GameplayLayoutMetrics.BoardViewport;
                 BoardViewportFit fit = BoardViewportFitter.Calculate(generatedBounds, aspect,
                     viewport, GameplayLayoutMetrics.BoardPaddingWorld);
