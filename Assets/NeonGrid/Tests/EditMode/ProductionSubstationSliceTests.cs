@@ -26,6 +26,10 @@ namespace NeonGrid.Tests
         [TestCase("S_04", "82EAE1DED6B3A1E4AB99BBB9D7D74CC301F74ECCF95C618CAF1B3EA83393E929")]
         [TestCase("S_05", "23B6A453134000A8B998C5C965B42C03326464E1087843413DD1237D8F0C98EE")]
         [TestCase("S_06", "53D848BC4FDA43BDE3F7D847DF271A7E96AE3E1C0AF63AF6FCEE1A6756930BEA")]
+        [TestCase("S_07", "6639DAD7F78A7BBE280B9C23445AE33A15FAB58FAA426F4A1E076EB3B2E97152")]
+        [TestCase("S_08", "0DA30E83412EF133806D16B3B32A2AD3A5E0578D5B2F100DAD9F08758DE73723")]
+        [TestCase("S_09", "95350BF8E44D46DD58674A6E623835ACD1C8A9CE2FD21E8C3CA75F06C3BAE09D")]
+        [TestCase("S_10", "D29478C84899B6FDA17C2B917C2A55C2D6E5D1E14CBFD7DAEEEEAEBF2DDC0064")]
         public void ProductionLevel_AssetHashRemainsImmutable(string assetName,
             string expectedHash)
         {
@@ -55,9 +59,34 @@ namespace NeonGrid.Tests
                 string.Join("\n", validation.Errors.Select(issue => issue.Message)));
             Assert.That(validation.Warnings, Is.Empty);
 
-            PuzzleSolverResult solution = new PuzzleSolver().Solve(level.CreateBoardState());
+            PuzzleSolverResult solution = new PuzzleSolver().Solve(level.CreateBoardState(),
+                PuzzleSolverProfiles.AuthoringExact);
             Assert.That(solution.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(solution.MinimumMoveCount, Is.EqualTo(expectedMinimumMoves));
+        }
+
+        [Test]
+        public void AuthoredS09_SolvesExactlyUnderAuthoringProfileWithoutCampaignIntegration()
+        {
+            LevelDefinition level = LoadLevel("S_09");
+            LevelValidationResult validation = new LevelValidator().Validate(level);
+            Assert.That(validation.IsValid, Is.True,
+                string.Join("\n", validation.Errors.Select(issue => issue.Message)));
+            Assert.That(validation.Warnings, Is.Empty);
+
+            PuzzleSolverResult result = new PuzzleSolver().Solve(level.CreateBoardState(),
+                PuzzleSolverProfiles.AuthoringExact);
+
+            Assert.That(result.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(result.MinimumMoveCount, Is.EqualTo(7));
+            Assert.That(result.ExploredStateCount,
+                Is.LessThanOrEqualTo(PuzzleSolverProfiles.AuthoringExact.MaximumExploredStates));
+            Assert.That(LoadCampaign().Chapters.SelectMany(chapter => chapter.Levels)
+                .Any(entry => entry.LevelDefinition == level), Is.False,
+                "S_09 must remain outside the accepted six-level development campaign.");
+            TestContext.WriteLine($"S_09: minimum={result.MinimumMoveCount}, " +
+                                  $"explored={result.ExploredStateCount}, " +
+                                  $"depth={result.DeepestSearchDepth}");
         }
 
         [Test]

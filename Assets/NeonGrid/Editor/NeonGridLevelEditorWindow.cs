@@ -266,7 +266,7 @@ namespace NeonGrid.Editor
                 if (GUILayout.Button("Validate Current Contents"))
                     lastReport = new LevelValidationReport(model.Validate(), null);
                 if (GUILayout.Button("Solve / Analyze Current Contents"))
-                    lastReport = model.Analyze(new PuzzleSolverOptions());
+                    lastReport = model.Analyze(PuzzleSolverProfiles.AuthoringExact);
             }
         }
 

@@ -43,7 +43,7 @@ namespace NeonGrid.Session
         {
             ActiveLevel = levelDefinition ?? throw new ArgumentNullException(nameof(levelDefinition));
             solver = new PuzzleSolver();
-            this.solverOptions = CopyOptions(solverOptions ?? new PuzzleSolverOptions());
+            this.solverOptions = CopyOptions(solverOptions ?? PuzzleSolverProfiles.RuntimeHint);
             this.starEvaluator = starEvaluator ?? new StarEvaluator();
 
             PuzzleSolverResult baseline = solver.Solve(ActiveLevel.CreateBoardState(), this.solverOptions);

@@ -257,7 +257,8 @@ namespace NeonGrid.Editor.Authoring
 
         public LevelValidationReport Analyze(PuzzleSolverOptions options = null)
         {
-            return new LevelValidator().ValidateWithSolver(Width, Height, CreateSnapshot(), options);
+            return new LevelValidator().ValidateWithSolver(Width, Height, CreateSnapshot(),
+                options ?? PuzzleSolverProfiles.AuthoringExact);
         }
 
         internal void MarkSaved(LevelDefinition sourceAsset)

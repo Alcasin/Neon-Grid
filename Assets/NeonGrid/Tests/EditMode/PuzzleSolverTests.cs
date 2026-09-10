@@ -10,6 +10,18 @@ namespace NeonGrid.Tests
     public sealed class PuzzleSolverTests
     {
         [Test]
+        public void NamedSearchProfiles_ExposeIntentionalPolicyValues()
+        {
+            PuzzleSolverOptions authoring = PuzzleSolverProfiles.AuthoringExact;
+            PuzzleSolverOptions runtimeHint = PuzzleSolverProfiles.RuntimeHint;
+
+            Assert.That(authoring.MaximumExploredStates, Is.EqualTo(500000));
+            Assert.That(authoring.MaximumDepth, Is.EqualTo(64));
+            Assert.That(runtimeHint.MaximumExploredStates, Is.EqualTo(250000));
+            Assert.That(runtimeHint.MaximumDepth, Is.EqualTo(64));
+        }
+
+        [Test]
         public void ActionModel_ExposesOnlySupportedPlayerInteractions()
         {
             var board = new BoardState(3, 1, new[]
@@ -187,14 +199,19 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void UnsolvableAndSearchLimitReached_AreDistinct()
+        public void CustomStateBudgets_PreserveSolvedUnsolvableAndLimitStatuses()
         {
+            PuzzleSolverResult solved = new PuzzleSolver().Solve(
+                LoadLevel("Levels/M3_Test_02").CreateBoardState(),
+                new PuzzleSolverOptions { MaximumExploredStates = 100, MaximumDepth = 64 });
             PuzzleSolverResult unsolvable = new PuzzleSolver().Solve(
-                LoadLevel("Levels/M3_Test_04").CreateBoardState());
+                LoadLevel("Levels/M3_Test_04").CreateBoardState(),
+                new PuzzleSolverOptions { MaximumExploredStates = 100, MaximumDepth = 64 });
             PuzzleSolverResult limited = new PuzzleSolver().Solve(
                 LoadLevel("Levels/M3_Test_05").CreateBoardState(),
                 new PuzzleSolverOptions { MaximumExploredStates = 1, MaximumDepth = 64 });
 
+            Assert.That(solved.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(unsolvable.Status, Is.EqualTo(PuzzleSolverStatus.Unsolvable));
             Assert.That(limited.Status, Is.EqualTo(PuzzleSolverStatus.SearchLimitReached));
             Assert.That(unsolvable.Status, Is.Not.EqualTo(limited.Status));

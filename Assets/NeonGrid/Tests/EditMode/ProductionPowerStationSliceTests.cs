@@ -37,7 +37,8 @@ namespace NeonGrid.Tests
                 string.Join("\n", validation.Errors.Select(issue => issue.Message)));
             Assert.That(validation.Warnings, Is.Empty);
 
-            PuzzleSolverResult solution = new PuzzleSolver().Solve(level.CreateBoardState());
+            PuzzleSolverResult solution = new PuzzleSolver().Solve(level.CreateBoardState(),
+                PuzzleSolverProfiles.AuthoringExact);
             Assert.That(solution.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(solution.MinimumMoveCount, Is.EqualTo(expectedMinimumMoves));
         }

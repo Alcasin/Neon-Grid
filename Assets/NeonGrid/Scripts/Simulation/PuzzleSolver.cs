@@ -19,6 +19,26 @@ namespace NeonGrid.Simulation
         public int MaximumDepth { get; set; } = DefaultMaximumDepth;
     }
 
+    public static class PuzzleSolverProfiles
+    {
+        public const int AuthoringExactMaximumExploredStates = 500000;
+        public const int RuntimeHintMaximumExploredStates = 250000;
+
+        // Both contexts retain the established depth guard; authoring differs only by
+        // allowing more states for exact solvability and minimum-move verification.
+        public static PuzzleSolverOptions AuthoringExact => new PuzzleSolverOptions
+        {
+            MaximumExploredStates = AuthoringExactMaximumExploredStates,
+            MaximumDepth = PuzzleSolverOptions.DefaultMaximumDepth
+        };
+
+        public static PuzzleSolverOptions RuntimeHint => new PuzzleSolverOptions
+        {
+            MaximumExploredStates = RuntimeHintMaximumExploredStates,
+            MaximumDepth = PuzzleSolverOptions.DefaultMaximumDepth
+        };
+    }
+
     public sealed class PuzzleSolverResult
     {
         private static readonly PuzzleAction[] NoActions = Array.Empty<PuzzleAction>();

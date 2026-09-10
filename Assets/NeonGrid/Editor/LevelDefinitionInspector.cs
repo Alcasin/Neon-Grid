@@ -20,7 +20,8 @@ namespace NeonGrid.Editor
             if (GUILayout.Button("Validate Level"))
             {
                 var level = (LevelDefinition)target;
-                lastReport = new LevelValidator().ValidateWithSolver(level, new PuzzleSolverOptions());
+                lastReport = new LevelValidator().ValidateWithSolver(level,
+                    PuzzleSolverProfiles.AuthoringExact);
                 Debug.Log(LevelValidationReportFormatter.Format(level.name, lastReport), level);
             }
 

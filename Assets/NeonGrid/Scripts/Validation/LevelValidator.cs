@@ -140,7 +140,8 @@ namespace NeonGrid.Validation
                 return new LevelValidationReport(structural, null);
             }
 
-            PuzzleSolverResult solverResult = new PuzzleSolver().Solve(board, options);
+            PuzzleSolverResult solverResult = new PuzzleSolver().Solve(board,
+                options ?? PuzzleSolverProfiles.AuthoringExact);
             return new LevelValidationReport(structural, solverResult);
         }
     }
