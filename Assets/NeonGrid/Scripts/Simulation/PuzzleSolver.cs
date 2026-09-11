@@ -73,11 +73,17 @@ namespace NeonGrid.Simulation
     {
         public PuzzleSolverResult Solve(BoardState sourceBoard, PuzzleSolverOptions options = null)
         {
+            return SolveProfiled(sourceBoard, options, null);
+        }
+
+        internal PuzzleSolverResult SolveProfiled(BoardState sourceBoard, PuzzleSolverOptions options,
+            SolverProfile profile)
+        {
             if (sourceBoard == null) throw new ArgumentNullException(nameof(sourceBoard));
             options = options ?? new PuzzleSolverOptions();
             ValidateOptions(options);
 
-            PuzzleSearchState initialState = PuzzleSearchState.FromBoard(sourceBoard);
+            PuzzleSearchState initialState = PuzzleSearchState.FromBoard(sourceBoard, profile);
             var initialPath = Array.Empty<PuzzleAction>();
             if (initialState.IsSolved)
                 return Result(PuzzleSolverStatus.Solved, initialPath, 1, 0);
@@ -104,12 +110,13 @@ namespace NeonGrid.Simulation
                     PuzzleSearchState nextState = current.State.CreateIndependentCopy();
                     if (!nextState.ApplyAction(action))
                         throw new InvalidOperationException($"Generated action became invalid: {action}.");
-                    if (visited.Contains(nextState.Key)) continue;
+                    PuzzleStateKey nextKey = nextState.Key;
+                    if (visited.Contains(nextKey)) continue;
 
                     if (visited.Count >= options.MaximumExploredStates)
                         return Result(PuzzleSolverStatus.SearchLimitReached, null, visited.Count, deepestDepth);
 
-                    visited.Add(nextState.Key);
+                    visited.Add(nextKey);
                     PuzzleAction[] nextPath = Append(current.Path, action);
                     deepestDepth = Math.Max(deepestDepth, nextPath.Length);
                     if (nextState.IsSolved)

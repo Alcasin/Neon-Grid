@@ -88,18 +88,17 @@ namespace NeonGrid.Simulation
 
         public BoardState CreateIndependentCopy()
         {
-            var definitions = new List<TileDefinition>(Width * Height);
-            foreach (CircuitTileState tile in AllTiles())
-            {
-                definitions.Add(new TileDefinition(
-                    tile.Position,
-                    tile.TileType,
-                    tile.Rotation,
-                    tile.IsRotatable,
-                    tile.IsSwitchOn));
-            }
+            return new BoardState(this);
+        }
 
-            return new BoardState(Width, Height, definitions);
+        private BoardState(BoardState source)
+        {
+            Width = source.Width;
+            Height = source.Height;
+            tiles = new CircuitTileState[Width, Height];
+            for (int y = 0; y < Height; y++)
+            for (int x = 0; x < Width; x++)
+                tiles[x, y] = new CircuitTileState(source.tiles[x, y]);
         }
 
         internal bool TryApplyAction(PuzzleAction action)

@@ -23,6 +23,17 @@ namespace NeonGrid.Simulation
             IsSwitchOn = definition.tileType == TileType.Switch && definition.startingSwitchOn;
         }
 
+        // The source is already validated and normalized. Transient electrical state
+        // deliberately starts empty, matching BoardState.CreateIndependentCopy's contract.
+        internal CircuitTileState(CircuitTileState source)
+        {
+            Position = source.Position;
+            TileType = source.TileType;
+            IsRotatable = source.IsRotatable;
+            Rotation = source.Rotation;
+            IsSwitchOn = source.IsSwitchOn;
+        }
+
         internal bool RotateClockwise()
         {
             if (!IsRotatable) return false;
