@@ -52,10 +52,14 @@ namespace NeonGrid.Data
         [SerializeField] private string displayName;
         [SerializeField] private LevelDefinition levelDefinition;
         [SerializeField] private LevelTutorialDefinition tutorial = new LevelTutorialDefinition();
+        [SerializeField] private int authoredOptimalMoves = -1;
 
         public string LevelId => levelId;
         public string DisplayName => displayName;
         public LevelDefinition LevelDefinition => levelDefinition;
+        public int? AuthoredOptimalMoves => authoredOptimalMoves >= 0
+            ? authoredOptimalMoves
+            : (int?)null;
         public LevelTutorialDefinition Tutorial => tutorial?.Steps != null && tutorial.Steps.Count > 0
             ? tutorial
             : null;
@@ -68,6 +72,15 @@ namespace NeonGrid.Data
             this.levelDefinition = levelDefinition;
             if (tutorial != null)
                 this.tutorial = tutorial;
+        }
+
+        public CampaignLevelEntry(string levelId, string displayName, LevelDefinition levelDefinition,
+            int authoredOptimalMoves, LevelTutorialDefinition tutorial = null)
+            : this(levelId, displayName, levelDefinition, tutorial)
+        {
+            if (authoredOptimalMoves < 0)
+                throw new ArgumentOutOfRangeException(nameof(authoredOptimalMoves));
+            this.authoredOptimalMoves = authoredOptimalMoves;
         }
     }
 }

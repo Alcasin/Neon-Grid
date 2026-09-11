@@ -75,7 +75,13 @@ namespace NeonGrid.Tests
 
                 controller.Session.AdvanceTime(GameplaySession.HintUnlockSeconds);
                 HintResult hint = controller.RequestHint();
-                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintAvailable));
+                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintSearching));
+                Text hintStatus = root.transform.Find("Gameplay HUD Canvas/Hint Status")
+                    .GetComponent<Text>();
+                Button hintButton = root.transform.Find("Gameplay HUD Canvas/Hint Button")
+                    .GetComponent<Button>();
+                Assert.That(hintStatus.text, Is.EqualTo("Finding hint..."));
+                Assert.That(hintButton.interactable, Is.False);
                 Assert.That(controller.Session.MoveCount, Is.Zero);
             }
             finally
@@ -234,13 +240,10 @@ namespace NeonGrid.Tests
 
                 controller.Session.AdvanceTime(GameplaySession.HintUnlockSeconds);
                 HintResult hint = controller.RequestHint();
-                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintAvailable));
+                Assert.That(hint.Status, Is.EqualTo(HintStatus.HintSearching));
                 Assert.That(targetView.IsTutorialHighlighted, Is.True,
                     "Requesting a hint must not clear tutorial state.");
-                CircuitTileView hintView = root.transform.Find(
-                    $"Tile {hint.SuggestedAction.Value.Position.x},{hint.SuggestedAction.Value.Position.y}")
-                    .GetComponent<CircuitTileView>();
-                Assert.That(hintView.IsHintHighlighted, Is.True);
+                Assert.That(hint.SuggestedAction, Is.Null);
             }
             finally
             {
@@ -677,6 +680,8 @@ namespace NeonGrid.Tests
                 session.AdvanceTime(GameplaySession.HintUnlockSeconds);
                 session.RequestHint();
                 hud.Refresh(session);
+                Assert.That(session.IsHintSearchInProgress, Is.True,
+                    "HUD refresh alone must not invalidate the active request.");
 
                 int rotation = session.Board.GetTile(new GridPosition(1, 0)).Rotation;
                 int moves = session.MoveCount;
@@ -686,6 +691,8 @@ namespace NeonGrid.Tests
                 bool canUndo = session.CanUndo;
 
                 Transform canvas = root.transform.Find("Gameplay HUD Canvas");
+                Assert.That(canvas.Find("Hint Status").GetComponent<Text>().text,
+                    Is.EqualTo("Finding hint..."));
                 RectTransform backRect = canvas.Find("Back To Levels Button").GetComponent<RectTransform>();
                 RectTransform timerRect = canvas.Find("Timer").GetComponent<RectTransform>();
                 RectTransform moveRect = canvas.Find("Move Count").GetComponent<RectTransform>();

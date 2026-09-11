@@ -67,12 +67,36 @@ namespace NeonGrid.Tests
                 PuzzleSolverProfiles.AuthoringExact);
             Assert.That(solution.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(solution.MinimumMoveCount, Is.EqualTo(expectedMinimumMoves));
+            CampaignLevelEntry entry = LoadCampaign().Chapters[0].Levels.Single(candidate =>
+                candidate.LevelDefinition == level);
+            Assert.That(entry.AuthoredOptimalMoves, Is.EqualTo(expectedMinimumMoves),
+                "Runtime baseline metadata must stay synchronized with exact authoring verification.");
             Assert.That(solution.ExploredStateCount,
                 Is.LessThanOrEqualTo(PuzzleSolverProfiles.AuthoringExact.MaximumExploredStates));
             TestContext.WriteLine($"{assetName}: minimum={solution.MinimumMoveCount}, " +
                                   $"explored={solution.ExploredStateCount}, " +
                                   $"depth={solution.DeepestSearchDepth}, " +
                                   $"solution={string.Join(" | ", solution.Solution)}");
+        }
+
+        [TestCase(8, 7)]
+        [TestCase(9, 6)]
+        public void LateLevelRuntimeSessionUsesAuthoredBaselineWithoutStartupSearch(
+            int levelIndex, int expectedOptimalMoves)
+        {
+            CampaignLevelEntry entry = LoadCampaign().Chapters[0].Levels[levelIndex];
+            var runner = new RejectingHintSolverRunner();
+            var session = new GameplaySession(entry.LevelDefinition,
+                entry.AuthoredOptimalMoves.Value, runner, new PuzzleSolverOptions
+                {
+                    MaximumExploredStates = 1,
+                    MaximumDepth = 0
+                });
+
+            Assert.That(session.OptimalSolverStatus, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(session.OptimalMoves, Is.EqualTo(expectedOptimalMoves));
+            Assert.That(runner.StartCount, Is.Zero,
+                "Constructing a production session must not start either baseline or hint search.");
         }
 
         [Test]
@@ -638,6 +662,18 @@ namespace NeonGrid.Tests
             public CampaignSaveResult Delete()
             {
                 return new CampaignSaveResult(CampaignSaveStatus.Saved, SavePath);
+            }
+        }
+
+        private sealed class RejectingHintSolverRunner : IHintSolverRunner
+        {
+            public int StartCount { get; private set; }
+
+            public void Start(BoardState boardSnapshot, PuzzleSolverOptions options,
+                Action<PuzzleSolverResult> completed, Action<Exception> failed)
+            {
+                StartCount++;
+                failed(new InvalidOperationException("Hint search was not expected."));
             }
         }
     }

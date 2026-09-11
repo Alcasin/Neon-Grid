@@ -277,6 +277,8 @@ namespace NeonGrid.Presentation
                 return FormatAction(hint.SuggestedAction.Value);
             if (hint.Status == HintStatus.HintAvailable)
                 return "Hint available";
+            if (hint.Status == HintStatus.HintSearching)
+                return "Finding hint...";
             if (hint.Status == HintStatus.SolverLimitReached)
                 return "Hint unavailable";
             if (hint.Status == HintStatus.UnsolvableOrInvalid)

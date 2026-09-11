@@ -41,6 +41,12 @@ namespace NeonGrid.Tests
                 PuzzleSolverProfiles.AuthoringExact);
             Assert.That(solution.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(solution.MinimumMoveCount, Is.EqualTo(expectedMinimumMoves));
+            CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
+                "Campaigns/PowerStation_VerticalSlice");
+            CampaignLevelEntry entry = campaign.Chapters[0].Levels.Single(candidate =>
+                candidate.LevelDefinition == level);
+            Assert.That(entry.AuthoredOptimalMoves, Is.EqualTo(expectedMinimumMoves),
+                "Runtime baseline metadata must stay synchronized with exact authoring verification.");
         }
 
         [Test]

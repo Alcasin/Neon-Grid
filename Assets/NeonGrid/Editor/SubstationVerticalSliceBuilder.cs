@@ -51,17 +51,17 @@ namespace NeonGrid.Editor
             {
                 new CampaignChapterDefinition("substation", "Substation", new[]
                 {
-                    new CampaignLevelEntry("substation_01", "Substation Circuit 1", s01),
-                    new CampaignLevelEntry("substation_02", "Substation Circuit 2", s02),
-                    new CampaignLevelEntry("substation_03", "Substation Circuit 3", s03,
+                    new CampaignLevelEntry("substation_01", "Substation Circuit 1", s01, 3),
+                    new CampaignLevelEntry("substation_02", "Substation Circuit 2", s02, 7),
+                    new CampaignLevelEntry("substation_03", "Substation Circuit 3", s03, 3,
                         SwitchTutorial()),
-                    new CampaignLevelEntry("substation_04", "Substation Circuit 4", s04),
-                    new CampaignLevelEntry("substation_05", "Substation Circuit 5", s05),
-                    new CampaignLevelEntry("substation_06", "Substation Circuit 6", s06),
-                    new CampaignLevelEntry("substation_07", "Substation Circuit 7", s07),
-                    new CampaignLevelEntry("substation_08", "Substation Circuit 8", s08),
-                    new CampaignLevelEntry("substation_09", "Substation Circuit 9", s09),
-                    new CampaignLevelEntry("substation_10", "Substation Circuit 10", s10)
+                    new CampaignLevelEntry("substation_04", "Substation Circuit 4", s04, 3),
+                    new CampaignLevelEntry("substation_05", "Substation Circuit 5", s05, 3),
+                    new CampaignLevelEntry("substation_06", "Substation Circuit 6", s06, 3),
+                    new CampaignLevelEntry("substation_07", "Substation Circuit 7", s07, 5),
+                    new CampaignLevelEntry("substation_08", "Substation Circuit 8", s08, 6),
+                    new CampaignLevelEntry("substation_09", "Substation Circuit 9", s09, 7),
+                    new CampaignLevelEntry("substation_10", "Substation Circuit 10", s10, 6)
                 })
             });
 

@@ -1,20 +1,26 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using NeonGrid.Data;
 using NeonGrid.Simulation;
 
 namespace NeonGrid.Session
 {
-    public sealed class GameplaySession
+    public sealed class GameplaySession : IDisposable
     {
         public const float HintUnlockSeconds = 180f;
 
         private readonly Stack<BoardPersistentSnapshot> undoHistory =
             new Stack<BoardPersistentSnapshot>();
-        private readonly PuzzleSolver solver;
         private readonly PuzzleSolverOptions solverOptions;
         private readonly StarEvaluator starEvaluator;
+        private readonly IHintSolverRunner hintSolverRunner;
+        private readonly ConcurrentQueue<HintSolverCompletion> hintCompletions =
+            new ConcurrentQueue<HintSolverCompletion>();
         private CircuitSimulation simulation;
+        private int boardVersion;
+        private int nextHintRequestId;
+        private int activeHintRequestId;
 
         public LevelDefinition ActiveLevel { get; }
         public BoardState Board => simulation.Board;
@@ -24,33 +30,67 @@ namespace NeonGrid.Session
         public PuzzleSolverStatus OptimalSolverStatus { get; }
         public bool HintsUsed { get; private set; }
         public bool IsCompleted => simulation.IsLevelCompleted;
-        public bool CanUndo => !IsCompleted && undoHistory.Count > 0;
-        public bool CanInteract => !IsCompleted;
+        public bool CanUndo => !IsDisposed && !IsCompleted && undoHistory.Count > 0;
+        public bool CanInteract => !IsDisposed && !IsCompleted;
+        public bool IsHintSearchInProgress => activeHintRequestId != 0;
+        public bool IsDisposed { get; private set; }
         public HintResult LastHint { get; private set; }
         public SessionCompletionResult CompletionResult { get; private set; }
         public HintStatus HintAvailability => IsCompleted
             ? HintStatus.NoHintNeeded
-            : ElapsedSeconds >= HintUnlockSeconds
-                ? HintStatus.HintAvailable
-                : HintStatus.HintLocked;
+            : IsHintSearchInProgress
+                ? HintStatus.HintSearching
+                : ElapsedSeconds >= HintUnlockSeconds
+                    ? HintStatus.HintAvailable
+                    : HintStatus.HintLocked;
 
         public event Action BoardChanged;
         public event Action SessionChanged;
         public event Action<SessionCompletionResult> LevelCompleted;
+        public event Action<Exception> HintSearchFailed;
 
         public GameplaySession(LevelDefinition levelDefinition, PuzzleSolverOptions solverOptions = null,
             StarEvaluator starEvaluator = null)
+            : this(levelDefinition, null, new BackgroundHintSolverRunner(), solverOptions,
+                starEvaluator, true)
+        {
+        }
+
+        public GameplaySession(LevelDefinition levelDefinition, int authoredOptimalMoves,
+            IHintSolverRunner hintSolverRunner = null, PuzzleSolverOptions solverOptions = null,
+            StarEvaluator starEvaluator = null)
+            : this(levelDefinition, authoredOptimalMoves,
+                hintSolverRunner ?? new BackgroundHintSolverRunner(), solverOptions,
+                starEvaluator, false)
+        {
+            if (authoredOptimalMoves < 0)
+                throw new ArgumentOutOfRangeException(nameof(authoredOptimalMoves));
+        }
+
+        private GameplaySession(LevelDefinition levelDefinition, int? authoredOptimalMoves,
+            IHintSolverRunner hintSolverRunner, PuzzleSolverOptions solverOptions,
+            StarEvaluator starEvaluator, bool calculateBaseline)
         {
             ActiveLevel = levelDefinition ?? throw new ArgumentNullException(nameof(levelDefinition));
-            solver = new PuzzleSolver();
             this.solverOptions = CopyOptions(solverOptions ?? PuzzleSolverProfiles.RuntimeHint);
             this.starEvaluator = starEvaluator ?? new StarEvaluator();
+            this.hintSolverRunner = hintSolverRunner ??
+                                    throw new ArgumentNullException(nameof(hintSolverRunner));
 
-            PuzzleSolverResult baseline = solver.Solve(ActiveLevel.CreateBoardState(), this.solverOptions);
-            OptimalSolverStatus = baseline.Status;
-            OptimalMoves = baseline.Status == PuzzleSolverStatus.Solved
-                ? baseline.MinimumMoveCount
-                : (int?)null;
+            if (calculateBaseline)
+            {
+                PuzzleSolverResult baseline = new PuzzleSolver().Solve(
+                    ActiveLevel.CreateBoardState(), this.solverOptions);
+                OptimalSolverStatus = baseline.Status;
+                OptimalMoves = baseline.Status == PuzzleSolverStatus.Solved
+                    ? baseline.MinimumMoveCount
+                    : (int?)null;
+            }
+            else
+            {
+                OptimalSolverStatus = PuzzleSolverStatus.Solved;
+                OptimalMoves = authoredOptimalMoves;
+            }
 
             ReplaceSimulation(ActiveLevel.CreateBoardState());
             LastHint = HintResult.WithoutAction(IsCompleted
@@ -101,6 +141,7 @@ namespace NeonGrid.Session
 
         public void Restart()
         {
+            InvalidatePendingHint();
             undoHistory.Clear();
             MoveCount = 0;
             ElapsedSeconds = 0f;
@@ -121,7 +162,7 @@ namespace NeonGrid.Session
         public void AdvanceTime(float deltaSeconds)
         {
             if (deltaSeconds < 0f) throw new ArgumentOutOfRangeException(nameof(deltaSeconds));
-            if (deltaSeconds == 0f || IsCompleted) return;
+            if (deltaSeconds == 0f || IsDisposed || IsCompleted) return;
             bool hintWasLocked = ElapsedSeconds < HintUnlockSeconds;
             ElapsedSeconds += deltaSeconds;
             if (hintWasLocked && ElapsedSeconds >= HintUnlockSeconds &&
@@ -132,22 +173,66 @@ namespace NeonGrid.Session
 
         public HintResult RequestHint(PuzzleSolverOptions options = null)
         {
+            if (IsDisposed)
+                return SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
             if (IsCompleted)
                 return SetHint(HintResult.WithoutAction(HintStatus.NoHintNeeded));
             if (ElapsedSeconds < HintUnlockSeconds)
                 return SetHint(HintResult.WithoutAction(HintStatus.HintLocked));
+            if (IsHintSearchInProgress)
+                return LastHint;
 
-            PuzzleSolverResult result;
+            BoardState snapshot = Board.CreateIndependentCopy();
+            PuzzleSolverOptions requestOptions = CopyOptions(options ?? solverOptions);
+            int requestId = ++nextHintRequestId;
+            int requestBoardVersion = boardVersion;
+            activeHintRequestId = requestId;
+            SetHint(HintResult.WithoutAction(HintStatus.HintSearching));
             try
             {
-                result = solver.Solve(Board.CreateIndependentCopy(),
-                    CopyOptions(options ?? solverOptions));
+                hintSolverRunner.Start(snapshot, requestOptions,
+                    result => hintCompletions.Enqueue(
+                        HintSolverCompletion.Succeeded(requestId, requestBoardVersion, result)),
+                    exception => hintCompletions.Enqueue(
+                        HintSolverCompletion.Failed(requestId, requestBoardVersion, exception)));
             }
-            catch (ArgumentException)
+            catch (Exception exception)
             {
+                activeHintRequestId = 0;
+                HintSearchFailed?.Invoke(exception);
                 return SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
             }
 
+            return LastHint;
+        }
+
+        public bool UpdateHintRequest()
+        {
+            bool changed = false;
+            while (hintCompletions.TryDequeue(out HintSolverCompletion completion))
+            {
+                if (IsDisposed || completion.RequestId != activeHintRequestId ||
+                    completion.BoardVersion != boardVersion)
+                    continue;
+
+                activeHintRequestId = 0;
+                if (completion.Exception != null)
+                {
+                    HintSearchFailed?.Invoke(completion.Exception);
+                    SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
+                }
+                else
+                {
+                    ApplyHintResult(completion.Result);
+                }
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private HintResult ApplyHintResult(PuzzleSolverResult result)
+        {
             switch (result.Status)
             {
                 case PuzzleSolverStatus.Solved:
@@ -171,8 +256,26 @@ namespace NeonGrid.Session
 
         private void ClearHint()
         {
+            InvalidatePendingHint();
             LastHint = HintResult.WithoutAction(HintAvailability);
             SessionChanged?.Invoke();
+        }
+
+        private void InvalidatePendingHint()
+        {
+            boardVersion++;
+            activeHintRequestId = 0;
+            if (LastHint?.Status == HintStatus.HintSearching)
+            {
+                HintStatus status = IsDisposed
+                    ? HintStatus.UnsolvableOrInvalid
+                    : IsCompleted
+                        ? HintStatus.NoHintNeeded
+                        : ElapsedSeconds >= HintUnlockSeconds
+                            ? HintStatus.HintAvailable
+                            : HintStatus.HintLocked;
+                LastHint = HintResult.WithoutAction(status);
+            }
         }
 
         private void ReplaceSimulation(BoardState board)
@@ -201,12 +304,25 @@ namespace NeonGrid.Session
 
         private void CompleteAttempt(bool raiseEvent)
         {
+            InvalidatePendingHint();
             StarEvaluationResult rating = starEvaluator.Evaluate(true, MoveCount, OptimalMoves);
             CompletionResult = new SessionCompletionResult(ActiveLevel, MoveCount, ElapsedSeconds,
                 OptimalMoves, HintsUsed, rating);
             LastHint = HintResult.WithoutAction(HintStatus.NoHintNeeded);
             if (raiseEvent)
                 LevelCompleted?.Invoke(CompletionResult);
+        }
+
+        public void Dispose()
+        {
+            if (IsDisposed) return;
+            IsDisposed = true;
+            InvalidatePendingHint();
+            if (simulation != null)
+            {
+                simulation.BoardChanged -= HandleBoardChanged;
+                simulation.LevelCompleted -= HandleLevelCompleted;
+            }
         }
 
         private static PuzzleSolverOptions CopyOptions(PuzzleSolverOptions source)
@@ -216,6 +332,37 @@ namespace NeonGrid.Session
                 MaximumExploredStates = source.MaximumExploredStates,
                 MaximumDepth = source.MaximumDepth
             };
+        }
+
+        private sealed class HintSolverCompletion
+        {
+            public int RequestId { get; }
+            public int BoardVersion { get; }
+            public PuzzleSolverResult Result { get; }
+            public Exception Exception { get; }
+
+            private HintSolverCompletion(int requestId, int boardVersion,
+                PuzzleSolverResult result, Exception exception)
+            {
+                RequestId = requestId;
+                BoardVersion = boardVersion;
+                Result = result;
+                Exception = exception;
+            }
+
+            public static HintSolverCompletion Succeeded(int requestId, int boardVersion,
+                PuzzleSolverResult result)
+            {
+                return new HintSolverCompletion(requestId, boardVersion,
+                    result ?? throw new ArgumentNullException(nameof(result)), null);
+            }
+
+            public static HintSolverCompletion Failed(int requestId, int boardVersion,
+                Exception exception)
+            {
+                return new HintSolverCompletion(requestId, boardVersion, null,
+                    exception ?? new InvalidOperationException("Hint solver failed without an exception."));
+            }
         }
     }
 }

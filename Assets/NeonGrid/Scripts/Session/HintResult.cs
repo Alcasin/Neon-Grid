@@ -5,6 +5,7 @@ namespace NeonGrid.Session
     public enum HintStatus
     {
         HintLocked,
+        HintSearching,
         HintAvailable,
         NoHintNeeded,
         SolverLimitReached,

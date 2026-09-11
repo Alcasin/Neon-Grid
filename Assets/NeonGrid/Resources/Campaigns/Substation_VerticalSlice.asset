@@ -22,11 +22,13 @@ MonoBehaviour:
       levelDefinition: {fileID: 11400000, guid: 2d44c7e1b12115446bd44ceaca532557, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 3
     - levelId: substation_02
       displayName: Substation Circuit 2
       levelDefinition: {fileID: 11400000, guid: 782c8652e6c117e408c449dde543589e, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 7
     - levelId: substation_03
       displayName: Substation Circuit 3
       levelDefinition: {fileID: 11400000, guid: 8124ce478f2afd54abb2e363af1f80e4, type: 2}
@@ -37,38 +39,46 @@ MonoBehaviour:
             x: 2
             y: 1
           completionCondition: 1
+      authoredOptimalMoves: 3
     - levelId: substation_04
       displayName: Substation Circuit 4
       levelDefinition: {fileID: 11400000, guid: f60415b0a4511e949b8c0c43a66fc5ac, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 3
     - levelId: substation_05
       displayName: Substation Circuit 5
       levelDefinition: {fileID: 11400000, guid: 3a2d7bf98854a004da9db229047f8335, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 3
     - levelId: substation_06
       displayName: Substation Circuit 6
       levelDefinition: {fileID: 11400000, guid: 70ba464329c1d964cb32edbee6c844a1, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 3
     - levelId: substation_07
       displayName: Substation Circuit 7
       levelDefinition: {fileID: 11400000, guid: a305961522ec721438e089876332a00f, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 5
     - levelId: substation_08
       displayName: Substation Circuit 8
       levelDefinition: {fileID: 11400000, guid: 5b38787b62030834291942c28a6e88ed, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 6
     - levelId: substation_09
       displayName: Substation Circuit 9
       levelDefinition: {fileID: 11400000, guid: 19bd91d4730387f42aeac92a8f7dfd8a, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 7
     - levelId: substation_10
       displayName: Substation Circuit 10
       levelDefinition: {fileID: 11400000, guid: 68f1c4da136b06a45898bc8ffc996f1e, type: 2}
       tutorial:
         steps: []
+      authoredOptimalMoves: 6

@@ -50,22 +50,22 @@ namespace NeonGrid.Editor
             {
                 new CampaignChapterDefinition("power_station", "Power Station", new[]
                 {
-                    new CampaignLevelEntry("power_01", "Power Circuit 01", ps01,
+                    new CampaignLevelEntry("power_01", "Power Circuit 01", ps01, 1,
                         Tutorial("Tap a wire to rotate it.", new GridPosition(1, 0))),
-                    new CampaignLevelEntry("power_02", "Power Circuit 02", ps02,
+                    new CampaignLevelEntry("power_02", "Power Circuit 02", ps02, 1,
                         Tutorial("Corner wires redirect the current.", new GridPosition(1, 0))),
-                    new CampaignLevelEntry("power_03", "Power Circuit 03", ps03),
-                    new CampaignLevelEntry("power_04", "Power Circuit 04", ps04),
-                    new CampaignLevelEntry("power_05", "Power Circuit 05", ps05),
-                    new CampaignLevelEntry("power_06", "Power Circuit 06", ps06,
+                    new CampaignLevelEntry("power_03", "Power Circuit 03", ps03, 4),
+                    new CampaignLevelEntry("power_04", "Power Circuit 04", ps04, 5),
+                    new CampaignLevelEntry("power_05", "Power Circuit 05", ps05, 4),
+                    new CampaignLevelEntry("power_06", "Power Circuit 06", ps06, 3,
                         Tutorial("T-junctions split power into multiple paths.",
                             new GridPosition(2, 2))),
-                    new CampaignLevelEntry("power_07", "Power Circuit 07", ps07),
-                    new CampaignLevelEntry("power_08", "Power Circuit 08", ps08),
-                    new CampaignLevelEntry("power_09", "Power Circuit 09", ps09,
+                    new CampaignLevelEntry("power_07", "Power Circuit 07", ps07, 4),
+                    new CampaignLevelEntry("power_08", "Power Circuit 08", ps08, 4),
+                    new CampaignLevelEntry("power_09", "Power Circuit 09", ps09, 2,
                         Tutorial("Diodes only allow power in one direction.",
                             new GridPosition(2, 2))),
-                    new CampaignLevelEntry("power_10", "Power Circuit 10", ps10)
+                    new CampaignLevelEntry("power_10", "Power Circuit 10", ps10, 5)
                 })
             });
 

@@ -45,6 +45,7 @@ namespace NeonGrid.Presentation
 
             session.BoardChanged += OnBoardChanged;
             session.LevelCompleted += OnLevelCompleted;
+            session.HintSearchFailed += OnHintSearchFailed;
         }
 
         private void OnDestroy()
@@ -52,12 +53,16 @@ namespace NeonGrid.Presentation
             if (session == null) return;
             session.BoardChanged -= OnBoardChanged;
             session.LevelCompleted -= OnLevelCompleted;
+            session.HintSearchFailed -= OnHintSearchFailed;
+            session.Dispose();
         }
 
         private void Update()
         {
             if (session == null) return;
             RefreshBoardFraming(false);
+            if (session.UpdateHintRequest())
+                ApplyHintHighlight();
             if (!hudView.IsLeaveConfirmationOpen)
                 session.AdvanceTime(Time.deltaTime);
             hudView.Refresh(session);
@@ -98,6 +103,11 @@ namespace NeonGrid.Presentation
             hudView.Refresh(session);
         }
 
+        private static void OnHintSearchFailed(System.Exception exception)
+        {
+            Debug.LogException(exception);
+        }
+
         public bool Undo()
         {
             return session != null && session.Undo();
@@ -116,7 +126,9 @@ namespace NeonGrid.Presentation
             if (session == null)
                 return HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid);
 
-            HintResult hint = session.RequestHint();
+            session.RequestHint();
+            session.UpdateHintRequest();
+            HintResult hint = session.LastHint;
             ApplyHintHighlight();
             hudView.Refresh(session);
             return hint;

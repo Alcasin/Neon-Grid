@@ -164,7 +164,9 @@ namespace NeonGrid.Campaign
                 : null;
             LastProgressUpdate = null;
             ResultNavigation = default;
-            ActiveSession = new GameplaySession(entry.LevelDefinition);
+            ActiveSession = entry.AuthoredOptimalMoves.HasValue
+                ? new GameplaySession(entry.LevelDefinition, entry.AuthoredOptimalMoves.Value)
+                : new GameplaySession(entry.LevelDefinition);
             ActiveSession.LevelCompleted += HandleSessionCompleted;
             CurrentScreen = CampaignFlowScreen.Gameplay;
             if (ActiveSession.IsCompleted)
@@ -189,7 +191,10 @@ namespace NeonGrid.Campaign
         private void DetachSession()
         {
             if (ActiveSession != null)
+            {
                 ActiveSession.LevelCompleted -= HandleSessionCompleted;
+                ActiveSession.Dispose();
+            }
             ActiveSession = null;
             ActiveTutorial = null;
         }

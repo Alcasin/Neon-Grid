@@ -91,6 +91,7 @@ namespace NeonGrid.Tests
             Assert.That(flow.Retry(), Is.True);
 
             Assert.That(flow.ActiveSession, Is.Not.SameAs(firstSession));
+            Assert.That(firstSession.IsDisposed, Is.True);
             Assert.That(flow.ActiveSession.MoveCount, Is.Zero);
             Assert.That(flow.ActiveSession.IsCompleted, Is.False);
             Assert.That(progress.GetLevelProgress("power_01").Completed, Is.True);
@@ -104,9 +105,11 @@ namespace NeonGrid.Tests
             flow.OpenChapter("power_station");
             flow.StartLevel("power_01");
             CampaignTestFixture.Solve(flow.ActiveSession);
+            GameplaySession completedSession = flow.ActiveSession;
 
             Assert.That(flow.CanStartNextLevel(), Is.True);
             Assert.That(flow.StartNextLevel(), Is.True);
+            Assert.That(completedSession.IsDisposed, Is.True);
             Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("power_02"));
             Assert.That(flow.ActiveSession.ActiveLevel, Is.SameAs(fixture.Level("power_02")));
             Assert.That(flow.CurrentScreen, Is.EqualTo(CampaignFlowScreen.Gameplay));
@@ -217,6 +220,8 @@ namespace NeonGrid.Tests
             Assert.That(abandonedSession.IsCompleted, Is.False);
             Assert.That(flow.ReturnToLevelSelection(), Is.True);
 
+            Assert.That(abandonedSession.IsDisposed, Is.True,
+                "Leaving gameplay must invalidate any in-flight hint result owned by the attempt.");
             Assert.That(flow.CurrentScreen, Is.EqualTo(CampaignFlowScreen.LevelSelection));
             Assert.That(flow.SelectedChapter.ChapterId, Is.EqualTo("power_station"));
             Assert.That(flow.ActiveLevel, Is.Null);
