@@ -33,6 +33,10 @@ namespace NeonGrid.Editor
             LevelDefinition s04 = LoadProductionLevel("S_04");
             LevelDefinition s05 = LoadProductionLevel("S_05");
             LevelDefinition s06 = LoadProductionLevel("S_06");
+            LevelDefinition s07 = LoadProductionLevel("S_07");
+            LevelDefinition s08 = LoadProductionLevel("S_08");
+            LevelDefinition s09 = LoadProductionLevel("S_09");
+            LevelDefinition s10 = LoadProductionLevel("S_10");
 
             CampaignDefinition campaign =
                 AssetDatabase.LoadAssetAtPath<CampaignDefinition>(CampaignPath);
@@ -53,7 +57,11 @@ namespace NeonGrid.Editor
                         SwitchTutorial()),
                     new CampaignLevelEntry("substation_04", "Substation Circuit 4", s04),
                     new CampaignLevelEntry("substation_05", "Substation Circuit 5", s05),
-                    new CampaignLevelEntry("substation_06", "Substation Circuit 6", s06)
+                    new CampaignLevelEntry("substation_06", "Substation Circuit 6", s06),
+                    new CampaignLevelEntry("substation_07", "Substation Circuit 7", s07),
+                    new CampaignLevelEntry("substation_08", "Substation Circuit 8", s08),
+                    new CampaignLevelEntry("substation_09", "Substation Circuit 9", s09),
+                    new CampaignLevelEntry("substation_10", "Substation Circuit 10", s10)
                 })
             });
 

@@ -52,3 +52,23 @@ MonoBehaviour:
       levelDefinition: {fileID: 11400000, guid: 70ba464329c1d964cb32edbee6c844a1, type: 2}
       tutorial:
         steps: []
+    - levelId: substation_07
+      displayName: Substation Circuit 7
+      levelDefinition: {fileID: 11400000, guid: a305961522ec721438e089876332a00f, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_08
+      displayName: Substation Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 5b38787b62030834291942c28a6e88ed, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_09
+      displayName: Substation Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 19bd91d4730387f42aeac92a8f7dfd8a, type: 2}
+      tutorial:
+        steps: []
+    - levelId: substation_10
+      displayName: Substation Circuit 10
+      levelDefinition: {fileID: 11400000, guid: 68f1c4da136b06a45898bc8ffc996f1e, type: 2}
+      tutorial:
+        steps: []

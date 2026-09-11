@@ -51,6 +51,12 @@ namespace NeonGrid.Tests
         [TestCase("S_04", 1080, 1920)]
         [TestCase("S_05", 1080, 2340)]
         [TestCase("S_06", 720, 1280)]
+        [TestCase("S_07", 1080, 1920)]
+        [TestCase("S_08", 1080, 2340)]
+        [TestCase("S_09", 720, 1280)]
+        [TestCase("S_10", 1080, 1920)]
+        [TestCase("S_10", 1080, 2340)]
+        [TestCase("S_10", 720, 1280)]
         public void SubstationProductionBounds_UseGenericPortraitFit(
             string assetName, int screenWidth, int screenHeight)
         {
