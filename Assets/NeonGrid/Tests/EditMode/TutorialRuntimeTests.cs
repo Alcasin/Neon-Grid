@@ -74,6 +74,22 @@ namespace NeonGrid.Tests
         }
 
         [Test]
+        public void AnyAcceptedAction_UsesTargetOnlyAsVisualAnchor()
+        {
+            var fixedAnchor = new GridPosition(2, 2);
+            var tutorial = new TutorialRuntime(new LevelTutorialDefinition(new[]
+            {
+                new TutorialStepDefinition("Explain a fixed component", fixedAnchor,
+                    TutorialCompletionCondition.AnyAcceptedAction)
+            }));
+
+            Assert.That(tutorial.CurrentStep.TargetPosition, Is.EqualTo(fixedAnchor));
+            Assert.That(tutorial.ObserveSuccessfulAction(new PuzzleAction(
+                new GridPosition(4, 1), PuzzleActionType.RotateClockwise)), Is.True);
+            Assert.That(tutorial.IsActive, Is.False);
+        }
+
+        [Test]
         public void TransferLevels_HaveNoTutorialRuntime()
         {
             foreach (int levelIndex in new[] { 2, 3, 4, 6, 7, 9 })

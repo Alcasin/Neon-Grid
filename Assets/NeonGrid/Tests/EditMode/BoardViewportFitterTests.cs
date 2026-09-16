@@ -64,6 +64,25 @@ namespace NeonGrid.Tests
                 screenWidth, screenHeight);
         }
 
+        [TestCase("CC_01", 1080, 1920)]
+        [TestCase("CC_01", 1080, 2340)]
+        [TestCase("CC_01", 720, 1280)]
+        [TestCase("CC_08", 1080, 1920)]
+        [TestCase("CC_08", 1080, 2340)]
+        [TestCase("CC_08", 720, 1280)]
+        [TestCase("CC_09", 1080, 1920)]
+        [TestCase("CC_09", 1080, 2340)]
+        [TestCase("CC_09", 720, 1280)]
+        [TestCase("CC_10", 1080, 1920)]
+        [TestCase("CC_10", 1080, 2340)]
+        [TestCase("CC_10", 720, 1280)]
+        public void ControlCenterProductionBounds_UseUnchangedGenericPortraitFit(
+            string assetName, int screenWidth, int screenHeight)
+        {
+            AssertProductionBoardFits($"Levels/ControlCenter/{assetName}", assetName,
+                screenWidth, screenHeight);
+        }
+
         private static void AssertProductionBoardFits(string resourcePath, string assetName,
             int screenWidth, int screenHeight)
         {

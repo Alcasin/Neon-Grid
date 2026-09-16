@@ -8,7 +8,8 @@ namespace NeonGrid.Data
     public enum TutorialCompletionCondition
     {
         RotateClockwise,
-        ToggleSwitch
+        ToggleSwitch,
+        AnyAcceptedAction
     }
 
     [Serializable]

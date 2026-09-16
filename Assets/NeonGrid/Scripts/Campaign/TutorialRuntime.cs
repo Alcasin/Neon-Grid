@@ -27,8 +27,7 @@ namespace NeonGrid.Campaign
         public bool ObserveSuccessfulAction(PuzzleAction action)
         {
             TutorialStepDefinition step = CurrentStep;
-            if (step == null || !step.TargetPosition.Equals(action.Position) ||
-                !Matches(step.CompletionCondition, action.ActionType))
+            if (step == null || !Matches(step, action))
                 return false;
 
             currentStepIndex++;
@@ -40,15 +39,18 @@ namespace NeonGrid.Campaign
             currentStepIndex = 0;
         }
 
-        private static bool Matches(TutorialCompletionCondition condition,
-            PuzzleActionType actionType)
+        private static bool Matches(TutorialStepDefinition step, PuzzleAction action)
         {
-            switch (condition)
+            switch (step.CompletionCondition)
             {
                 case TutorialCompletionCondition.RotateClockwise:
-                    return actionType == PuzzleActionType.RotateClockwise;
+                    return step.TargetPosition.Equals(action.Position) &&
+                           action.ActionType == PuzzleActionType.RotateClockwise;
                 case TutorialCompletionCondition.ToggleSwitch:
-                    return actionType == PuzzleActionType.ToggleSwitch;
+                    return step.TargetPosition.Equals(action.Position) &&
+                           action.ActionType == PuzzleActionType.ToggleSwitch;
+                case TutorialCompletionCondition.AnyAcceptedAction:
+                    return true;
                 default:
                     return false;
             }

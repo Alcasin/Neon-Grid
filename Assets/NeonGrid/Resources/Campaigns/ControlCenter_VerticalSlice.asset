@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9ca009eb0a99949b3649aaba97e6c3, type: 3}
+  m_Name: ControlCenter_VerticalSlice
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
+  campaignId: control_center_vertical_slice
+  chapters:
+  - chapterId: control_center
+    displayName: Control Center
+    levels:
+    - levelId: control_center_01
+      displayName: Control Center Circuit 1
+      levelDefinition: {fileID: 11400000, guid: 96264bf64715cc34db7faeb6d9c9df17, type: 2}
+      tutorial:
+        steps:
+        - message: AND gates require all inputs to be powered.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 2
+      authoredOptimalMoves: 4
+    - levelId: control_center_02
+      displayName: Control Center Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 71adf2a4c6202204cae2b7d973994531, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: control_center_03
+      displayName: Control Center Circuit 3
+      levelDefinition: {fileID: 11400000, guid: fe9ec6e3da06509488324da4e223ab11, type: 2}
+      tutorial:
+        steps:
+        - message: OR gates activate when any input is powered.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 2
+      authoredOptimalMoves: 1
+    - levelId: control_center_04
+      displayName: Control Center Circuit 4
+      levelDefinition: {fileID: 11400000, guid: 2761cda8f15fb424389c17153362a056, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: control_center_05
+      displayName: Control Center Circuit 5
+      levelDefinition: {fileID: 11400000, guid: ddf6afb1af9c4154db3db20175ad7664, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: control_center_06
+      displayName: Control Center Circuit 6
+      levelDefinition: {fileID: 11400000, guid: 2aae837f020c3f843b306efb26ac1521, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: control_center_07
+      displayName: Control Center Circuit 7
+      levelDefinition: {fileID: 11400000, guid: 834e00cd336967d4f8481c9052fd04d7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: control_center_08
+      displayName: Control Center Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 523c92691a962454a9bc6f7ba96409e2, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: control_center_09
+      displayName: Control Center Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 1d8f9e7c7755c53478b67906978b2e63, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: control_center_10
+      displayName: Control Center Circuit 10
+      levelDefinition: {fileID: 11400000, guid: ef7e76c96ffcaa1438c3a313dc0fbff7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 8

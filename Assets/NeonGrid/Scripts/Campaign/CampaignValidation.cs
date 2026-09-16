@@ -232,6 +232,10 @@ namespace NeonGrid.Campaign
         {
             switch (condition)
             {
+                case TutorialCompletionCondition.AnyAcceptedAction:
+                    // The target is a visual anchor only; BoardController observes this
+                    // condition after some independently validated action succeeds.
+                    return true;
                 case TutorialCompletionCondition.RotateClockwise:
                     return target.isRotatable && target.tileType != TileType.Empty &&
                            target.tileType != TileType.Switch;
