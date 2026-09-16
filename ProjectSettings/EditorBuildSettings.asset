@@ -41,5 +41,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/NeonGrid/Scenes/M9_ControlCenter_VerticalSlice.unity
     guid: a6e69169ce1b7734dbc7293c3f265612
+  - enabled: 1
+    path: Assets/NeonGrid/Scenes/M10_AutomationPlant_VerticalSlice.unity
+    guid: c606a48d7f76bfe4f89cc78d058d9ee1
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

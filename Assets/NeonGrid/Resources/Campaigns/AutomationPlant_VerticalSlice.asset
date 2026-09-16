@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9ca009eb0a99949b3649aaba97e6c3, type: 3}
+  m_Name: AutomationPlant_VerticalSlice
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
+  campaignId: automation_plant_vertical_slice
+  chapters:
+  - chapterId: automation_plant
+    displayName: Automation Plant
+    levels:
+    - levelId: automation_plant_01
+      displayName: Automation Plant Circuit 1
+      levelDefinition: {fileID: 11400000, guid: a4580555e474be34b8f570e6711567c2, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: automation_plant_02
+      displayName: Automation Plant Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 3fc4655ffe71d964a90076edba9b20aa, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_03
+      displayName: Automation Plant Circuit 3
+      levelDefinition: {fileID: 11400000, guid: 5e10d1e93139fd04c8b35a0905b24416, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 8
+    - levelId: automation_plant_04
+      displayName: Automation Plant Circuit 4
+      levelDefinition: {fileID: 11400000, guid: 4c8ccfa1842fc4b41806d830016c0b57, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: automation_plant_05
+      displayName: Automation Plant Circuit 5
+      levelDefinition: {fileID: 11400000, guid: 7d2835297ef8dab408c5a540cdef90ab, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_06
+      displayName: Automation Plant Circuit 6
+      levelDefinition: {fileID: 11400000, guid: ca9ba57c8455b9b4791aaa57ae0f21b7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: automation_plant_07
+      displayName: Automation Plant Circuit 7
+      levelDefinition: {fileID: 11400000, guid: 3c74627225b777546a11d41baf6741de, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: automation_plant_08
+      displayName: Automation Plant Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 7e979cd866e7a4947a725beca07d7fc5, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_09
+      displayName: Automation Plant Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 722c90cb660450e4498a1c4b1e76d68b, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_10
+      displayName: Automation Plant Circuit 10
+      levelDefinition: {fileID: 11400000, guid: e295b54905c51474ba1449daaea463e5, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 9
