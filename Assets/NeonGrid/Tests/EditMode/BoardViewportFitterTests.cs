@@ -101,7 +101,29 @@ namespace NeonGrid.Tests
         public void AutomationPlantProductionBounds_UseUnchangedGenericPortraitFit(
             string assetName, int screenWidth, int screenHeight)
         {
-            AssertProductionBoardFits($"Levels/Automation Plant/{assetName}", assetName,
+            AssertProductionBoardFits($"Levels/AutomationPlant/{assetName}", assetName,
+                screenWidth, screenHeight);
+        }
+
+        [TestCase("CG_01", 1080, 1920)]
+        [TestCase("CG_01", 1080, 2340)]
+        [TestCase("CG_01", 720, 1280)]
+        [TestCase("CG_05", 1080, 1920)]
+        [TestCase("CG_05", 1080, 2340)]
+        [TestCase("CG_05", 720, 1280)]
+        [TestCase("CG_08", 1080, 1920)]
+        [TestCase("CG_08", 1080, 2340)]
+        [TestCase("CG_08", 720, 1280)]
+        [TestCase("CG_09", 1080, 1920)]
+        [TestCase("CG_09", 1080, 2340)]
+        [TestCase("CG_09", 720, 1280)]
+        [TestCase("CG_10", 1080, 1920)]
+        [TestCase("CG_10", 1080, 2340)]
+        [TestCase("CG_10", 720, 1280)]
+        public void CentralGridProductionBounds_UseUnchangedGenericPortraitFit(
+            string assetName, int screenWidth, int screenHeight)
+        {
+            AssertProductionBoardFits($"Levels/CentralGrid/{assetName}", assetName,
                 screenWidth, screenHeight);
         }
 

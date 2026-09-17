@@ -175,6 +175,23 @@ namespace NeonGrid.Tests
         }
 
         [Test]
+        public void SolverAnalysis_DefaultAuthoringProfileSolvesBeyondDepthEight()
+        {
+            LevelDefinition level = Resources.Load<LevelDefinition>(
+                "Levels/AutomationPlant/AP_10");
+            Assert.That(level, Is.Not.Null);
+            var model = new LevelAuthoringModel();
+            model.Load(level);
+
+            LevelValidationReport report = model.Analyze();
+
+            Assert.That(report.StructuralValidation.IsValid, Is.True);
+            Assert.That(report.SolverResult.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(report.SolverResult.MinimumMoveCount, Is.EqualTo(9));
+            Assert.That(PuzzleSolverProfiles.AuthoringExact.MaximumDepth, Is.EqualTo(64));
+        }
+
+        [Test]
         public void Save_ProducesStructurallyValidExactGrid()
         {
             LevelDefinition level = CreateLevel(2, 1,

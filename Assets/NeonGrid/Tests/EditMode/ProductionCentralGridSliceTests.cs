@@ -20,37 +20,37 @@ using UnityEngine.UI;
 
 namespace NeonGrid.Tests
 {
-    public sealed class ProductionAutomationPlantSliceTests
+    public sealed class ProductionCentralGridSliceTests
     {
-        [TestCase("AP_01", "6A6DC3D19C7262B4A8B43EAF6A5651645AD3FC2EB64A8666A2BC08A5714D66C3", "BF0C01B84750621D348C5A10624C62841118E9E113C35E8521D20BD022E966EE")]
-        [TestCase("AP_02", "42D55D92B0709F0BEF43BB4F4E2EBD62F612945A909E778323B9E47F9F0BF8A8", "163548F8425790A08E34D859FBB858540E9070103372DC652808A8100441FDF9")]
-        [TestCase("AP_03", "28D85E69372AF5F4C39608765D113C68307C5B1F8A793741C75ED6A269294D37", "3EF0A88B1F1B1DFA79EC0FE70CA4225F37D9D69DF694E489598D6BD50B1D1C0F")]
-        [TestCase("AP_04", "E62DE3DC474DE76020D8B943B1953F0A78D567380618FC3BB0EBF03F75D14FD7", "83F5F43F08A2B3A890168C45BD5A18C9C02123897D1F2F2AED87890B2AEC753D")]
-        [TestCase("AP_05", "F157D6F27713779841483D2CC9E4DED7EF9640307DF70A5FC9931F880DA99190", "F4492F5C373BDFDB2AF6967E0CB97B6981815635709C3436485BD11BDE3FC3C8")]
-        [TestCase("AP_06", "AE51221C5A961A732C3EF71146AD565324F8A74A8D9960AFB6633B077A23CA25", "6BDD97745EF48283ABDBF9CB93E2ACB1B7C2422B905EF2729E6BEFAB824C4668")]
-        [TestCase("AP_07", "6400912C6C38AEF10ABB999119C31D36EC0041E98F77CE897FD2D07044293FEE", "6C5BD95120C55AFDE18EB612E8E25A35A080B04CCCE77D705F7813509030BB67")]
-        [TestCase("AP_08", "E922F5BF5752DFF7EEDB177485FFB1E1CAFAD4513FC6644A5FB96980DF903C41", "017022E8F17026D3D9E2240121B7A3C2BCEFB37EDAB21E1FA571967EF43EB346")]
-        [TestCase("AP_09", "205C26ED7A1456EC247A263E332A2D3AF5BECA649CD83139E5A1605775953DE8", "D445A606BF9E63E49C5CF33BACC8357D9F2DEB2BF453D41B9C67FD43DAC0019C")]
-        [TestCase("AP_10", "4A3AE56502AF3A678AA24CD4CBA88AE98EC20BC9E2010C77B1E4874D1EA5559C", "0B1FCAFA81C7798A7F89E7CE2C0C5D2A64BBE2B2AC4BB09A18868E3FFC906109")]
+        [TestCase("CG_01", "29C8EB6EFACEF8253FFF111B51B3863580E17D9652CEB8869A93721257FE95C8", "A8D9FD9D0157A11BD66B62DAB8498BDFDA0B33C077F098E347F488770C3BB806")]
+        [TestCase("CG_02", "A486AE430E5BBE5D20214B491FE680E45BF434192D086F7BF2BBA1889CF8C73C", "0A77EC9494D3BF485E757D31DE2455ECCF033552B3B981601157101D2D666335")]
+        [TestCase("CG_03", "BD707B1F1EE3D19EBA3B0AEF7645E0C587C582774854563E404EF29473C6A595", "2F3206F3B16CC7145F6A6010B5B018F9F0BA64ECD2A959804270C69388114C46")]
+        [TestCase("CG_04", "5BB9AA143EE45740965B1A681E183D29F539EBB7DBE8FCA6BA8EBF852712A20A", "06CA561768CE39D03657C252782E11A8736883939DBA98209549D7FCCABA855B")]
+        [TestCase("CG_05", "1EB706EC00B118215D765AB8E02CC80BE679FF83D180265AB4AA64F335098FE3", "BE902013EE2BEB6D3DEA89943119489A32D2A8CF1D5FF50D3F351352D855F75E")]
+        [TestCase("CG_06", "A8F5B72F332BA1268D6CCC6FA1F5E4809A075C47CA1BC051C4B29040E30D5439", "83D340CE7816B59AFB0F97DD10546F4A0917CCB84FC5781E29572CAB6A27A050")]
+        [TestCase("CG_07", "D264971F3A4A025B1B0EC422CF9CE95A57DE27E355B7F3FCEAE9B009009CD576", "80F2C4DA5E1AA101981B1B65AB620F29E783D82BD1BFA1611DADADCD00DF8897")]
+        [TestCase("CG_08", "F6B4F2D823D46B1F1A5ECE032578F783C394CDEA458FE4ABA52301383277DFF6", "44349C89305EA2B95AAEB1D6AEEEFEA8A94FAD3400FEA958E93ECAC640C52C00")]
+        [TestCase("CG_09", "43007DCAA962409EEE638D9E58EBF02580EDFF6D2E3EFFDF3EBDAA7B5655E96D", "4D43FA7FF804F832C7C5E9F96BE2CD14CA7392AE23B09A59695F83763AC85E53")]
+        [TestCase("CG_10", "525FC7F9C02FE3940A1EB88DDC2F79141F9883E21D55FF34FF175119F7005CC6", "653408B6763F9F683A35E38D988A08F72E22DF0F1732DF52951189F638DC5C32")]
         public void ProductionLevel_AssetAndMetaHashesRemainImmutable(string name,
             string assetHash, string metaHash)
         {
             string path = Path.GetFullPath(
-                $"Assets/NeonGrid/Resources/Levels/AutomationPlant/{name}.asset");
+                $"Assets/NeonGrid/Resources/Levels/CentralGrid/{name}.asset");
             Assert.That(Hash(path), Is.EqualTo(assetHash));
             Assert.That(Hash(path + ".meta"), Is.EqualTo(metaHash));
         }
 
-        [TestCase("AP_01", 5, 283, 5)]
-        [TestCase("AP_02", 6, 564, 6)]
-        [TestCase("AP_03", 8, 1095, 8)]
-        [TestCase("AP_04", 5, 916, 5)]
-        [TestCase("AP_05", 6, 1314, 6)]
-        [TestCase("AP_06", 7, 1506, 7)]
-        [TestCase("AP_07", 7, 4702, 7)]
-        [TestCase("AP_08", 6, 739, 6)]
-        [TestCase("AP_09", 6, 714, 6)]
-        [TestCase("AP_10", 9, 2283, 9)]
+        [TestCase("CG_01", 5, 5975, 5)]
+        [TestCase("CG_02", 6, 21609, 6)]
+        [TestCase("CG_03", 6, 14100, 6)]
+        [TestCase("CG_04", 6, 23443, 6)]
+        [TestCase("CG_05", 5, 5582, 5)]
+        [TestCase("CG_06", 7, 4278, 7)]
+        [TestCase("CG_07", 7, 11152, 7)]
+        [TestCase("CG_08", 9, 17798, 9)]
+        [TestCase("CG_09", 9, 15941, 9)]
+        [TestCase("CG_10", 10, 45741, 10)]
         public void ProductionLevel_IsValidAndMatchesExactAuthoringBaseline(string name,
             int minimum, int explored, int depth)
         {
@@ -83,20 +83,20 @@ namespace NeonGrid.Tests
             Assert.That(validation.IsValid, Is.True,
                 string.Join("\n", validation.Issues.Select(issue => issue.Message)));
             Assert.That(validation.Issues, Is.Empty);
-            Assert.That(campaign.CampaignId, Is.EqualTo("automation_plant_vertical_slice"));
+            Assert.That(campaign.CampaignId, Is.EqualTo("central_grid_vertical_slice"));
             Assert.That(campaign.Chapters, Has.Count.EqualTo(1));
             CampaignChapterDefinition chapter = campaign.Chapters[0];
-            Assert.That(chapter.ChapterId, Is.EqualTo("automation_plant"));
-            Assert.That(chapter.DisplayName, Is.EqualTo("Automation Plant"));
+            Assert.That(chapter.ChapterId, Is.EqualTo("central_grid"));
+            Assert.That(chapter.DisplayName, Is.EqualTo("Central Grid"));
             Assert.That(chapter.Levels, Has.Count.EqualTo(10));
             Assert.That(chapter.Levels.Select(level => level.LevelId), Is.EqualTo(
-                Enumerable.Range(1, 10).Select(index => $"automation_plant_{index:D2}")));
+                Enumerable.Range(1, 10).Select(index => $"central_grid_{index:D2}")));
             for (int index = 0; index < 10; index++)
             {
                 Assert.That(chapter.Levels[index].LevelDefinition,
-                    Is.SameAs(LoadLevel($"AP_{index + 1:D2}")));
+                    Is.SameAs(LoadLevel($"CG_{index + 1:D2}")));
                 Assert.That(chapter.Levels[index].Tutorial, Is.Null,
-                    "Automation Plant must not add onboarding metadata.");
+                    "Central Grid must not add onboarding metadata.");
             }
 
             var progress = new CampaignProgressService(campaign);
@@ -112,19 +112,19 @@ namespace NeonGrid.Tests
                 if (index < 9)
                     Assert.That(progress.IsLevelUnlocked(chapter.Levels[index + 1].LevelId), Is.True);
             }
-            Assert.That(progress.GetChapterState("automation_plant"),
+            Assert.That(progress.GetChapterState("central_grid"),
                 Is.EqualTo(CampaignChapterState.Restored));
             Assert.That(progress.TotalStars, Is.EqualTo(30));
         }
 
         [Test]
-        public void Navigation_IsGenericThroughAP10AndReplayUsesNormalFinalNavigation()
+        public void Navigation_IsGenericThroughCG10AndReplayUsesNormalFinalNavigation()
         {
             CampaignDefinition campaign = LoadCampaign();
             var flow = new CampaignFlowCoordinator(campaign,
                 new CampaignProgressService(campaign), new MemoryStore());
-            Assert.That(flow.OpenChapter("automation_plant"), Is.True);
-            Assert.That(flow.StartLevel("automation_plant_01"), Is.True);
+            Assert.That(flow.OpenChapter("central_grid"), Is.True);
+            Assert.That(flow.StartLevel("central_grid_01"), Is.True);
             for (int index = 0; index < 9; index++)
             {
                 Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.False);
@@ -132,7 +132,7 @@ namespace NeonGrid.Tests
                 AssertNormalNavigation(flow.ResultNavigation, true);
                 Assert.That(flow.StartNextLevel(), Is.True);
             }
-            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("automation_plant_10"));
+            Assert.That(flow.ActiveLevel.LevelId, Is.EqualTo("central_grid_10"));
             Assert.That(flow.IsFinalLevelInSelectedChapter(), Is.True);
             Solve(flow.ActiveSession);
             Assert.That(flow.LastProgressUpdate.ChapterJustRestored, Is.True);
@@ -148,47 +148,50 @@ namespace NeonGrid.Tests
         [Test]
         public void PartialProgress_SaveLoadAndCampaignIsolationRemainGeneric()
         {
-            CampaignDefinition automation = LoadCampaign();
-            CampaignDefinition power = Resources.Load<CampaignDefinition>(
-                "Campaigns/PowerStation_VerticalSlice");
-            CampaignDefinition substation = Resources.Load<CampaignDefinition>(
-                "Campaigns/Substation_VerticalSlice");
-            CampaignDefinition control = Resources.Load<CampaignDefinition>(
-                "Campaigns/ControlCenter_VerticalSlice");
-            string root = Path.Combine(Path.GetTempPath(), "NeonGridM10Tests",
+            CampaignDefinition central = LoadCampaign();
+            string[] otherCampaigns =
+            {
+                "PowerStation_VerticalSlice", "Substation_VerticalSlice",
+                "ControlCenter_VerticalSlice", "AutomationPlant_VerticalSlice"
+            };
+            string root = Path.Combine(Path.GetTempPath(), "NeonGridM11Tests",
                 Guid.NewGuid().ToString("N"));
-            string path = CampaignSaveStore.BuildSavePath(root, automation.CampaignId);
+            string path = CampaignSaveStore.BuildSavePath(root, central.CampaignId);
             try
             {
                 Assert.That(path, Does.EndWith(Path.Combine("NeonGrid",
-                    "automation_plant_vertical_slice", CampaignSaveStore.SaveFileName)));
-                Assert.That(path, Is.Not.EqualTo(CampaignSaveStore.BuildSavePath(root,
-                    power.CampaignId)));
-                Assert.That(path, Is.Not.EqualTo(CampaignSaveStore.BuildSavePath(root,
-                    substation.CampaignId)));
-                Assert.That(path, Is.Not.EqualTo(CampaignSaveStore.BuildSavePath(root,
-                    control.CampaignId)));
-                var progress = new CampaignProgressService(automation);
+                    "central_grid_vertical_slice", CampaignSaveStore.SaveFileName)));
+                foreach (string resourceName in otherCampaigns)
+                {
+                    CampaignDefinition other = Resources.Load<CampaignDefinition>(
+                        $"Campaigns/{resourceName}");
+                    Assert.That(other, Is.Not.Null);
+                    Assert.That(path, Is.Not.EqualTo(CampaignSaveStore.BuildSavePath(root,
+                        other.CampaignId)));
+                }
+                var progress = new CampaignProgressService(central);
                 for (int index = 0; index < 4; index++)
-                    Assert.That(Record(progress, automation.Chapters[0].Levels[index],
+                    Assert.That(Record(progress, central.Chapters[0].Levels[index],
                         index % 3 + 1).Accepted, Is.True);
                 Assert.That(new CampaignSaveStore(path).Save(progress).Succeeded, Is.True);
-                CampaignLoadResult load = new CampaignSaveStore(path).Load(automation);
+                CampaignLoadResult load = new CampaignSaveStore(path).Load(central);
                 Assert.That(load.Status, Is.EqualTo(CampaignLoadStatus.Loaded));
                 for (int index = 0; index < 4; index++)
                 {
                     LevelProgress restored = load.Progress.GetLevelProgress(
-                        $"automation_plant_{index + 1:D2}");
+                        $"central_grid_{index + 1:D2}");
                     Assert.That(restored.Completed, Is.True);
                     Assert.That(restored.BestStars, Is.EqualTo(index % 3 + 1));
                     Assert.That(restored.BestMoves, Is.EqualTo(index % 3 + 1));
                     Assert.That(restored.BestTimeSeconds, Is.EqualTo(1f));
                 }
-                Assert.That(load.Progress.IsLevelUnlocked("automation_plant_05"), Is.True);
-                Assert.That(load.Progress.IsLevelUnlocked("automation_plant_06"), Is.False);
-                Assert.That(load.Progress.GetChapterState("automation_plant"),
+                Assert.That(load.Progress.IsLevelUnlocked("central_grid_05"), Is.True);
+                Assert.That(load.Progress.IsLevelUnlocked("central_grid_06"), Is.False);
+                Assert.That(load.Progress.GetChapterState("central_grid"),
                     Is.EqualTo(CampaignChapterState.Available));
-                Assert.That(new CampaignSaveStore(path).Load(control).Status,
+                CampaignDefinition mismatch = Resources.Load<CampaignDefinition>(
+                    "Campaigns/AutomationPlant_VerticalSlice");
+                Assert.That(new CampaignSaveStore(path).Load(mismatch).Status,
                     Is.EqualTo(CampaignLoadStatus.CampaignMismatch));
             }
             finally
@@ -211,7 +214,7 @@ namespace NeonGrid.Tests
         {
             CampaignChapterDefinition chapter = LoadCampaign().Chapters[0];
             CampaignLevelEntry entry = chapter.Levels[index];
-            var root = new GameObject("Automation Plant HUD Test");
+            var root = new GameObject("Central Grid HUD Test");
             try
             {
                 var controller = root.AddComponent<BoardController>();
@@ -229,7 +232,7 @@ namespace NeonGrid.Tests
         public void Selector_UsesAcceptedThreePlusThreePlusThreePlusOneTopology()
         {
             CampaignDefinition campaign = LoadCampaign();
-            var root = new GameObject("Automation Plant Selector Test");
+            var root = new GameObject("Central Grid Selector Test");
             try
             {
                 var view = root.AddComponent<CampaignRuntimeView>();
@@ -253,10 +256,10 @@ namespace NeonGrid.Tests
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
-        [TestCase("AP_07", 4702, 7)]
-        [TestCase("AP_08", 739, 6)]
-        [TestCase("AP_09", 714, 6)]
-        [TestCase("AP_10", 2283, 9)]
+        [TestCase("CG_07", 11152, 7)]
+        [TestCase("CG_08", 17798, 9)]
+        [TestCase("CG_09", 15941, 9)]
+        [TestCase("CG_10", 45741, 10)]
         public void RuntimeHint_InitialStateStaysWithinExistingBudget(string name,
             int explored, int depth)
         {
@@ -275,14 +278,14 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void RuntimeHint_AP10MeaningfulMemoryOnlyScrambleDoesNotMutateAsset()
+        public void RuntimeHint_CG10MeaningfulMemoryOnlyScrambleDoesNotMutateAsset()
         {
-            LevelDefinition level = LoadLevel("AP_10");
+            LevelDefinition level = LoadLevel("CG_10");
             string path = Path.GetFullPath(
-                "Assets/NeonGrid/Resources/Levels/AutomationPlant/AP_10.asset");
+                "Assets/NeonGrid/Resources/Levels/CentralGrid/CG_10.asset");
             string before = Hash(path);
             BoardState board = level.CreateBoardState();
-            var scramble = new PuzzleAction(new GridPosition(2, 0),
+            var scramble = new PuzzleAction(new GridPosition(1, 0),
                 PuzzleActionType.RotateClockwise);
             Assert.That(board.TryApplyAction(scramble), Is.True);
             var timer = Stopwatch.StartNew();
@@ -293,7 +296,7 @@ namespace NeonGrid.Tests
             Assert.That(result.ExploredStateCount,
                 Is.LessThan(PuzzleSolverProfiles.RuntimeHint.MaximumExploredStates));
             Assert.That(Hash(path), Is.EqualTo(before));
-            TestContext.WriteLine($"AP_10 RuntimeHint after {scramble}: status={result.Status}, " +
+            TestContext.WriteLine($"CG_10 RuntimeHint after {scramble}: status={result.Status}, " +
                                   $"explored={result.ExploredStateCount}, " +
                                   $"depth={result.DeepestSearchDepth}, " +
                                   $"ms={timer.Elapsed.TotalMilliseconds:F2}, " +
@@ -301,9 +304,9 @@ namespace NeonGrid.Tests
         }
 
         [UnityTest]
-        public IEnumerator AP10_RealBackgroundHintReachesTerminalStateThroughMainThreadPump()
+        public IEnumerator CG10_RealBackgroundHintReachesTerminalStateThroughMainThreadPump()
         {
-            var session = new GameplaySession(LoadLevel("AP_10"), 9);
+            var session = new GameplaySession(LoadLevel("CG_10"), 10);
             session.AdvanceTime(GameplaySession.HintUnlockSeconds);
             Assert.That(session.RequestHint().Status, Is.EqualTo(HintStatus.HintSearching));
             var watchdog = Stopwatch.StartNew();
@@ -316,15 +319,15 @@ namespace NeonGrid.Tests
             Assert.That(session.IsHintSearchInProgress, Is.False);
             Assert.That(session.LastHint.Status, Is.EqualTo(HintStatus.HintAvailable));
             Assert.That(session.LastHint.SuggestedAction.HasValue, Is.True);
-            TestContext.WriteLine($"AP_10 async RuntimeHint delivery: elapsedMs={watchdog.Elapsed.TotalMilliseconds:F2}, " +
+            TestContext.WriteLine($"CG_10 async RuntimeHint delivery: elapsedMs={watchdog.Elapsed.TotalMilliseconds:F2}, " +
                                   $"status={session.LastHint.Status}");
             session.Dispose();
         }
 
         [TestCase(6, 7)]
-        [TestCase(7, 6)]
-        [TestCase(8, 6)]
-        [TestCase(9, 9)]
+        [TestCase(7, 9)]
+        [TestCase(8, 9)]
+        [TestCase(9, 10)]
         public void RuntimeSession_UsesAuthoredBaselineWithoutStartupSearch(int index, int optimum)
         {
             CampaignLevelEntry entry = LoadCampaign().Chapters[0].Levels[index];
@@ -338,9 +341,9 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void RuntimeScene_UsesAutomationPlantCampaignAndIsEnabledInBuildSettings()
+        public void RuntimeScene_UsesCentralGridCampaignAndIsEnabledInBuildSettings()
         {
-            const string path = "Assets/NeonGrid/Scenes/M10_AutomationPlant_VerticalSlice.unity";
+            const string path = "Assets/NeonGrid/Scenes/M11_CentralGrid_VerticalSlice.unity";
             CampaignDefinition campaign = LoadCampaign();
             Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(path), Is.Not.Null);
             Assert.That(EditorBuildSettings.scenes.Any(scene => scene.enabled && scene.path == path),
@@ -368,7 +371,7 @@ namespace NeonGrid.Tests
         private static LevelDefinition LoadLevel(string name)
         {
             LevelDefinition level = Resources.Load<LevelDefinition>(
-                $"Levels/AutomationPlant/{name}");
+                $"Levels/CentralGrid/{name}");
             Assert.That(level, Is.Not.Null, $"Missing {name}.");
             return level;
         }
@@ -376,7 +379,7 @@ namespace NeonGrid.Tests
         private static CampaignDefinition LoadCampaign()
         {
             CampaignDefinition campaign = Resources.Load<CampaignDefinition>(
-                "Campaigns/AutomationPlant_VerticalSlice");
+                "Campaigns/CentralGrid_VerticalSlice");
             Assert.That(campaign, Is.Not.Null);
             return campaign;
         }
@@ -415,7 +418,7 @@ namespace NeonGrid.Tests
 
         private sealed class MemoryStore : ICampaignProgressStore
         {
-            public string SavePath => "memory://automation-plant";
+            public string SavePath => "memory://central-grid";
             public CampaignLoadResult Load(CampaignDefinition campaign) =>
                 new CampaignLoadResult(CampaignLoadStatus.NoSaveFound,
                     new CampaignProgressService(campaign), Array.Empty<string>());

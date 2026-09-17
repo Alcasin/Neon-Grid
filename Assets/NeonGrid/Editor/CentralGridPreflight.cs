@@ -7,17 +7,20 @@ using UnityEditor;
 
 namespace NeonGrid.Editor
 {
-    /// <summary>Read-only M10 content gate; it never dirties or saves production assets.</summary>
-    public static class AutomationPlantPreflight
+    /// <summary>Read-only M11 content gate; it never dirties or saves production assets.</summary>
+    public static class CentralGridPreflight
     {
-        private static readonly int[] ExpectedMinima = { 5, 6, 8, 5, 6, 7, 7, 6, 6, 9 };
+        private static readonly int[] ExpectedMinima = { 5, 6, 6, 6, 5, 7, 7, 9, 9, 10 };
+        private static readonly int[] ExpectedStates =
+            { 5975, 21609, 14100, 23443, 5582, 4278, 11152, 17798, 15941, 45741 };
+        private static readonly int[] ExpectedDepths = { 5, 6, 6, 6, 5, 7, 7, 9, 9, 10 };
 
         public static void Run()
         {
             for (int index = 0; index < ExpectedMinima.Length; index++)
             {
-                string name = $"AP_{index + 1:D2}";
-                string path = $"Assets/NeonGrid/Resources/Levels/AutomationPlant/{name}.asset";
+                string name = $"CG_{index + 1:D2}";
+                string path = $"Assets/NeonGrid/Resources/Levels/CentralGrid/{name}.asset";
                 LevelDefinition level = AssetDatabase.LoadAssetAtPath<LevelDefinition>(path);
                 if (level == null) throw new InvalidOperationException($"Missing {path}.");
 
@@ -28,18 +31,22 @@ namespace NeonGrid.Editor
                     : null;
                 timer.Stop();
                 string issues = string.Join(" | ", validation.Errors);
-                UnityEngine.Debug.Log($"M10 PREFLIGHT {name} path={path} size={level.Width}x{level.Height} " +
+                UnityEngine.Debug.Log($"M11 PREFLIGHT {name} path={path} size={level.Width}x{level.Height} " +
                     $"valid={validation.IsValid} warnings={validation.Warnings.Count} " +
                     $"status={result?.Status.ToString() ?? "NotRun"} minimum={result?.MinimumMoveCount ?? -1} " +
                     $"explored={result?.ExploredStateCount ?? -1} depth={result?.DeepestSearchDepth ?? -1} " +
                     $"ms={timer.Elapsed.TotalMilliseconds:F2} solution={Format(result)} issues={issues}");
 
-                if (!validation.IsValid || result.Status != PuzzleSolverStatus.Solved ||
-                    result.MinimumMoveCount != ExpectedMinima[index])
-                    throw new InvalidOperationException($"M10 preflight failed for {name}; production content was not changed.");
+                if (!validation.IsValid || result == null || result.Status != PuzzleSolverStatus.Solved ||
+                    result.MinimumMoveCount != ExpectedMinima[index] ||
+                    result.ExploredStateCount != ExpectedStates[index] ||
+                    result.DeepestSearchDepth != ExpectedDepths[index])
+                    throw new InvalidOperationException(
+                        $"M11 preflight failed for {name}; production content was not changed.");
             }
 
-            UnityEngine.Debug.Log("M10 PREFLIGHT PASSED: all Automation Plant assets structurally valid with expected exact minima.");
+            UnityEngine.Debug.Log(
+                "M11 PREFLIGHT PASSED: all Central Grid assets match expected validation and exact results.");
         }
 
         private static string Format(PuzzleSolverResult result)
