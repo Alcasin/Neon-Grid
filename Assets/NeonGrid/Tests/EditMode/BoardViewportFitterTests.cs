@@ -127,6 +127,43 @@ namespace NeonGrid.Tests
                 screenWidth, screenHeight);
         }
 
+        [TestCase("PowerStation", "PS_01", 1080, 1920)]
+        [TestCase("PowerStation", "PS_01", 1080, 2340)]
+        [TestCase("PowerStation", "PS_01", 720, 1280)]
+        [TestCase("PowerStation", "PS_10", 1080, 1920)]
+        [TestCase("PowerStation", "PS_10", 1080, 2340)]
+        [TestCase("PowerStation", "PS_10", 720, 1280)]
+        [TestCase("Substation", "S_01", 1080, 1920)]
+        [TestCase("Substation", "S_01", 1080, 2340)]
+        [TestCase("Substation", "S_01", 720, 1280)]
+        [TestCase("Substation", "S_10", 1080, 1920)]
+        [TestCase("Substation", "S_10", 1080, 2340)]
+        [TestCase("Substation", "S_10", 720, 1280)]
+        [TestCase("ControlCenter", "CC_01", 1080, 1920)]
+        [TestCase("ControlCenter", "CC_01", 1080, 2340)]
+        [TestCase("ControlCenter", "CC_01", 720, 1280)]
+        [TestCase("ControlCenter", "CC_10", 1080, 1920)]
+        [TestCase("ControlCenter", "CC_10", 1080, 2340)]
+        [TestCase("ControlCenter", "CC_10", 720, 1280)]
+        [TestCase("AutomationPlant", "AP_01", 1080, 1920)]
+        [TestCase("AutomationPlant", "AP_01", 1080, 2340)]
+        [TestCase("AutomationPlant", "AP_01", 720, 1280)]
+        [TestCase("AutomationPlant", "AP_10", 1080, 1920)]
+        [TestCase("AutomationPlant", "AP_10", 1080, 2340)]
+        [TestCase("AutomationPlant", "AP_10", 720, 1280)]
+        [TestCase("CentralGrid", "CG_01", 1080, 1920)]
+        [TestCase("CentralGrid", "CG_01", 1080, 2340)]
+        [TestCase("CentralGrid", "CG_01", 720, 1280)]
+        [TestCase("CentralGrid", "CG_10", 1080, 1920)]
+        [TestCase("CentralGrid", "CG_10", 1080, 2340)]
+        [TestCase("CentralGrid", "CG_10", 720, 1280)]
+        public void MainCampaignRepresentativeBoards_UseGenericPortraitFit(string directory,
+            string assetName, int screenWidth, int screenHeight)
+        {
+            AssertProductionBoardFits($"Levels/{directory}/{assetName}", assetName,
+                screenWidth, screenHeight);
+        }
+
         private static void AssertProductionBoardFits(string resourcePath, string assetName,
             int screenWidth, int screenHeight)
         {

@@ -47,5 +47,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/NeonGrid/Scenes/M11_CentralGrid_VerticalSlice.unity
     guid: deefc9a2534701148af3095e1c308b1a
+  - enabled: 1
+    path: Assets/NeonGrid/Scenes/M12_NeonGrid_Main.unity
+    guid: 5c16a5127bfcb0540884293a05074a14
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

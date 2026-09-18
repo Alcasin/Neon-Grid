@@ -73,6 +73,16 @@ namespace NeonGrid.Campaign
 
         public CampaignDefinition Campaign { get; }
         public int MaximumCampaignStars { get; }
+        public bool IsCampaignComplete
+        {
+            get
+            {
+                foreach (CampaignChapterDefinition chapter in Campaign.Chapters)
+                    if (!IsChapterRestored(chapter.ChapterId))
+                        return false;
+                return true;
+            }
+        }
         public int TotalStars
         {
             get

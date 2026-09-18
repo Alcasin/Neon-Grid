@@ -8,16 +8,20 @@ namespace NeonGrid.Data
     public sealed class CampaignDefinition : ScriptableObject
     {
         [SerializeField] private string campaignId = "campaign";
+        [SerializeField] private string displayName = "Campaign";
         [SerializeField] private List<CampaignChapterDefinition> chapters =
             new List<CampaignChapterDefinition>();
 
         public string CampaignId => campaignId;
+        public string DisplayName => displayName;
         public IReadOnlyList<CampaignChapterDefinition> Chapters => chapters;
 
 #if UNITY_EDITOR
-        public void SetData(string newCampaignId, IEnumerable<CampaignChapterDefinition> newChapters)
+        public void SetData(string newCampaignId, IEnumerable<CampaignChapterDefinition> newChapters,
+            string newDisplayName = null)
         {
             campaignId = newCampaignId;
+            if (!string.IsNullOrWhiteSpace(newDisplayName)) displayName = newDisplayName;
             chapters = newChapters == null
                 ? null
                 : new List<CampaignChapterDefinition>(newChapters);

@@ -1,0 +1,367 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd9ca009eb0a99949b3649aaba97e6c3, type: 3}
+  m_Name: NeonGrid_Main
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
+  campaignId: neon_grid_main
+  displayName: Neon Grid
+  chapters:
+  - chapterId: power_station
+    displayName: Power Station
+    levels:
+    - levelId: power_01
+      displayName: Power Circuit 01
+      levelDefinition: {fileID: 11400000, guid: 24d6b5a6f9ac7ea4d932b35d6f3dc956, type: 2}
+      tutorial:
+        steps:
+        - message: Tap a wire to rotate it.
+          targetPosition:
+            x: 1
+            y: 0
+          completionCondition: 0
+      authoredOptimalMoves: 1
+    - levelId: power_02
+      displayName: Power Circuit 02
+      levelDefinition: {fileID: 11400000, guid: 6ef32ab7ddf40584dae2049c8619d469, type: 2}
+      tutorial:
+        steps:
+        - message: Corner wires redirect the current.
+          targetPosition:
+            x: 1
+            y: 0
+          completionCondition: 0
+      authoredOptimalMoves: 1
+    - levelId: power_03
+      displayName: Power Circuit 03
+      levelDefinition: {fileID: 11400000, guid: eed73d85e6671504db936a904119a2b4, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: power_04
+      displayName: Power Circuit 04
+      levelDefinition: {fileID: 11400000, guid: 75c249eec4e965f4aa0098a33c4c0ca7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: power_05
+      displayName: Power Circuit 05
+      levelDefinition: {fileID: 11400000, guid: 819aba00532a7b642b8b7c570a9b9335, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: power_06
+      displayName: Power Circuit 06
+      levelDefinition: {fileID: 11400000, guid: 8e4b4d75334a2e241ab0d27b9cc27bc8, type: 2}
+      tutorial:
+        steps:
+        - message: T-junctions split power into multiple paths.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 0
+      authoredOptimalMoves: 3
+    - levelId: power_07
+      displayName: Power Circuit 07
+      levelDefinition: {fileID: 11400000, guid: 5ba7a73386d55124bb92539abc69f9d8, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: power_08
+      displayName: Power Circuit 08
+      levelDefinition: {fileID: 11400000, guid: 165d0c0ef9e483b4f8a6f7a0b2c092f6, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: power_09
+      displayName: Power Circuit 09
+      levelDefinition: {fileID: 11400000, guid: b2ed3f5f2e30a5944843310ae52d9b5a, type: 2}
+      tutorial:
+        steps:
+        - message: Diodes only allow power in one direction.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 0
+      authoredOptimalMoves: 2
+    - levelId: power_10
+      displayName: Power Circuit 10
+      levelDefinition: {fileID: 11400000, guid: bc3b3039f1ff0d9499cea78c9637b65e, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+  - chapterId: substation
+    displayName: Substation
+    levels:
+    - levelId: substation_01
+      displayName: Substation Circuit 1
+      levelDefinition: {fileID: 11400000, guid: 2d44c7e1b12115446bd44ceaca532557, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: substation_02
+      displayName: Substation Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 782c8652e6c117e408c449dde543589e, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: substation_03
+      displayName: Substation Circuit 3
+      levelDefinition: {fileID: 11400000, guid: 8124ce478f2afd54abb2e363af1f80e4, type: 2}
+      tutorial:
+        steps:
+        - message: Switches can open or close a circuit.
+          targetPosition:
+            x: 2
+            y: 1
+          completionCondition: 1
+      authoredOptimalMoves: 3
+    - levelId: substation_04
+      displayName: Substation Circuit 4
+      levelDefinition: {fileID: 11400000, guid: f60415b0a4511e949b8c0c43a66fc5ac, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: substation_05
+      displayName: Substation Circuit 5
+      levelDefinition: {fileID: 11400000, guid: 3a2d7bf98854a004da9db229047f8335, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: substation_06
+      displayName: Substation Circuit 6
+      levelDefinition: {fileID: 11400000, guid: 70ba464329c1d964cb32edbee6c844a1, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: substation_07
+      displayName: Substation Circuit 7
+      levelDefinition: {fileID: 11400000, guid: a305961522ec721438e089876332a00f, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: substation_08
+      displayName: Substation Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 5b38787b62030834291942c28a6e88ed, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: substation_09
+      displayName: Substation Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 19bd91d4730387f42aeac92a8f7dfd8a, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: substation_10
+      displayName: Substation Circuit 10
+      levelDefinition: {fileID: 11400000, guid: 68f1c4da136b06a45898bc8ffc996f1e, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+  - chapterId: control_center
+    displayName: Control Center
+    levels:
+    - levelId: control_center_01
+      displayName: Control Center Circuit 1
+      levelDefinition: {fileID: 11400000, guid: 96264bf64715cc34db7faeb6d9c9df17, type: 2}
+      tutorial:
+        steps:
+        - message: AND gates require all inputs to be powered.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 2
+      authoredOptimalMoves: 4
+    - levelId: control_center_02
+      displayName: Control Center Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 71adf2a4c6202204cae2b7d973994531, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: control_center_03
+      displayName: Control Center Circuit 3
+      levelDefinition: {fileID: 11400000, guid: fe9ec6e3da06509488324da4e223ab11, type: 2}
+      tutorial:
+        steps:
+        - message: OR gates activate when any input is powered.
+          targetPosition:
+            x: 2
+            y: 2
+          completionCondition: 2
+      authoredOptimalMoves: 1
+    - levelId: control_center_04
+      displayName: Control Center Circuit 4
+      levelDefinition: {fileID: 11400000, guid: 2761cda8f15fb424389c17153362a056, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: control_center_05
+      displayName: Control Center Circuit 5
+      levelDefinition: {fileID: 11400000, guid: ddf6afb1af9c4154db3db20175ad7664, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: control_center_06
+      displayName: Control Center Circuit 6
+      levelDefinition: {fileID: 11400000, guid: 2aae837f020c3f843b306efb26ac1521, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 3
+    - levelId: control_center_07
+      displayName: Control Center Circuit 7
+      levelDefinition: {fileID: 11400000, guid: 834e00cd336967d4f8481c9052fd04d7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 4
+    - levelId: control_center_08
+      displayName: Control Center Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 523c92691a962454a9bc6f7ba96409e2, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: control_center_09
+      displayName: Control Center Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 1d8f9e7c7755c53478b67906978b2e63, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: control_center_10
+      displayName: Control Center Circuit 10
+      levelDefinition: {fileID: 11400000, guid: ef7e76c96ffcaa1438c3a313dc0fbff7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 8
+  - chapterId: automation_plant
+    displayName: Automation Plant
+    levels:
+    - levelId: automation_plant_01
+      displayName: Automation Plant Circuit 1
+      levelDefinition: {fileID: 11400000, guid: a4580555e474be34b8f570e6711567c2, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: automation_plant_02
+      displayName: Automation Plant Circuit 2
+      levelDefinition: {fileID: 11400000, guid: 3fc4655ffe71d964a90076edba9b20aa, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_03
+      displayName: Automation Plant Circuit 3
+      levelDefinition: {fileID: 11400000, guid: 5e10d1e93139fd04c8b35a0905b24416, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 8
+    - levelId: automation_plant_04
+      displayName: Automation Plant Circuit 4
+      levelDefinition: {fileID: 11400000, guid: 4c8ccfa1842fc4b41806d830016c0b57, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: automation_plant_05
+      displayName: Automation Plant Circuit 5
+      levelDefinition: {fileID: 11400000, guid: 7d2835297ef8dab408c5a540cdef90ab, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_06
+      displayName: Automation Plant Circuit 6
+      levelDefinition: {fileID: 11400000, guid: ca9ba57c8455b9b4791aaa57ae0f21b7, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: automation_plant_07
+      displayName: Automation Plant Circuit 7
+      levelDefinition: {fileID: 11400000, guid: 3c74627225b777546a11d41baf6741de, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: automation_plant_08
+      displayName: Automation Plant Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 7e979cd866e7a4947a725beca07d7fc5, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_09
+      displayName: Automation Plant Circuit 9
+      levelDefinition: {fileID: 11400000, guid: 722c90cb660450e4498a1c4b1e76d68b, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: automation_plant_10
+      displayName: Automation Plant Circuit 10
+      levelDefinition: {fileID: 11400000, guid: e295b54905c51474ba1449daaea463e5, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 9
+  - chapterId: central_grid
+    displayName: Central Grid
+    levels:
+    - levelId: central_grid_01
+      displayName: Central Grid Circuit 1
+      levelDefinition: {fileID: 11400000, guid: a44bf9923d703ea4aa82e1bc077285e8, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: central_grid_02
+      displayName: Central Grid Circuit 2
+      levelDefinition: {fileID: 11400000, guid: ffc0041f5b4a8cd4691452dfe0462233, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: central_grid_03
+      displayName: Central Grid Circuit 3
+      levelDefinition: {fileID: 11400000, guid: 07eb766c8af65cc4dad9faad91589723, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: central_grid_04
+      displayName: Central Grid Circuit 4
+      levelDefinition: {fileID: 11400000, guid: 85c6ffab63804ae4d94130aaae58c39d, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 6
+    - levelId: central_grid_05
+      displayName: Central Grid Circuit 5
+      levelDefinition: {fileID: 11400000, guid: 1fdbe25287e0a6f49a1b19f769ad1f28, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 5
+    - levelId: central_grid_06
+      displayName: Central Grid Circuit 6
+      levelDefinition: {fileID: 11400000, guid: 1af4edffb4e44fd4e86ea6c4b8a59144, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: central_grid_07
+      displayName: Central Grid Circuit 7
+      levelDefinition: {fileID: 11400000, guid: 6753662f990e650449f42528cfbe8338, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 7
+    - levelId: central_grid_08
+      displayName: Central Grid Circuit 8
+      levelDefinition: {fileID: 11400000, guid: 74482082ae18d234c8194d45a22e0078, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 9
+    - levelId: central_grid_09
+      displayName: Central Grid Circuit 9
+      levelDefinition: {fileID: 11400000, guid: a93e4dd6042916f469ef650fc7015b50, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 9
+    - levelId: central_grid_10
+      displayName: Central Grid Circuit 10
+      levelDefinition: {fileID: 11400000, guid: fdc6a5f69d8d8cf4a8781ce44627bd60, type: 2}
+      tutorial:
+        steps: []
+      authoredOptimalMoves: 10
