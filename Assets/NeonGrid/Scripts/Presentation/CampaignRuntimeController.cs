@@ -9,6 +9,7 @@ namespace NeonGrid.Presentation
         [SerializeField] private CampaignDefinition campaign;
 
         private CampaignRuntimeView campaignView;
+        private CityRestorationSequenceController restorationSequence;
         private GameObject boardRoot;
 
         public CampaignFlowCoordinator Flow { get; private set; }
@@ -42,7 +43,9 @@ namespace NeonGrid.Presentation
             campaignView = gameObject.AddComponent<CampaignRuntimeView>();
             campaignView.Build(definition, load.Progress, id => OpenChapter(id),
                 id => StartLevel(id), ShowMap);
-            campaignView.ShowMap();
+            restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
+            restorationSequence.Initialize(campaignView, Flow);
+            restorationSequence.EnterMap();
         }
 
         private void OnDestroy()
@@ -69,7 +72,7 @@ namespace NeonGrid.Presentation
         {
             DestroyBoard();
             Flow.ReturnToMap();
-            campaignView.ShowMap();
+            restorationSequence.EnterMap();
         }
 
         public void ShowCurrentChapter()

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
@@ -33,13 +32,13 @@ namespace NeonGrid.Presentation
         private GameObject canvasObject;
         private GameObject mapPanel;
         private GameObject levelPanel;
-        private GameObject restorationOverlay;
+        private CanvasGroup mapInteraction;
         private Text totalStarsText;
-        private Text restorationText;
-        private Coroutine restorationRoutine;
         private bool usesCityMap;
 
         public bool UsesCityMap => usesCityMap;
+        public bool IsMapInteractionEnabled => mapInteraction != null && mapInteraction.interactable &&
+                                               mapInteraction.blocksRaycasts;
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
             Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap)
@@ -66,6 +65,7 @@ namespace NeonGrid.Presentation
 
             mapPanel = CreatePanel(canvasObject.transform, "Campaign Map", Vector2.zero, Vector2.one,
                 Vector2.zero, Vector2.zero, Color.clear);
+            mapInteraction = mapPanel.AddComponent<CanvasGroup>();
             if (CityMapLayoutCatalog.TryGet(campaign, out CityMapLayoutDefinition cityLayout))
                 BuildProductionCityMap(font, cityLayout);
             else
@@ -79,14 +79,6 @@ namespace NeonGrid.Presentation
                 new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
                 new Vector2(420f, 100f), onBackToMap);
 
-            restorationOverlay = CreatePanel(canvasObject.transform, "Restoration Feedback",
-                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero,
-                new Color(0.02f, 0.1f, 0.16f, 0.88f));
-            restorationText = CreateText(restorationOverlay.transform, "Message", string.Empty, font,
-                ProgrammerUiMetrics.RestorationFontSize,
-                TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(900f, 240f));
-            restorationOverlay.SetActive(false);
         }
 
         private void BuildFallbackMap(Font font)
@@ -328,19 +320,133 @@ namespace NeonGrid.Presentation
 
         public void ShowMap()
         {
+            PrepareMapSurface();
+            if (usesCityMap)
+                PresentProductionCityMap();
+            else
+                PresentFallbackMap();
+            SetMapInteractionEnabled(true);
             SetVisible(true);
+        }
+
+        internal bool TryPrepareRestoration(ChapterRestorationEvent restorationEvent,
+            out CityRestorationSequencePlan plan)
+        {
+            plan = null;
+            if (!usesCityMap || restorationEvent == null ||
+                restorationEvent.RestoredChapterIndex < 0 ||
+                restorationEvent.RestoredChapterIndex >= campaign.Chapters.Count)
+                return false;
+
+            int restoredIndex = restorationEvent.RestoredChapterIndex;
+            CampaignChapterDefinition restoredChapter = campaign.Chapters[restoredIndex];
+            if (!string.Equals(restoredChapter.ChapterId, restorationEvent.RestoredChapterId,
+                    StringComparison.Ordinal) || !cityNodes.ContainsKey(restoredChapter.ChapterId))
+                return false;
+
+            int pathIndex = -1;
+            CampaignChapterDefinition nextChapter = null;
+            if (restorationEvent.HasNextChapter)
+            {
+                int nextIndex = restoredIndex + 1;
+                if (nextIndex >= campaign.Chapters.Count ||
+                    !string.Equals(campaign.Chapters[nextIndex].ChapterId,
+                        restorationEvent.NextChapterId, StringComparison.Ordinal) ||
+                    !cityNodes.ContainsKey(restorationEvent.NextChapterId))
+                    return false;
+                pathIndex = cityPaths.FindIndex(path =>
+                    path.FromIndex == restoredIndex && path.ToIndex == nextIndex);
+                if (pathIndex < 0) return false;
+                nextChapter = campaign.Chapters[nextIndex];
+            }
+
+            int previousCompleted = Mathf.Max(0, restoredChapter.Levels.Count - 1);
+            ChapterMapVisualState previousState =
+                CityMapPresentationModel.GetChapterVisualState(CampaignChapterState.Available,
+                    previousCompleted, restoredChapter.Levels.Count);
+            plan = new CityRestorationSequencePlan(restorationEvent, pathIndex, previousState);
+
+            PrepareMapSurface();
+            PresentProductionCityMap();
+            int restoredStars = CityMapPresentationModel.GetChapterStars(progress, restoredChapter);
+            cityNodes[restoredChapter.ChapterId].Present(previousState,
+                $"{restoredChapter.DisplayName}\nPOWERING UP\n" +
+                $"★ {restoredStars} / {restoredChapter.Levels.Count * 3}");
+            if (nextChapter != null)
+            {
+                cityNodes[nextChapter.ChapterId].Present(ChapterMapVisualState.Locked,
+                    $"{nextChapter.DisplayName}\nLOCKED");
+                cityPaths[pathIndex].Present(CityEnergyPathState.Locked);
+            }
+            SetMapInteractionEnabled(false);
+            SetVisible(true);
+            return true;
+        }
+
+        internal void ApplyRestoredNodePowerUp(CityRestorationSequencePlan plan, float progressValue)
+        {
+            CityChapterNodeView node = cityNodes[plan.RestoredChapterId];
+            node.ApplyPowerUp(progressValue);
+            if (progressValue >= 1f)
+            {
+                CampaignChapterDefinition chapter = progress.FindChapter(plan.RestoredChapterId);
+                int stars = CityMapPresentationModel.GetChapterStars(progress, chapter);
+                node.Label.text = $"{chapter.DisplayName}\nRESTORED\n" +
+                                  $"★ {stars} / {chapter.Levels.Count * 3}";
+            }
+        }
+
+        internal void ApplyEnergyTravel(CityRestorationSequencePlan plan, float progressValue)
+        {
+            if (plan.EnergyPathIndex >= 0)
+                cityPaths[plan.EnergyPathIndex].ApplyEnergyTravel(progressValue);
+        }
+
+        internal void ApplyNextChapterReveal(CityRestorationSequencePlan plan, float progressValue)
+        {
+            if (plan.HasNextChapter)
+            {
+                CityChapterNodeView node = cityNodes[plan.NextChapterId];
+                node.ApplyAvailableReveal(progressValue);
+                if (progressValue >= 1f)
+                {
+                    CampaignChapterDefinition chapter = progress.FindChapter(plan.NextChapterId);
+                    int completed = progress.GetCompletedLevelCount(plan.NextChapterId);
+                    int stars = CityMapPresentationModel.GetChapterStars(progress, chapter);
+                    node.Label.text = $"{chapter.DisplayName}\n{completed} / {chapter.Levels.Count}\n" +
+                                      $"★ {stars} / {chapter.Levels.Count * 3}";
+                }
+            }
+        }
+
+        internal void RestoreAuthoritativeMap(bool interactionEnabled)
+        {
+            PrepareMapSurface();
+            if (usesCityMap)
+                PresentProductionCityMap();
+            else
+                PresentFallbackMap();
+            SetMapInteractionEnabled(interactionEnabled);
+            SetVisible(true);
+        }
+
+        internal void SetMapInteractionEnabled(bool enabled)
+        {
+            mapInteraction.interactable = enabled;
+            mapInteraction.blocksRaycasts = enabled;
+        }
+
+        private void PrepareMapSurface()
+        {
             mapPanel.SetActive(true);
             levelPanel.SetActive(false);
             totalStarsText.text = usesCityMap
                 ? $"★ {progress.TotalStars} / {progress.MaximumCampaignStars}"
                 : $"Stars: {progress.TotalStars} / {progress.MaximumCampaignStars}";
+        }
 
-            if (usesCityMap)
-            {
-                PresentProductionCityMap();
-                return;
-            }
-
+        private void PresentFallbackMap()
+        {
             foreach (CampaignChapterDefinition chapter in campaign.Chapters)
             {
                 CampaignChapterState state = progress.GetChapterState(chapter.ChapterId);
@@ -499,33 +605,6 @@ namespace NeonGrid.Presentation
             shackle.raycastTarget = false;
             opening.raycastTarget = false;
             body.raycastTarget = false;
-        }
-
-        public void PlayRestoration(string chapterId)
-        {
-            CampaignChapterDefinition chapter = progress.FindChapter(chapterId);
-            if (chapter == null) return;
-            if (restorationRoutine != null) StopCoroutine(restorationRoutine);
-            restorationText.text = $"{chapter.DisplayName.ToUpperInvariant()} RESTORED";
-            restorationRoutine = StartCoroutine(RestorationSequence());
-        }
-
-        private IEnumerator RestorationSequence()
-        {
-            restorationOverlay.SetActive(true);
-            restorationOverlay.transform.SetAsLastSibling();
-            float elapsed = 0f;
-            while (elapsed < 2f)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float pulse = 1f + Mathf.Sin(elapsed * 8f) * 0.04f;
-                restorationText.rectTransform.localScale = Vector3.one * pulse;
-                yield return null;
-            }
-
-            restorationText.rectTransform.localScale = Vector3.one;
-            restorationOverlay.SetActive(false);
-            restorationRoutine = null;
         }
 
         private void ClearGeneratedLevelContent()

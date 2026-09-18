@@ -33,6 +33,11 @@ namespace NeonGrid.Presentation
         public const float SelectorGridTopInset = 280f;
         public const float SelectorBackButtonCenterY = 360f;
         public const float CityAvailablePulseSeconds = 2f;
+        public const float CityRestorationFocusSeconds = 0.2f;
+        public const float CityRestorationPowerUpSeconds = 0.85f;
+        public const float CityRestorationEnergyTravelSeconds = 1f;
+        public const float CityRestorationRevealSeconds = 0.55f;
+        public const float CityRestorationSettleSeconds = 0.25f;
         public const float CityCompositionWidth = 1020f;
         public const float CityCompositionHeight = 1500f;
     }
