@@ -16,6 +16,9 @@ namespace NeonGrid.Presentation
         public const int ChapterCardFontSize = 40;
         public const int ChapterTitleFontSize = 72;
         public const int RestorationFontSize = 70;
+        public const int CityMapHeaderFontSize = 68;
+        public const int CityMapStarsFontSize = 44;
+        public const int CityNodeLabelFontSize = 30;
 
         public const float TopHudInset = 52f;
         public const float HudLevelIdentityTopInset = 48f;
@@ -29,5 +32,8 @@ namespace NeonGrid.Presentation
         public const float SelectorVerticalSpacing = 48f;
         public const float SelectorGridTopInset = 280f;
         public const float SelectorBackButtonCenterY = 360f;
+        public const float CityAvailablePulseSeconds = 2f;
+        public const float CityCompositionWidth = 1020f;
+        public const float CityCompositionHeight = 1500f;
     }
 }

@@ -23,6 +23,9 @@ namespace NeonGrid.Presentation
 
         private readonly Dictionary<string, ChapterButton> chapterButtons =
             new Dictionary<string, ChapterButton>(StringComparer.Ordinal);
+        private readonly Dictionary<string, CityChapterNodeView> cityNodes =
+            new Dictionary<string, CityChapterNodeView>(StringComparer.Ordinal);
+        private readonly List<CityEnergyPathView> cityPaths = new List<CityEnergyPathView>();
         private CampaignDefinition campaign;
         private CampaignProgressService progress;
         private Action<string> openChapter;
@@ -34,6 +37,9 @@ namespace NeonGrid.Presentation
         private Text totalStarsText;
         private Text restorationText;
         private Coroutine restorationRoutine;
+        private bool usesCityMap;
+
+        public bool UsesCityMap => usesCityMap;
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
             Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap)
@@ -60,6 +66,32 @@ namespace NeonGrid.Presentation
 
             mapPanel = CreatePanel(canvasObject.transform, "Campaign Map", Vector2.zero, Vector2.one,
                 Vector2.zero, Vector2.zero, Color.clear);
+            if (CityMapLayoutCatalog.TryGet(campaign, out CityMapLayoutDefinition cityLayout))
+                BuildProductionCityMap(font, cityLayout);
+            else
+                BuildFallbackMap(font);
+
+            levelPanel = CreatePanel(canvasObject.transform, "Level Selection", Vector2.zero, Vector2.one,
+                Vector2.zero, Vector2.zero, Panel);
+            levelPanel.SetActive(false);
+            CreateButton(levelPanel.transform, "Back To Map", "BACK TO MAP", font,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
+                new Vector2(420f, 100f), onBackToMap);
+
+            restorationOverlay = CreatePanel(canvasObject.transform, "Restoration Feedback",
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero,
+                new Color(0.02f, 0.1f, 0.16f, 0.88f));
+            restorationText = CreateText(restorationOverlay.transform, "Message", string.Empty, font,
+                ProgrammerUiMetrics.RestorationFontSize,
+                TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(900f, 240f));
+            restorationOverlay.SetActive(false);
+        }
+
+        private void BuildFallbackMap(Font font)
+        {
+            usesCityMap = false;
             CreateText(mapPanel.transform, "Title", "NEON GRID - TEST CITY", font,
                 ProgrammerUiMetrics.MapTitleFontSize,
                 TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -80,23 +112,213 @@ namespace NeonGrid.Presentation
                 chapterButtons.Add(chapter.ChapterId,
                     new ChapterButton(button, button.transform.Find("Label").GetComponent<Text>()));
             }
+        }
 
-            levelPanel = CreatePanel(canvasObject.transform, "Level Selection", Vector2.zero, Vector2.one,
-                Vector2.zero, Vector2.zero, Panel);
-            levelPanel.SetActive(false);
-            CreateButton(levelPanel.transform, "Back To Map", "BACK TO MAP", font,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
-                new Vector2(420f, 100f), onBackToMap);
+        private void BuildProductionCityMap(Font font, CityMapLayoutDefinition layout)
+        {
+            usesCityMap = true;
+            Text title = CreateText(mapPanel.transform, "Title", "NEON GRID\nCITY RESTORATION", font,
+                ProgrammerUiMetrics.CityMapHeaderFontSize, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -92f),
+                new Vector2(940f, 150f));
+            title.lineSpacing = 0.82f;
+            totalStarsText = CreateText(mapPanel.transform, "Total Stars", string.Empty, font,
+                ProgrammerUiMetrics.CityMapStarsFontSize,
+                TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -212f), new Vector2(760f, 70f));
 
-            restorationOverlay = CreatePanel(canvasObject.transform, "Restoration Feedback",
-                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero,
-                new Color(0.02f, 0.1f, 0.16f, 0.88f));
-            restorationText = CreateText(restorationOverlay.transform, "Message", string.Empty, font,
-                ProgrammerUiMetrics.RestorationFontSize,
-                TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(900f, 240f));
-            restorationOverlay.SetActive(false);
+            GameObject composition = CreatePanel(mapPanel.transform, "City Composition",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                CityMapLayoutDefinition.CompositionOffset,
+                new Vector2(ProgrammerUiMetrics.CityCompositionWidth,
+                    ProgrammerUiMetrics.CityCompositionHeight), Color.clear);
+            CreateCityBackdrop(composition.transform);
+
+            for (int index = 0; index + 1 < layout.Entries.Count; index++)
+                cityPaths.Add(CreateEnergyPath(composition.transform, layout, index));
+
+            for (int index = 0; index < layout.Entries.Count; index++)
+            {
+                CityMapLayoutEntry entry = layout.Entries[index];
+                CampaignChapterDefinition chapter = campaign.Chapters[index];
+                string capturedId = chapter.ChapterId;
+                Button button = CreateButton(composition.transform, $"City Node {index + 1}", string.Empty,
+                    font, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), entry.Position,
+                    entry.HitSize, () => openChapter(capturedId),
+                    ProgrammerUiMetrics.CityNodeLabelFontSize);
+                button.transition = Selectable.Transition.None;
+                button.targetGraphic.color = new Color(1f, 1f, 1f, 0.001f);
+                Text label = button.transform.Find("Label").GetComponent<Text>();
+                label.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                label.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                label.rectTransform.anchoredPosition = new Vector2(0f,
+                    entry.Silhouette == CityBuildingSilhouette.CentralCore ? -103f : -88f);
+                label.rectTransform.sizeDelta = new Vector2(entry.HitSize.x, 125f);
+                label.fontStyle = FontStyle.Bold;
+
+                Image glow = CreateDecor(button.transform, "Glow", new Vector2(0f, 34f),
+                    entry.VisualSize + new Vector2(42f, 42f), Color.clear);
+                var silhouette = new GameObject("Building Silhouette", typeof(RectTransform));
+                silhouette.transform.SetParent(button.transform, false);
+                RectTransform silhouetteRect = silhouette.GetComponent<RectTransform>();
+                silhouetteRect.anchorMin = silhouetteRect.anchorMax = new Vector2(0.5f, 0.5f);
+                silhouetteRect.anchoredPosition = new Vector2(0f, 38f);
+                silhouetteRect.sizeDelta = entry.VisualSize;
+                silhouetteRect.localScale = Vector3.one * entry.Scale;
+                Image[] parts = CreateBuildingSilhouette(silhouetteRect, entry.Silhouette);
+
+                CityChapterNodeView node = button.gameObject.AddComponent<CityChapterNodeView>();
+                node.Initialize(chapter.ChapterId, button, label, glow, parts);
+                cityNodes.Add(chapter.ChapterId, node);
+            }
+        }
+
+        private void PresentProductionCityMap()
+        {
+            for (int index = 0; index < campaign.Chapters.Count; index++)
+            {
+                CampaignChapterDefinition chapter = campaign.Chapters[index];
+                CampaignChapterState chapterState = progress.GetChapterState(chapter.ChapterId);
+                int completed = progress.GetCompletedLevelCount(chapter.ChapterId);
+                int stars = CityMapPresentationModel.GetChapterStars(progress, chapter);
+                ChapterMapVisualState visualState = CityMapPresentationModel.GetChapterVisualState(
+                    chapterState, completed, chapter.Levels.Count);
+                string label = visualState == ChapterMapVisualState.Locked
+                    ? $"{chapter.DisplayName}\nLOCKED"
+                    : visualState == ChapterMapVisualState.Restored
+                        ? $"{chapter.DisplayName}\nRESTORED\n★ {stars} / {chapter.Levels.Count * 3}"
+                        : $"{chapter.DisplayName}\n{completed} / {chapter.Levels.Count}\n" +
+                          $"★ {stars} / {chapter.Levels.Count * 3}";
+                cityNodes[chapter.ChapterId].Present(visualState, label);
+            }
+
+            for (int index = 0; index < cityPaths.Count; index++)
+                cityPaths[index].Present(CityMapPresentationModel.GetPathState(
+                    progress.GetChapterState(campaign.Chapters[index].ChapterId),
+                    progress.GetChapterState(campaign.Chapters[index + 1].ChapterId)));
+        }
+
+        private static void CreateCityBackdrop(Transform parent)
+        {
+            CreateDecor(parent, "City Ground", Vector2.zero,
+                new Vector2(980f, 1430f), new Color(0.015f, 0.025f, 0.055f, 0.95f));
+            CreateDecor(parent, "Road Horizontal", new Vector2(0f, -100f),
+                new Vector2(920f, 54f), new Color(0.055f, 0.065f, 0.09f, 1f));
+            CreateDecor(parent, "Road Vertical", new Vector2(80f, 90f),
+                new Vector2(58f, 1180f), new Color(0.055f, 0.065f, 0.09f, 1f));
+            CreateDecor(parent, "Road Diagonal", new Vector2(-130f, 120f),
+                new Vector2(620f, 42f), new Color(0.045f, 0.055f, 0.08f, 1f), 32f);
+
+            Vector2[] blocks =
+            {
+                new Vector2(-410f, 520f), new Vector2(-220f, 500f),
+                new Vector2(310f, 520f), new Vector2(430f, 350f),
+                new Vector2(-450f, 220f), new Vector2(-150f, 60f),
+                new Vector2(210f, 170f), new Vector2(450f, -220f),
+                new Vector2(-430f, -300f), new Vector2(-170f, -300f),
+                new Vector2(210f, -390f), new Vector2(-80f, -560f),
+                new Vector2(250f, -580f)
+            };
+            for (int index = 0; index < blocks.Length; index++)
+                CreateDecor(parent, $"City Block {index + 1}", blocks[index],
+                    index >= 8 ? new Vector2(130f, 96f) : new Vector2(150f, 115f),
+                    new Color(0.025f, 0.045f, 0.085f, 1f));
+        }
+
+        private static CityEnergyPathView CreateEnergyPath(Transform parent,
+            CityMapLayoutDefinition layout, int fromIndex)
+        {
+            var pathObject = new GameObject($"Energy Path {fromIndex + 1}", typeof(RectTransform));
+            pathObject.transform.SetParent(parent, false);
+            RectTransform pathRect = pathObject.GetComponent<RectTransform>();
+            pathRect.anchorMin = Vector2.zero;
+            pathRect.anchorMax = Vector2.one;
+            pathRect.offsetMin = pathRect.offsetMax = Vector2.zero;
+
+            CityMapLayoutEntry from = layout.Entries[fromIndex];
+            CityMapLayoutEntry to = layout.Entries[fromIndex + 1];
+            var points = new List<Vector2> { from.Position };
+            points.AddRange(from.RouteToNext);
+            points.Add(to.Position);
+            var segments = new Image[points.Count - 1];
+            for (int index = 0; index < segments.Length; index++)
+            {
+                Vector2 delta = points[index + 1] - points[index];
+                Image segment = CreateDecor(pathRect, $"Segment {index + 1}",
+                    (points[index] + points[index + 1]) * 0.5f,
+                    new Vector2(delta.magnitude, 14f), Color.clear);
+                segment.rectTransform.localRotation = Quaternion.Euler(0f, 0f,
+                    Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+                segments[index] = segment;
+            }
+
+            CityEnergyPathView view = pathObject.AddComponent<CityEnergyPathView>();
+            view.Initialize(fromIndex, fromIndex + 1, segments);
+            return view;
+        }
+
+        private static Image[] CreateBuildingSilhouette(RectTransform parent,
+            CityBuildingSilhouette silhouette)
+        {
+            var parts = new List<Image>();
+            void Part(string name, Vector2 position, Vector2 size)
+            {
+                parts.Add(CreateDecor(parent, name, position, size, Color.white));
+            }
+
+            Vector2 size = parent.sizeDelta;
+            switch (silhouette)
+            {
+                case CityBuildingSilhouette.Generator:
+                    Part("Generator Hall", new Vector2(0f, -18f), new Vector2(size.x, size.y * 0.55f));
+                    Part("Stack Left", new Vector2(-size.x * 0.28f, size.y * 0.23f),
+                        new Vector2(size.x * 0.18f, size.y * 0.58f));
+                    Part("Stack Right", new Vector2(size.x * 0.26f, size.y * 0.16f),
+                        new Vector2(size.x * 0.16f, size.y * 0.45f));
+                    break;
+                case CityBuildingSilhouette.Substation:
+                    Part("Transformer Base", new Vector2(0f, -30f), new Vector2(size.x, size.y * 0.34f));
+                    Part("Transformer Left", new Vector2(-size.x * 0.25f, 8f),
+                        new Vector2(size.x * 0.22f, size.y * 0.52f));
+                    Part("Transformer Right", new Vector2(size.x * 0.25f, 8f),
+                        new Vector2(size.x * 0.22f, size.y * 0.52f));
+                    Part("Bus Bar", new Vector2(0f, size.y * 0.28f),
+                        new Vector2(size.x * 0.78f, 14f));
+                    break;
+                case CityBuildingSilhouette.ControlTower:
+                    Part("Tower", new Vector2(0f, -5f), new Vector2(size.x * 0.52f, size.y * 0.78f));
+                    Part("Command Deck", new Vector2(0f, size.y * 0.18f),
+                        new Vector2(size.x * 0.85f, size.y * 0.22f));
+                    Part("Antenna", new Vector2(0f, size.y * 0.48f), new Vector2(12f, size.y * 0.28f));
+                    break;
+                case CityBuildingSilhouette.Factory:
+                    Part("Factory Hall", new Vector2(0f, -18f), new Vector2(size.x, size.y * 0.58f));
+                    Part("Factory Stack", new Vector2(size.x * 0.33f, size.y * 0.20f),
+                        new Vector2(size.x * 0.17f, size.y * 0.58f));
+                    Part("Factory Annex", new Vector2(-size.x * 0.32f, size.y * 0.14f),
+                        new Vector2(size.x * 0.28f, size.y * 0.30f));
+                    break;
+                default:
+                    Part("Core", Vector2.zero, new Vector2(size.x * 0.50f, size.y * 0.92f));
+                    Part("Core Left", new Vector2(-size.x * 0.34f, -18f),
+                        new Vector2(size.x * 0.28f, size.y * 0.60f));
+                    Part("Core Right", new Vector2(size.x * 0.34f, -18f),
+                        new Vector2(size.x * 0.28f, size.y * 0.60f));
+                    Part("Core Crown", new Vector2(0f, size.y * 0.34f),
+                        new Vector2(size.x * 0.82f, size.y * 0.18f));
+                    break;
+            }
+            return parts.ToArray();
+        }
+
+        private static Image CreateDecor(Transform parent, string name, Vector2 position,
+            Vector2 size, Color color, float rotation = 0f)
+        {
+            Image image = CreatePanel(parent, name, new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f), position, size, color).GetComponent<Image>();
+            image.raycastTarget = false;
+            image.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rotation);
+            return image;
         }
 
         public void SetVisible(bool visible)
@@ -109,7 +331,15 @@ namespace NeonGrid.Presentation
             SetVisible(true);
             mapPanel.SetActive(true);
             levelPanel.SetActive(false);
-            totalStarsText.text = $"Stars: {progress.TotalStars} / {progress.MaximumCampaignStars}";
+            totalStarsText.text = usesCityMap
+                ? $"★ {progress.TotalStars} / {progress.MaximumCampaignStars}"
+                : $"Stars: {progress.TotalStars} / {progress.MaximumCampaignStars}";
+
+            if (usesCityMap)
+            {
+                PresentProductionCityMap();
+                return;
+            }
 
             foreach (CampaignChapterDefinition chapter in campaign.Chapters)
             {
