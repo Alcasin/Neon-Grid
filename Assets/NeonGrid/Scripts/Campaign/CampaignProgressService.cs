@@ -70,9 +70,14 @@ namespace NeonGrid.Campaign
             new Dictionary<string, LevelLocation>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> chapterIndexes =
             new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly List<ChapterRestorationEvent> pendingRestorations =
+            new List<ChapterRestorationEvent>();
 
         public CampaignDefinition Campaign { get; }
         public int MaximumCampaignStars { get; }
+        public ChapterRestorationEvent PendingRestoration =>
+            pendingRestorations.Count > 0 ? pendingRestorations[0] : null;
+        public int PendingRestorationCount => pendingRestorations.Count;
         public bool IsCampaignComplete
         {
             get
@@ -268,6 +273,70 @@ namespace NeonGrid.Campaign
             }
 
             return entries;
+        }
+
+        internal IReadOnlyList<ChapterRestorationSaveEntry> ExportPendingRestorations()
+        {
+            var entries = new List<ChapterRestorationSaveEntry>(pendingRestorations.Count);
+            foreach (ChapterRestorationEvent pending in pendingRestorations)
+                entries.Add(new ChapterRestorationSaveEntry(pending.RestoredChapterId,
+                    pending.RestoredChapterIndex, pending.NextChapterId,
+                    pending.IsCampaignComplete));
+            return entries;
+        }
+
+        internal bool TryDequeuePendingRestoration(out ChapterRestorationEvent restorationEvent)
+        {
+            if (pendingRestorations.Count == 0)
+            {
+                restorationEvent = null;
+                return false;
+            }
+
+            restorationEvent = pendingRestorations[0];
+            pendingRestorations.RemoveAt(0);
+            return true;
+        }
+
+        internal void RestorePendingRestorationToFront(ChapterRestorationEvent restorationEvent)
+        {
+            if (restorationEvent == null) return;
+            pendingRestorations.Insert(0, restorationEvent);
+        }
+
+        internal void ImportPendingRestorations(
+            IEnumerable<ChapterRestorationSaveEntry> entries)
+        {
+            pendingRestorations.Clear();
+            if (entries == null) return;
+            foreach (ChapterRestorationSaveEntry entry in entries)
+                EnqueuePendingRestoration(new ChapterRestorationEvent(entry.restoredChapterId,
+                    entry.restoredChapterIndex, entry.nextChapterId, entry.campaignComplete));
+        }
+
+        internal void QueuePendingRestoration(string restoredChapterId)
+        {
+            if (!chapterIndexes.TryGetValue(restoredChapterId ?? string.Empty, out int chapterIndex) ||
+                !IsChapterRestored(restoredChapterId))
+                throw new ArgumentException("Only a restored campaign chapter can be queued.",
+                    nameof(restoredChapterId));
+            string nextChapterId = chapterIndex + 1 < Campaign.Chapters.Count
+                ? Campaign.Chapters[chapterIndex + 1].ChapterId
+                : null;
+            EnqueuePendingRestoration(new ChapterRestorationEvent(restoredChapterId, chapterIndex,
+                nextChapterId, IsCampaignComplete));
+        }
+
+        private void EnqueuePendingRestoration(ChapterRestorationEvent restorationEvent)
+        {
+            foreach (ChapterRestorationEvent pending in pendingRestorations)
+                if (string.Equals(pending.RestoredChapterId,
+                        restorationEvent.RestoredChapterId, StringComparison.Ordinal))
+                    return;
+            if (pendingRestorations.Count >= Campaign.Chapters.Count)
+                throw new InvalidOperationException(
+                    "Pending restoration events cannot exceed the campaign chapter count.");
+            pendingRestorations.Add(restorationEvent);
         }
 
         internal void ImportProgress(IEnumerable<LevelProgressSaveEntry> entries, IList<string> warnings)

@@ -51,7 +51,8 @@ namespace NeonGrid.Campaign
         public LevelTutorialDefinition ActiveTutorial { get; private set; }
         public CampaignProgressUpdate LastProgressUpdate { get; private set; }
         public CampaignSaveResult LastSaveResult { get; private set; }
-        public string PendingRestorationChapterId { get; private set; }
+        public string PendingRestorationChapterId =>
+            Progress.PendingRestoration?.RestoredChapterId;
         public CampaignResultNavigationState ResultNavigation { get; private set; }
         public string SavePath => saveStore.SavePath;
 
@@ -147,11 +148,28 @@ namespace NeonGrid.Campaign
             CurrentScreen = CampaignFlowScreen.Map;
         }
 
+        public ChapterRestorationEvent PeekPendingRestoration()
+        {
+            return Progress.PendingRestoration;
+        }
+
+        public bool TryConsumePendingRestoration(out ChapterRestorationEvent restorationEvent)
+        {
+            if (!Progress.TryDequeuePendingRestoration(out restorationEvent)) return false;
+
+            LastSaveResult = saveStore.Save(Progress);
+            if (LastSaveResult.Succeeded) return true;
+
+            Progress.RestorePendingRestorationToFront(restorationEvent);
+            restorationEvent = null;
+            return false;
+        }
+
         public string ConsumePendingRestoration()
         {
-            string result = PendingRestorationChapterId;
-            PendingRestorationChapterId = null;
-            return result;
+            return TryConsumePendingRestoration(out ChapterRestorationEvent restorationEvent)
+                ? restorationEvent.RestoredChapterId
+                : null;
         }
 
         private void StartAttempt(CampaignLevelEntry entry)
@@ -180,7 +198,7 @@ namespace NeonGrid.Campaign
             if (!update.Accepted) return;
 
             if (update.ChapterJustRestored)
-                PendingRestorationChapterId = update.RestoredChapterId;
+                Progress.QueuePendingRestoration(update.RestoredChapterId);
             ResultNavigation = update.ChapterJustRestored
                 ? CampaignResultNavigationState.FirstChapterRestoration()
                 : CampaignResultNavigationState.Normal(CanStartNextLevel());

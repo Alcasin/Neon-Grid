@@ -70,9 +70,6 @@ namespace NeonGrid.Presentation
             DestroyBoard();
             Flow.ReturnToMap();
             campaignView.ShowMap();
-            string restoredChapterId = Flow.ConsumePendingRestoration();
-            if (restoredChapterId != null)
-                campaignView.PlayRestoration(restoredChapterId);
         }
 
         public void ShowCurrentChapter()

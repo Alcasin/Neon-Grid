@@ -123,6 +123,8 @@ namespace NeonGrid.Campaign
 
             var diagnostics = new List<string>();
             fresh.ImportProgress(data.levelProgressEntries, diagnostics);
+            fresh.ImportPendingRestorations(FilterValidPendingRestorations(
+                data.pendingRestorationEvents, campaign, fresh, diagnostics));
             return new CampaignLoadResult(CampaignLoadStatus.Loaded, fresh,
                 diagnostics.AsReadOnly());
         }
@@ -144,7 +146,9 @@ namespace NeonGrid.Campaign
                 {
                     version = CurrentVersion,
                     campaignId = progress.Campaign.CampaignId,
-                    levelProgressEntries = new List<LevelProgressSaveEntry>(progress.ExportProgress())
+                    levelProgressEntries = new List<LevelProgressSaveEntry>(progress.ExportProgress()),
+                    pendingRestorationEvents = new List<ChapterRestorationSaveEntry>(
+                        progress.ExportPendingRestorations())
                 };
                 string json = JsonUtility.ToJson(data, true);
                 File.WriteAllText(temporaryPath, json, new UTF8Encoding(false));
@@ -219,6 +223,47 @@ namespace NeonGrid.Campaign
 
             error = null;
             return true;
+        }
+
+        private static IReadOnlyList<ChapterRestorationSaveEntry> FilterValidPendingRestorations(
+            IReadOnlyList<ChapterRestorationSaveEntry> entries, CampaignDefinition campaign,
+            CampaignProgressService progress, IList<string> diagnostics)
+        {
+            var valid = new List<ChapterRestorationSaveEntry>();
+            if (entries == null) return valid;
+
+            var chapterIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ChapterRestorationSaveEntry entry = entries[index];
+                if (entry == null || entry.restoredChapterIndex < 0 ||
+                    entry.restoredChapterIndex >= campaign.Chapters.Count)
+                {
+                    diagnostics?.Add($"Ignored invalid pending restoration event at index {index}.");
+                    continue;
+                }
+
+                CampaignChapterDefinition chapter = campaign.Chapters[entry.restoredChapterIndex];
+                string expectedNext = entry.restoredChapterIndex + 1 < campaign.Chapters.Count
+                    ? campaign.Chapters[entry.restoredChapterIndex + 1].ChapterId
+                    : null;
+                bool expectedCampaignComplete =
+                    entry.restoredChapterIndex == campaign.Chapters.Count - 1;
+                if (!string.Equals(entry.restoredChapterId, chapter.ChapterId,
+                        StringComparison.Ordinal) ||
+                    !chapterIds.Add(entry.restoredChapterId) ||
+                    !string.Equals(entry.nextChapterId, expectedNext, StringComparison.Ordinal) ||
+                    entry.campaignComplete != expectedCampaignComplete ||
+                    !progress.IsChapterRestored(entry.restoredChapterId))
+                {
+                    diagnostics?.Add($"Ignored pending restoration event {index} because it no " +
+                                     "longer matches the campaign definition or progress.");
+                    continue;
+                }
+                valid.Add(entry);
+            }
+
+            return valid;
         }
 
         private static CampaignLoadResult FailedLoad(CampaignLoadStatus status,
