@@ -58,6 +58,7 @@ namespace NeonGrid.Tests
             Assert.That(sequence.PreparePendingRestoration(), Is.True);
 
             CityRestorationSequencePlan plan = sequence.CurrentPlan;
+            Assert.That(plan.IncludesFinalNetworkPulse, Is.False);
             Assert.That(plan.RestoredChapterId, Is.EqualTo(campaign.Chapters[0].ChapterId));
             Assert.That(plan.NextChapterId, Is.EqualTo(campaign.Chapters[1].ChapterId));
             Assert.That(plan.EnergyPathIndex, Is.Zero);
@@ -70,6 +71,9 @@ namespace NeonGrid.Tests
                 Is.EqualTo(CampaignChapterState.Available));
             Assert.That(progress.TotalStars, Is.EqualTo(stars));
             Assert.That(flow.PeekPendingRestoration(), Is.Not.Null);
+            sequence.ApplyPhase(CityRestorationSequencePhase.FinalNetworkPulse, 0.5f);
+            Assert.That(Nodes().All(node => node.NetworkPulseStrength == 0f), Is.True);
+            Assert.That(Paths().All(path => path.NetworkPulseStrength == 0f), Is.True);
         }
 
         [Test]
@@ -91,6 +95,94 @@ namespace NeonGrid.Tests
             Assert.That(Nodes()[1].IsPulsing, Is.True);
             Assert.That(Nodes().Skip(2).All(node =>
                 node.VisualState == ChapterMapVisualState.Locked), Is.True);
+        }
+
+        [Test]
+        public void BuildingPowerUp_SynchronizesLabelAndReturnsToAuthoredScale()
+        {
+            CompleteChapter(0, true, 2);
+            Assert.That(sequence.PreparePendingRestoration(), Is.True);
+            CityChapterNodeView restored = Nodes()[0];
+            Vector3 baseScale = restored.BaseVisualScale;
+            Assert.That(restored.Label.text, Does.Contain("POWERING UP"));
+            Assert.That(restored.Label.text, Does.Not.Contain("RESTORED"));
+
+            sequence.ApplyPhase(CityRestorationSequencePhase.Focus, 0.5f);
+            Assert.That(restored.VisualScale, Is.Not.EqualTo(baseScale));
+            sequence.ApplyPhase(CityRestorationSequencePhase.Focus, 1f);
+            Assert.That(restored.VisualScale, Is.EqualTo(baseScale));
+            sequence.ApplyPhase(CityRestorationSequencePhase.BuildingPowerUp, 0.75f);
+            Assert.That(restored.VisualState, Is.EqualTo(ChapterMapVisualState.ProgressStage3));
+            Assert.That(restored.Label.text, Does.Contain("POWERING UP"));
+
+            sequence.ApplyPhase(CityRestorationSequencePhase.BuildingPowerUp, 1f);
+
+            Assert.That(restored.VisualState, Is.EqualTo(ChapterMapVisualState.Restored));
+            Assert.That(restored.Label.text, Does.Contain("RESTORED"));
+            Assert.That(restored.Label.text, Does.Contain("★ 20 / 30"));
+            Assert.That(restored.VisualScale, Is.EqualTo(baseScale));
+            Assert.That(restored.IsPulsing, Is.False);
+        }
+
+        [Test]
+        public void NextReveal_SynchronizesLabelArrivalCueAndAvailablePulse()
+        {
+            CompleteChapter(0, true, 1);
+            Assert.That(sequence.PreparePendingRestoration(), Is.True);
+            CityChapterNodeView[] nodes = Nodes();
+            CityChapterNodeView next = nodes[1];
+            Vector3 baseScale = next.BaseVisualScale;
+            Assert.That(next.Label.text, Does.Contain("LOCKED"));
+            Assert.That(next.IsPulsing, Is.False);
+
+            sequence.ApplyPhase(CityRestorationSequencePhase.NextChapterReveal, 0.5f);
+
+            Assert.That(next.Label.text, Does.Contain("LOCKED"));
+            Assert.That(next.VisualState, Is.EqualTo(ChapterMapVisualState.Locked));
+            Assert.That(next.IsPulsing, Is.False);
+            Assert.That(next.ArrivalCueStrength, Is.GreaterThan(0f));
+            Assert.That(nodes.Where(node => node != next)
+                .All(node => node.ArrivalCueStrength == 0f), Is.True);
+
+            sequence.ApplyPhase(CityRestorationSequencePhase.NextChapterReveal, 1f);
+
+            Assert.That(next.VisualState, Is.EqualTo(ChapterMapVisualState.ProgressStage1));
+            Assert.That(next.Label.text, Does.Not.Contain("LOCKED"));
+            Assert.That(next.Label.text, Does.Contain("0 / 10"));
+            Assert.That(next.Label.text, Does.Contain("★ 0 / 30"));
+            Assert.That(next.IsPulsing, Is.True);
+            Assert.That(next.ArrivalCueStrength, Is.Zero);
+            Assert.That(next.VisualScale, Is.EqualTo(baseScale));
+            Assert.That(view.IsMapInteractionEnabled, Is.False);
+        }
+
+        [Test]
+        public void EnergyTravel_IsMonotonicKeepsTraversedRouteLitAndSettlesAuthoritatively()
+        {
+            CompleteChapter(0, true, 1);
+            Assert.That(sequence.PreparePendingRestoration(), Is.True);
+            CityEnergyPathView target = Paths()[0];
+            Color initiallyLocked = target.GetSegmentColor(0);
+
+            sequence.ApplyPhase(CityRestorationSequencePhase.EnergyTravel, 0.25f);
+            float firstProgress = target.TravelProgress;
+            Vector2 firstPosition = target.FrontierPosition;
+            sequence.ApplyPhase(CityRestorationSequencePhase.EnergyTravel, 0.75f);
+            float laterProgress = target.TravelProgress;
+            Color traversedColor = target.GetSegmentColor(0);
+
+            Assert.That(laterProgress, Is.GreaterThan(firstProgress));
+            Assert.That(target.IsFrontierVisible, Is.True);
+            Assert.That(target.FrontierPosition, Is.Not.EqualTo(firstPosition));
+            Assert.That(traversedColor, Is.Not.EqualTo(initiallyLocked));
+            sequence.ApplyPhase(CityRestorationSequencePhase.EnergyTravel, 0.9f);
+            Assert.That(target.GetSegmentColor(0), Is.EqualTo(traversedColor));
+            Assert.That(Paths().Skip(1).All(path => !path.IsEnergyTraveling), Is.True);
+
+            Assert.That(sequence.CompletePreparedSequence(), Is.True);
+            Assert.That(target.State, Is.EqualTo(CityEnergyPathState.Frontier));
+            Assert.That(target.IsFrontierVisible, Is.False);
+            Assert.That(target.NetworkPulseStrength, Is.Zero);
         }
 
         [Test]
@@ -126,6 +218,11 @@ namespace NeonGrid.Tests
             Assert.That(view.IsMapInteractionEnabled, Is.True);
             Assert.That(flow.PeekPendingRestoration(), Is.Not.Null);
             Assert.That(Nodes()[0].VisualState, Is.EqualTo(ChapterMapVisualState.Restored));
+            Assert.That(Nodes().All(node => node.VisualScale == node.BaseVisualScale), Is.True);
+            Assert.That(Nodes().All(node => node.ArrivalCueStrength == 0f &&
+                                             node.NetworkPulseStrength == 0f), Is.True);
+            Assert.That(Paths().All(path => !path.IsFrontierVisible &&
+                                             path.NetworkPulseStrength == 0f), Is.True);
         }
 
         [Test]
@@ -143,6 +240,8 @@ namespace NeonGrid.Tests
             Assert.That(view.IsMapInteractionEnabled, Is.True);
             Assert.That(flow.PeekPendingRestoration(), Is.Not.Null);
             Assert.That(Nodes()[0].VisualState, Is.EqualTo(ChapterMapVisualState.Restored));
+            Assert.That(Nodes().All(node => node.VisualScale == node.BaseVisualScale), Is.True);
+            Assert.That(Paths().All(path => !path.IsFrontierVisible), Is.True);
         }
 
         [Test]
@@ -181,14 +280,23 @@ namespace NeonGrid.Tests
             Assert.That(sequence.PreparePendingRestoration(), Is.True);
             Assert.That(sequence.CurrentPlan.HasNextChapter, Is.False);
             Assert.That(sequence.CurrentPlan.EnergyPathIndex, Is.EqualTo(-1));
+            Assert.That(sequence.CurrentPlan.IncludesFinalNetworkPulse, Is.True);
+            CityChapterNodeView central = Nodes()[campaign.Chapters.Count - 1];
+            Assert.That(central.BaseVisualScale, Is.EqualTo(Vector3.one * 1.25f));
             sequence.ApplyPhase(CityRestorationSequencePhase.BuildingPowerUp, 1f);
-            sequence.ApplyPhase(CityRestorationSequencePhase.EnergyTravel, 1f);
-            sequence.ApplyPhase(CityRestorationSequencePhase.NextChapterReveal, 1f);
+            sequence.ApplyPhase(CityRestorationSequencePhase.FinalNetworkPulse, 0.5f);
+            Assert.That(Nodes().All(node => node.NetworkPulseStrength > 0f), Is.True);
+            Assert.That(Paths().All(path => path.NetworkPulseStrength > 0f), Is.True);
+            sequence.ApplyPhase(CityRestorationSequencePhase.FinalNetworkPulse, 1f);
+            Assert.That(Nodes().All(node => node.NetworkPulseStrength == 0f &&
+                                             node.VisualScale == node.BaseVisualScale), Is.True);
+            Assert.That(Paths().All(path => path.NetworkPulseStrength == 0f), Is.True);
             Assert.That(sequence.CompletePreparedSequence(), Is.True);
             Assert.That(progress.IsCampaignComplete, Is.True);
             Assert.That(Nodes().All(node => node.VisualState == ChapterMapVisualState.Restored),
                 Is.True);
             Assert.That(Paths().All(path => path.State == CityEnergyPathState.Restored), Is.True);
+            Assert.That(central.VisualScale, Is.EqualTo(central.BaseVisualScale));
         }
 
         [Test]
@@ -261,13 +369,59 @@ namespace NeonGrid.Tests
         [Test]
         public void SequenceTiming_IsWithinFunctionalTargetWindow()
         {
-            float normalDuration = ProgrammerUiMetrics.CityRestorationFocusSeconds +
-                                   ProgrammerUiMetrics.CityRestorationPowerUpSeconds +
-                                   ProgrammerUiMetrics.CityRestorationEnergyTravelSeconds +
-                                   ProgrammerUiMetrics.CityRestorationRevealSeconds +
-                                   ProgrammerUiMetrics.CityRestorationSettleSeconds;
-            Assert.That(normalDuration, Is.EqualTo(2.85f).Within(0.001f));
-            Assert.That(normalDuration, Is.InRange(2.5f, 3.5f));
+            CompleteChapter(0, true, 1);
+            Assert.That(sequence.PreparePendingRestoration(), Is.True);
+            CityRestorationSequencePlan plan = sequence.CurrentPlan;
+            Assert.That(plan.TotalDuration, Is.EqualTo(2.85f).Within(0.001f));
+            Assert.That(plan.TotalDuration, Is.InRange(2.5f, 3.2f));
+            Assert.That(plan.Phases, Is.EqualTo(new[]
+            {
+                CityRestorationSequencePhase.Focus,
+                CityRestorationSequencePhase.BuildingPowerUp,
+                CityRestorationSequencePhase.EnergyTravel,
+                CityRestorationSequencePhase.NextChapterReveal,
+                CityRestorationSequencePhase.Settle
+            }));
+        }
+
+        [Test]
+        public void FinalSequencePlan_HasGenericNetworkPulseAndPolishedDuration()
+        {
+            for (int index = 0; index < campaign.Chapters.Count - 1; index++)
+                CompleteChapter(index, false, 1);
+            CompleteChapter(campaign.Chapters.Count - 1, true, 1);
+            Assert.That(sequence.PreparePendingRestoration(), Is.True);
+            CityRestorationSequencePlan plan = sequence.CurrentPlan;
+
+            Assert.That(plan.IncludesFinalNetworkPulse, Is.True);
+            Assert.That(plan.TotalDuration, Is.EqualTo(2.3f).Within(0.001f));
+            Assert.That(plan.TotalDuration, Is.InRange(2f, 2.5f));
+            Assert.That(plan.Phases, Is.EqualTo(new[]
+            {
+                CityRestorationSequencePhase.Focus,
+                CityRestorationSequencePhase.BuildingPowerUp,
+                CityRestorationSequencePhase.PreNetworkSettle,
+                CityRestorationSequencePhase.FinalNetworkPulse,
+                CityRestorationSequencePhase.Settle
+            }));
+        }
+
+        [Test]
+        public void EasingFunctions_AreClampedMonotonicAndKeepExactEndpoints()
+        {
+            foreach (Func<float, float> easing in new Func<float, float>[]
+                     {
+                         CityRestorationEasing.EaseOutCubic,
+                         CityRestorationEasing.EaseInOutCubic,
+                         CityRestorationEasing.SmoothStep
+                     })
+            {
+                Assert.That(easing(-1f), Is.Zero);
+                Assert.That(easing(0f), Is.Zero);
+                Assert.That(easing(0.25f), Is.LessThan(easing(0.75f)));
+                Assert.That(easing(1f), Is.EqualTo(1f));
+                Assert.That(easing(2f), Is.EqualTo(1f));
+            }
         }
 
         private void CompleteChapter(int chapterIndex, bool queue, int stars)

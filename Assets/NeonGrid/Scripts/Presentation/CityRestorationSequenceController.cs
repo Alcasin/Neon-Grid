@@ -13,6 +13,7 @@ namespace NeonGrid.Presentation
         public bool IsRunning { get; private set; }
         public CityRestorationSequencePhase Phase { get; private set; }
         public CityRestorationSequencePlan CurrentPlan { get; private set; }
+        public float DurationMultiplier { get; set; } = 1f;
 
         public void Initialize(CampaignRuntimeView runtimeView,
             CampaignFlowCoordinator flowCoordinator)
@@ -69,16 +70,28 @@ namespace NeonGrid.Presentation
             float normalized = Mathf.Clamp01(progress);
             switch (phase)
             {
+                case CityRestorationSequencePhase.Focus:
+                    view.ApplyRestoredNodeFocus(CurrentPlan,
+                        CityRestorationEasing.SmoothStep(normalized));
+                    break;
                 case CityRestorationSequencePhase.BuildingPowerUp:
-                    view.ApplyRestoredNodePowerUp(CurrentPlan, normalized);
+                    view.ApplyRestoredNodePowerUp(CurrentPlan,
+                        CityRestorationEasing.EaseOutCubic(normalized));
                     break;
                 case CityRestorationSequencePhase.EnergyTravel:
                     if (CurrentPlan.HasNextChapter)
-                        view.ApplyEnergyTravel(CurrentPlan, normalized);
+                        view.ApplyEnergyTravel(CurrentPlan,
+                            CityRestorationEasing.EaseInOutCubic(normalized));
                     break;
                 case CityRestorationSequencePhase.NextChapterReveal:
                     if (CurrentPlan.HasNextChapter)
-                        view.ApplyNextChapterReveal(CurrentPlan, normalized);
+                        view.ApplyNextChapterReveal(CurrentPlan,
+                            CityRestorationEasing.SmoothStep(normalized));
+                    break;
+                case CityRestorationSequencePhase.FinalNetworkPulse:
+                    if (CurrentPlan.IncludesFinalNetworkPulse)
+                        view.ApplyFinalNetworkPulse(
+                            CityRestorationEasing.SmoothStep(normalized));
                     break;
             }
         }
@@ -116,7 +129,7 @@ namespace NeonGrid.Presentation
 
         private IEnumerator RunPreparedSequence()
         {
-            yield return WaitPhase(CityRestorationSequencePhase.Focus,
+            yield return AnimatePhase(CityRestorationSequencePhase.Focus,
                 ProgrammerUiMetrics.CityRestorationFocusSeconds);
             yield return AnimatePhase(CityRestorationSequencePhase.BuildingPowerUp,
                 ProgrammerUiMetrics.CityRestorationPowerUpSeconds);
@@ -127,6 +140,13 @@ namespace NeonGrid.Presentation
                 yield return AnimatePhase(CityRestorationSequencePhase.NextChapterReveal,
                     ProgrammerUiMetrics.CityRestorationRevealSeconds);
             }
+            else if (CurrentPlan.IncludesFinalNetworkPulse)
+            {
+                yield return WaitPhase(CityRestorationSequencePhase.PreNetworkSettle,
+                    ProgrammerUiMetrics.CityRestorationFinalPrePulseSettleSeconds);
+                yield return AnimatePhase(CityRestorationSequencePhase.FinalNetworkPulse,
+                    ProgrammerUiMetrics.CityRestorationFinalNetworkPulseSeconds);
+            }
             yield return WaitPhase(CityRestorationSequencePhase.Settle,
                 ProgrammerUiMetrics.CityRestorationSettleSeconds);
             routine = null;
@@ -136,6 +156,8 @@ namespace NeonGrid.Presentation
         private IEnumerator WaitPhase(CityRestorationSequencePhase phase, float duration)
         {
             Phase = phase;
+            duration *= Mathf.Max(0f, DurationMultiplier);
+            if (duration <= 0f) yield break;
             float elapsed = 0f;
             while (elapsed < duration)
             {
@@ -146,6 +168,12 @@ namespace NeonGrid.Presentation
 
         private IEnumerator AnimatePhase(CityRestorationSequencePhase phase, float duration)
         {
+            duration *= Mathf.Max(0f, DurationMultiplier);
+            if (duration <= 0f)
+            {
+                ApplyPhase(phase, 1f);
+                yield break;
+            }
             float elapsed = 0f;
             ApplyPhase(phase, 0f);
             while (elapsed < duration)

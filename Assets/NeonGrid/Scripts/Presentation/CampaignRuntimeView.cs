@@ -396,6 +396,11 @@ namespace NeonGrid.Presentation
             }
         }
 
+        internal void ApplyRestoredNodeFocus(CityRestorationSequencePlan plan, float progressValue)
+        {
+            cityNodes[plan.RestoredChapterId].ApplyFocus(progressValue);
+        }
+
         internal void ApplyEnergyTravel(CityRestorationSequencePlan plan, float progressValue)
         {
             if (plan.EnergyPathIndex >= 0)
@@ -417,6 +422,16 @@ namespace NeonGrid.Presentation
                                       $"★ {stars} / {chapter.Levels.Count * 3}";
                 }
             }
+        }
+
+        internal void ApplyFinalNetworkPulse(float progressValue)
+        {
+            foreach (CityChapterNodeView node in cityNodes.Values)
+                if (node.VisualState == ChapterMapVisualState.Restored)
+                    node.ApplyNetworkPulse(progressValue);
+            foreach (CityEnergyPathView path in cityPaths)
+                if (path.State == CityEnergyPathState.Restored)
+                    path.ApplyNetworkPulse(progressValue);
         }
 
         internal void RestoreAuthoritativeMap(bool interactionEnabled)

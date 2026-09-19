@@ -38,6 +38,8 @@ namespace NeonGrid.Presentation
         public const float CityRestorationEnergyTravelSeconds = 1f;
         public const float CityRestorationRevealSeconds = 0.55f;
         public const float CityRestorationSettleSeconds = 0.25f;
+        public const float CityRestorationFinalPrePulseSettleSeconds = 0.25f;
+        public const float CityRestorationFinalNetworkPulseSeconds = 0.75f;
         public const float CityCompositionWidth = 1020f;
         public const float CityCompositionHeight = 1500f;
     }
