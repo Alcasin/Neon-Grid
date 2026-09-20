@@ -74,6 +74,7 @@ namespace NeonGrid.Campaign
             new List<ChapterRestorationEvent>();
 
         public CampaignDefinition Campaign { get; }
+        public bool IntroCompleted { get; private set; }
         public int MaximumCampaignStars { get; }
         public ChapterRestorationEvent PendingRestoration =>
             pendingRestorations.Count > 0 ? pendingRestorations[0] : null;
@@ -96,6 +97,17 @@ namespace NeonGrid.Campaign
                 foreach (LevelProgress progress in progressByLevelId.Values)
                     total += progress.BestStars;
                 return total;
+            }
+        }
+
+        public bool HasMeaningfulProgress
+        {
+            get
+            {
+                foreach (LevelProgress progress in progressByLevelId.Values)
+                    if (progress.Completed || progress.BestStars > 0)
+                        return true;
+                return false;
             }
         }
 
@@ -273,6 +285,11 @@ namespace NeonGrid.Campaign
             }
 
             return entries;
+        }
+
+        internal void SetIntroCompleted(bool completed)
+        {
+            IntroCompleted = completed;
         }
 
         internal IReadOnlyList<ChapterRestorationSaveEntry> ExportPendingRestorations()

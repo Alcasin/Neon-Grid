@@ -8,6 +8,8 @@ namespace NeonGrid.Campaign
     {
         public int version = CampaignSaveStore.CurrentVersion;
         public string campaignId;
+        public bool hasIntroCompletionState;
+        public bool introCompleted;
         public List<LevelProgressSaveEntry> levelProgressEntries = new List<LevelProgressSaveEntry>();
         public List<ChapterRestorationSaveEntry> pendingRestorationEvents =
             new List<ChapterRestorationSaveEntry>();

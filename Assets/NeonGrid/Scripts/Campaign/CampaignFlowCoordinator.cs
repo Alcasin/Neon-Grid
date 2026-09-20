@@ -165,6 +165,18 @@ namespace NeonGrid.Campaign
             return false;
         }
 
+        public bool TryCompleteIntro()
+        {
+            if (Progress.IntroCompleted) return true;
+
+            Progress.SetIntroCompleted(true);
+            LastSaveResult = saveStore.Save(Progress);
+            if (LastSaveResult.Succeeded) return true;
+
+            Progress.SetIntroCompleted(false);
+            return false;
+        }
+
         public string ConsumePendingRestoration()
         {
             return TryConsumePendingRestoration(out ChapterRestorationEvent restorationEvent)

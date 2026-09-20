@@ -9,12 +9,15 @@ namespace NeonGrid.Presentation
         [SerializeField] private CampaignDefinition campaign;
 
         private CampaignRuntimeView campaignView;
+        private CampaignIntroView introView;
         private CityRestorationSequenceController restorationSequence;
         private GameObject boardRoot;
 
         public CampaignFlowCoordinator Flow { get; private set; }
         public CampaignLoadStatus LoadStatus { get; private set; }
         public string SavePath => Flow?.SavePath;
+        public CampaignIntroView IntroView => introView;
+        public CampaignRuntimeView CampaignView => campaignView;
 
         private void Awake()
         {
@@ -45,7 +48,32 @@ namespace NeonGrid.Presentation
                 id => StartLevel(id), ShowMap);
             restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
             restorationSequence.Initialize(campaignView, Flow);
+            CampaignNarrativeDefinition narrative =
+                CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
+            if (narrative != null && narrative.IntroPages.Count > 0 &&
+                !load.Progress.IntroCompleted)
+            {
+                introView = gameObject.AddComponent<CampaignIntroView>();
+                introView.Build(narrative, CompleteIntro);
+            }
+            else
+            {
+                restorationSequence.EnterMap();
+            }
+        }
+
+        private bool CompleteIntro()
+        {
+            if (!Flow.TryCompleteIntro())
+            {
+                Debug.LogWarning(Flow.LastSaveResult?.Message ??
+                                 "Could not persist intro completion.", this);
+                return false;
+            }
+
+            introView.SetVisible(false);
             restorationSequence.EnterMap();
+            return true;
         }
 
         private void OnDestroy()

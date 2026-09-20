@@ -37,6 +37,7 @@ namespace NeonGrid.Presentation
         private bool usesCityMap;
 
         public bool UsesCityMap => usesCityMap;
+        public bool IsVisible => canvasObject != null && canvasObject.activeSelf;
         public bool IsMapInteractionEnabled => mapInteraction != null && mapInteraction.interactable &&
                                                mapInteraction.blocksRaycasts;
 
@@ -52,6 +53,7 @@ namespace NeonGrid.Presentation
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             canvasObject = new GameObject("Campaign Canvas");
             canvasObject.transform.SetParent(transform, false);
+            canvasObject.SetActive(false);
             Canvas canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 50;
@@ -78,7 +80,6 @@ namespace NeonGrid.Presentation
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
                 new Vector2(420f, 100f), onBackToMap);
-
         }
 
         private void BuildFallbackMap(Font font)
