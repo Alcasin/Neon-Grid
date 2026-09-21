@@ -52,3 +52,9 @@ MonoBehaviour:
     briefingBody: "All major systems are online.\nReconnect the city's core grid."
     restoredTitle: ''
     restoredBody: ''
+  endingNarrative:
+    title: GRID RESTORED
+    body: All primary city systems are stable.
+    statusTitle: 'CITY STATUS: ONLINE'
+    statusBody: Restoration complete.
+    returnButtonLabel: RETURN TO CITY

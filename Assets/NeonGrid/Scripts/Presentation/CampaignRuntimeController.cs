@@ -10,13 +10,16 @@ namespace NeonGrid.Presentation
 
         private CampaignRuntimeView campaignView;
         private CampaignIntroView introView;
+        private CampaignEndingView endingView;
         private CityRestorationSequenceController restorationSequence;
         private GameObject boardRoot;
+        private CampaignNarrativeDefinition narrative;
 
         public CampaignFlowCoordinator Flow { get; private set; }
         public CampaignLoadStatus LoadStatus { get; private set; }
         public string SavePath => Flow?.SavePath;
         public CampaignIntroView IntroView => introView;
+        public CampaignEndingView EndingView => endingView;
         public CampaignRuntimeView CampaignView => campaignView;
 
         private void Awake()
@@ -47,9 +50,8 @@ namespace NeonGrid.Presentation
             campaignView.Build(definition, load.Progress, id => OpenChapter(id),
                 id => StartLevel(id), ShowMap);
             restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
-            restorationSequence.Initialize(campaignView, Flow);
-            CampaignNarrativeDefinition narrative =
-                CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
+            restorationSequence.Initialize(campaignView, Flow, ShowEndingAfterFinalRestoration);
+            narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
             if (narrative != null && narrative.IntroPages.Count > 0 &&
                 !load.Progress.IntroCompleted)
             {
@@ -58,7 +60,7 @@ namespace NeonGrid.Presentation
             }
             else
             {
-                restorationSequence.EnterMap();
+                EnterPostIntroPresentation();
             }
         }
 
@@ -72,6 +74,50 @@ namespace NeonGrid.Presentation
             }
 
             introView.SetVisible(false);
+            EnterPostIntroPresentation();
+            return true;
+        }
+
+        private void EnterPostIntroPresentation()
+        {
+            if (Flow.PeekPendingRestoration() == null && TryShowEnding()) return;
+            restorationSequence.EnterMap();
+        }
+
+        private bool ShowEndingAfterFinalRestoration()
+        {
+            return TryShowEnding();
+        }
+
+        private bool TryShowEnding()
+        {
+            CampaignEndingNarrative ending = narrative?.EndingNarrative;
+            if (ending == null || !ending.IsConfigured || !Flow.Progress.IsEndingRequired)
+                return false;
+
+            campaignView.SetVisible(false);
+            if (endingView == null)
+            {
+                endingView = gameObject.AddComponent<CampaignEndingView>();
+                endingView.Build(ending, CompleteEnding);
+            }
+            else
+            {
+                endingView.SetVisible(true);
+            }
+            return true;
+        }
+
+        private bool CompleteEnding()
+        {
+            if (!Flow.TryCompleteEnding())
+            {
+                Debug.LogWarning(Flow.LastSaveResult?.Message ??
+                                 "Could not persist ending completion.", this);
+                return false;
+            }
+
+            endingView.SetVisible(false);
             restorationSequence.EnterMap();
             return true;
         }

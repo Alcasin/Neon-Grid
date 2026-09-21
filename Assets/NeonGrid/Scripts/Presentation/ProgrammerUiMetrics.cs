@@ -26,6 +26,12 @@ namespace NeonGrid.Presentation
         public const int RestorationStatusLabelFontSize = 30;
         public const int RestorationStatusTitleFontSize = 40;
         public const int RestorationStatusBodyFontSize = 34;
+        public const int EndingHeaderFontSize = 32;
+        public const int EndingTitleFontSize = 72;
+        public const int EndingBodyFontSize = 42;
+        public const int EndingStatusTitleFontSize = 46;
+        public const int EndingStatusBodyFontSize = 36;
+        public const int EndingButtonFontSize = 44;
 
         public const float TopHudInset = 52f;
         public const float HudLevelIdentityTopInset = 48f;

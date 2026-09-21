@@ -126,6 +126,9 @@ namespace NeonGrid.Campaign
             fresh.SetIntroCompleted(data.hasIntroCompletionState
                 ? data.introCompleted
                 : fresh.HasMeaningfulProgress);
+            fresh.SetEndingCompleted(data.hasEndingCompletionState
+                ? data.endingCompleted
+                : fresh.IsCampaignComplete);
             fresh.ImportPendingRestorations(FilterValidPendingRestorations(
                 data.pendingRestorationEvents, campaign, fresh, diagnostics));
             return new CampaignLoadResult(CampaignLoadStatus.Loaded, fresh,
@@ -151,6 +154,8 @@ namespace NeonGrid.Campaign
                     campaignId = progress.Campaign.CampaignId,
                     hasIntroCompletionState = true,
                     introCompleted = progress.IntroCompleted,
+                    hasEndingCompletionState = true,
+                    endingCompleted = progress.EndingCompleted,
                     levelProgressEntries = new List<LevelProgressSaveEntry>(progress.ExportProgress()),
                     pendingRestorationEvents = new List<ChapterRestorationSaveEntry>(
                         progress.ExportPendingRestorations())

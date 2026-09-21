@@ -75,6 +75,7 @@ namespace NeonGrid.Campaign
 
         public CampaignDefinition Campaign { get; }
         public bool IntroCompleted { get; private set; }
+        public bool EndingCompleted { get; private set; }
         public int MaximumCampaignStars { get; }
         public ChapterRestorationEvent PendingRestoration =>
             pendingRestorations.Count > 0 ? pendingRestorations[0] : null;
@@ -89,6 +90,7 @@ namespace NeonGrid.Campaign
                 return true;
             }
         }
+        public bool IsEndingRequired => IsCampaignComplete && !EndingCompleted;
         public int TotalStars
         {
             get
@@ -290,6 +292,11 @@ namespace NeonGrid.Campaign
         internal void SetIntroCompleted(bool completed)
         {
             IntroCompleted = completed;
+        }
+
+        internal void SetEndingCompleted(bool completed)
+        {
+            EndingCompleted = completed;
         }
 
         internal IReadOnlyList<ChapterRestorationSaveEntry> ExportPendingRestorations()

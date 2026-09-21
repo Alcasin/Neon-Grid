@@ -177,6 +177,19 @@ namespace NeonGrid.Campaign
             return false;
         }
 
+        public bool TryCompleteEnding()
+        {
+            if (Progress.EndingCompleted) return true;
+            if (!Progress.IsCampaignComplete) return false;
+
+            Progress.SetEndingCompleted(true);
+            LastSaveResult = saveStore.Save(Progress);
+            if (LastSaveResult.Succeeded) return true;
+
+            Progress.SetEndingCompleted(false);
+            return false;
+        }
+
         public string ConsumePendingRestoration()
         {
             return TryConsumePendingRestoration(out ChapterRestorationEvent restorationEvent)

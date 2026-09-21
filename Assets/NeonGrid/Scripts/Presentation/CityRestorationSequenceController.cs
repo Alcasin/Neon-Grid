@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using NeonGrid.Campaign;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace NeonGrid.Presentation
     {
         private CampaignRuntimeView view;
         private CampaignFlowCoordinator flow;
+        private Func<bool> tryShowFinalCompletion;
         private Coroutine routine;
         private Coroutine statusTailRoutine;
 
@@ -22,8 +24,15 @@ namespace NeonGrid.Presentation
         public void Initialize(CampaignRuntimeView runtimeView,
             CampaignFlowCoordinator flowCoordinator)
         {
+            Initialize(runtimeView, flowCoordinator, null);
+        }
+
+        public void Initialize(CampaignRuntimeView runtimeView,
+            CampaignFlowCoordinator flowCoordinator, Func<bool> onFinalRestorationCompleted)
+        {
             view = runtimeView;
             flow = flowCoordinator;
+            tryShowFinalCompletion = onFinalRestorationCompleted;
         }
 
         public void EnterMap()
@@ -121,6 +130,7 @@ namespace NeonGrid.Presentation
                 out ChapterRestorationEvent consumedEvent);
             bool consumedExpectedEvent = consumed &&
                                          consumedEvent.RestoredChapterId == restoredChapterId;
+            bool wasFinalRestoration = CurrentPlan.IncludesFinalNetworkPulse;
             if (!consumedExpectedEvent)
             {
                 Debug.LogWarning("The restoration sequence completed, but its pending event " +
@@ -129,8 +139,11 @@ namespace NeonGrid.Presentation
                 view.HideRestorationStatus();
             }
 
-            view.SetMapInteractionEnabled(true);
             ResetSequenceState();
+            bool endingOwnsPresentation = consumedExpectedEvent && wasFinalRestoration &&
+                                           tryShowFinalCompletion != null &&
+                                           tryShowFinalCompletion();
+            view.SetMapInteractionEnabled(!endingOwnsPresentation);
             if (consumedExpectedEvent && hadVisibleStatus)
                 BeginStatusTail();
             return consumed;
