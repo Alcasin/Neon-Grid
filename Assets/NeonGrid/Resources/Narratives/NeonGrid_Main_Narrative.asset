@@ -26,3 +26,29 @@ MonoBehaviour:
   - title: RESTORATION PRIORITY
     body: "Restore the Power Station.\n\nBring the city back online."
     primaryAction: BEGIN RESTORATION
+  chapterNarratives:
+  - chapterId: power_station
+    briefingTitle: POWER STATION
+    briefingBody: "Primary generation is offline.\nRestore the local circuits."
+    restoredTitle: POWER STATION RESTORED
+    restoredBody: "Generation stable.\nDistribution route established."
+  - chapterId: substation
+    briefingTitle: SUBSTATION
+    briefingBody: "Power is available,\nbut distribution remains offline."
+    restoredTitle: SUBSTATION RESTORED
+    restoredBody: "Distribution network stabilized.\nControl systems are now reachable."
+  - chapterId: control_center
+    briefingTitle: CONTROL CENTER
+    briefingBody: "Grid control remains isolated.\nRestore command routing."
+    restoredTitle: CONTROL CENTER RESTORED
+    restoredBody: "Command network online.\nAutomated infrastructure detected."
+  - chapterId: automation_plant
+    briefingTitle: AUTOMATION PLANT
+    briefingBody: "Automated infrastructure is offline.\nRestore system coordination."
+    restoredTitle: AUTOMATION PLANT RESTORED
+    restoredBody: "Automation synchronized.\nCentral Grid access established."
+  - chapterId: central_grid
+    briefingTitle: CENTRAL GRID
+    briefingBody: "All major systems are online.\nReconnect the city's core grid."
+    restoredTitle: ''
+    restoredBody: ''

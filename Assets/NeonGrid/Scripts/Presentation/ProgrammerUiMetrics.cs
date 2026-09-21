@@ -14,11 +14,18 @@ namespace NeonGrid.Presentation
         public const int MapTitleFontSize = 70;
         public const int MapSecondaryFontSize = 46;
         public const int ChapterCardFontSize = 40;
-        public const int ChapterTitleFontSize = 72;
+        public const int ChapterTitleFontSize = 80;
         public const int RestorationFontSize = 70;
         public const int CityMapHeaderFontSize = 68;
         public const int CityMapStarsFontSize = 44;
         public const int CityNodeLabelFontSize = 30;
+        public const int SelectorBriefingLabelFontSize = 36;
+        public const int SelectorBriefingBodyFontSize = 46;
+        public const int SelectorLevelNumberFontSize = 76;
+        public const int SelectorBackButtonFontSize = 48;
+        public const int RestorationStatusLabelFontSize = 30;
+        public const int RestorationStatusTitleFontSize = 40;
+        public const int RestorationStatusBodyFontSize = 34;
 
         public const float TopHudInset = 52f;
         public const float HudLevelIdentityTopInset = 48f;
@@ -30,8 +37,15 @@ namespace NeonGrid.Presentation
         public const float TutorialCenterY = -226f;
         public const float TutorialPanelHeight = 104f;
         public const float SelectorVerticalSpacing = 48f;
-        public const float SelectorGridTopInset = 280f;
-        public const float SelectorBackButtonCenterY = 360f;
+        public const float SelectorGridTopInset = 380f;
+        public const float SelectorBackButtonCenterY = 170f;
+        public const float SelectorBriefingLabelTopInset = 172f;
+        public const float SelectorBriefingBodyTopInset = 275f;
+        public const float RestorationStatusTopInset = 260f;
+        public const float RestorationStatusWidth = 880f;
+        public const float RestorationStatusHeight = 180f;
+        public const float RestorationStatusHoldSeconds = 1.65f;
+        public const float RestorationStatusFadeSeconds = 0.3f;
         public const float CityAvailablePulseSeconds = 2f;
         public const float CityRestorationFocusSeconds = 0.2f;
         public const float CityRestorationPowerUpSeconds = 0.85f;

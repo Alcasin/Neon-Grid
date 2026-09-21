@@ -26,6 +26,7 @@ namespace NeonGrid.Presentation
             new Dictionary<string, CityChapterNodeView>(StringComparer.Ordinal);
         private readonly List<CityEnergyPathView> cityPaths = new List<CityEnergyPathView>();
         private CampaignDefinition campaign;
+        private CampaignNarrativeDefinition narrative;
         private CampaignProgressService progress;
         private Action<string> openChapter;
         private Action<string> startLevel;
@@ -34,17 +35,28 @@ namespace NeonGrid.Presentation
         private GameObject levelPanel;
         private CanvasGroup mapInteraction;
         private Text totalStarsText;
+        private Text chapterBriefingTitle;
+        private Text chapterBriefingBody;
+        private RectTransform levelGrid;
+        private SystemNarrativeStatusView restorationStatus;
         private bool usesCityMap;
 
         public bool UsesCityMap => usesCityMap;
         public bool IsVisible => canvasObject != null && canvasObject.activeSelf;
         public bool IsMapInteractionEnabled => mapInteraction != null && mapInteraction.interactable &&
                                                mapInteraction.blocksRaycasts;
+        internal bool HasVisibleChapterBriefing => chapterBriefingTitle != null &&
+                                                    chapterBriefingTitle.gameObject.activeSelf;
+        internal Text ChapterBriefingTitle => chapterBriefingTitle;
+        internal Text ChapterBriefingBody => chapterBriefingBody;
+        internal RectTransform LevelGrid => levelGrid;
+        internal SystemNarrativeStatusView RestorationStatus => restorationStatus;
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
             Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap)
         {
             campaign = definition;
+            narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
             progress = progressService;
             openChapter = onOpenChapter;
             startLevel = onStartLevel;
@@ -79,7 +91,8 @@ namespace NeonGrid.Presentation
             CreateButton(levelPanel.transform, "Back To Map", "BACK TO MAP", font,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
-                new Vector2(420f, 100f), onBackToMap);
+                new Vector2(500f, 120f), onBackToMap,
+                ProgrammerUiMetrics.SelectorBackButtonFontSize);
         }
 
         private void BuildFallbackMap(Font font)
@@ -164,6 +177,9 @@ namespace NeonGrid.Presentation
                 node.Initialize(chapter.ChapterId, button, label, glow, parts);
                 cityNodes.Add(chapter.ChapterId, node);
             }
+
+            restorationStatus = gameObject.AddComponent<SystemNarrativeStatusView>();
+            restorationStatus.Build(mapPanel.transform, font);
         }
 
         private void PresentProductionCityMap()
@@ -384,6 +400,23 @@ namespace NeonGrid.Presentation
             return true;
         }
 
+        internal bool ShowRestorationStatus(string restoredChapterId)
+        {
+            if (restorationStatus == null || narrative == null ||
+                !narrative.TryGetChapterNarrative(restoredChapterId,
+                    out CampaignChapterNarrativeEntry entry))
+            {
+                restorationStatus?.Hide();
+                return false;
+            }
+            return restorationStatus.Show(entry);
+        }
+
+        internal void HideRestorationStatus()
+        {
+            restorationStatus?.Hide();
+        }
+
         internal void ApplyRestoredNodePowerUp(CityRestorationSequencePlan plan, float progressValue)
         {
             CityChapterNodeView node = cityNodes[plan.RestoredChapterId];
@@ -454,6 +487,7 @@ namespace NeonGrid.Presentation
 
         private void PrepareMapSurface()
         {
+            HideRestorationStatus();
             mapPanel.SetActive(true);
             levelPanel.SetActive(false);
             totalStarsText.text = usesCityMap
@@ -483,18 +517,46 @@ namespace NeonGrid.Presentation
 
         public void ShowChapter(CampaignChapterDefinition chapter)
         {
+            HideRestorationStatus();
             SetVisible(true);
             mapPanel.SetActive(false);
             levelPanel.SetActive(true);
             ClearGeneratedLevelContent();
+            chapterBriefingTitle = null;
+            chapterBriefingBody = null;
+            levelGrid = null;
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             CreateText(levelPanel.transform, "Generated Chapter Title", chapter.DisplayName, font,
                 ProgrammerUiMetrics.ChapterTitleFontSize,
                 TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -90f), new Vector2(900f, 100f));
 
+            if (narrative != null && narrative.TryGetChapterNarrative(chapter.ChapterId,
+                    out CampaignChapterNarrativeEntry chapterNarrative) &&
+                chapterNarrative.HasBriefing)
+            {
+                chapterBriefingTitle = CreateText(levelPanel.transform,
+                    "Generated Chapter Briefing Title",
+                    $"SYSTEM BRIEFING  /  {chapterNarrative.BriefingTitle}", font,
+                    ProgrammerUiMetrics.SelectorBriefingLabelFontSize,
+                    TextAnchor.MiddleCenter, new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0f, -ProgrammerUiMetrics.SelectorBriefingLabelTopInset),
+                    new Vector2(920f, 52f));
+                chapterBriefingTitle.color = new Color(0.08f, 0.68f, 0.86f, 1f);
+                chapterBriefingBody = CreateText(levelPanel.transform,
+                    "Generated Chapter Briefing Body", chapterNarrative.BriefingBody, font,
+                    ProgrammerUiMetrics.SelectorBriefingBodyFontSize,
+                    TextAnchor.MiddleCenter, new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0f, -ProgrammerUiMetrics.SelectorBriefingBodyTopInset),
+                    new Vector2(920f, 120f));
+                chapterBriefingBody.lineSpacing = 0.86f;
+            }
+
             int rowCount = Mathf.CeilToInt(chapter.Levels.Count / (float)LevelGridColumns);
             RectTransform grid = CreateLevelGrid(rowCount);
+            levelGrid = grid;
             for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
             {
                 Transform row = CreateLevelRow(grid, rowIndex + 1);
@@ -575,14 +637,14 @@ namespace NeonGrid.Presentation
             Text number = button.transform.Find("Label").GetComponent<Text>();
             number.name = "Level Number";
             number.text = $"{index + 1:00}";
-            number.fontSize = 58;
+            number.fontSize = ProgrammerUiMetrics.SelectorLevelNumberFontSize;
             number.alignment = TextAnchor.MiddleCenter;
             number.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             number.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             number.rectTransform.anchoredPosition = completed || !unlocked
-                ? new Vector2(0f, 28f)
+                ? new Vector2(0f, 32f)
                 : Vector2.zero;
-            number.rectTransform.sizeDelta = new Vector2(180f, 100f);
+            number.rectTransform.sizeDelta = new Vector2(190f, 120f);
 
             string state = completed
                 ? levelProgress.HasKnownStars ? BuildStars(levelProgress.BestStars) : "✓"
@@ -607,16 +669,16 @@ namespace NeonGrid.Presentation
             lockRect.anchorMin = new Vector2(0.5f, 0f);
             lockRect.anchorMax = new Vector2(0.5f, 0f);
             lockRect.anchoredPosition = new Vector2(0f, 42f);
-            lockRect.sizeDelta = new Vector2(58f, 58f);
+            lockRect.sizeDelta = new Vector2(64f, 64f);
 
             Image shackle = CreatePanel(lockRect, "Shackle", new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f), new Vector2(0f, 12f), new Vector2(38f, 32f),
+                new Vector2(0.5f, 0.5f), new Vector2(0f, 13f), new Vector2(42f, 35f),
                 Color.white).GetComponent<Image>();
             Image opening = CreatePanel(lockRect, "Shackle Opening", new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f), new Vector2(0f, 9f), new Vector2(22f, 23f),
+                new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(24f, 25f),
                 Locked).GetComponent<Image>();
             Image body = CreatePanel(lockRect, "Body", new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f), new Vector2(0f, -10f), new Vector2(52f, 36f),
+                new Vector2(0.5f, 0.5f), new Vector2(0f, -11f), new Vector2(58f, 40f),
                 Color.white).GetComponent<Image>();
             shackle.raycastTarget = false;
             opening.raycastTarget = false;

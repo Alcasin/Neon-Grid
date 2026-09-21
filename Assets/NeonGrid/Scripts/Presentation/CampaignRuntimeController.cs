@@ -85,6 +85,7 @@ namespace NeonGrid.Presentation
         public bool OpenChapter(string chapterId)
         {
             if (!Flow.OpenChapter(chapterId)) return false;
+            restorationSequence.CancelStatusTail();
             campaignView.ShowChapter(Flow.SelectedChapter);
             return true;
         }
@@ -106,6 +107,7 @@ namespace NeonGrid.Presentation
         public void ShowCurrentChapter()
         {
             if (!Flow.ReturnToLevelSelection()) return;
+            restorationSequence.CancelStatusTail();
             DestroyBoard();
             campaignView.ShowChapter(Flow.SelectedChapter);
         }
@@ -130,6 +132,7 @@ namespace NeonGrid.Presentation
 
         private void ShowActiveGameplay()
         {
+            restorationSequence.CancelStatusTail();
             DestroyBoard();
             campaignView.SetVisible(false);
             ConfigureCamera();

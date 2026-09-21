@@ -23,20 +23,79 @@ namespace NeonGrid.Data
         }
     }
 
+    [Serializable]
+    public sealed class CampaignChapterNarrativeEntry
+    {
+        [SerializeField] private string chapterId;
+        [SerializeField] private string briefingTitle;
+        [SerializeField, TextArea(2, 4)] private string briefingBody;
+        [SerializeField] private string restoredTitle;
+        [SerializeField, TextArea(2, 4)] private string restoredBody;
+
+        public string ChapterId => chapterId;
+        public string BriefingTitle => briefingTitle;
+        public string BriefingBody => briefingBody;
+        public string RestoredTitle => restoredTitle;
+        public string RestoredBody => restoredBody;
+        public bool HasBriefing => !string.IsNullOrWhiteSpace(briefingTitle) &&
+                                   !string.IsNullOrWhiteSpace(briefingBody);
+        public bool HasRestorationStatus => !string.IsNullOrWhiteSpace(restoredTitle) &&
+                                            !string.IsNullOrWhiteSpace(restoredBody);
+
+        public CampaignChapterNarrativeEntry(string chapterId, string briefingTitle,
+            string briefingBody, string restoredTitle = null, string restoredBody = null)
+        {
+            this.chapterId = chapterId;
+            this.briefingTitle = briefingTitle;
+            this.briefingBody = briefingBody;
+            this.restoredTitle = restoredTitle;
+            this.restoredBody = restoredBody;
+        }
+    }
+
     [CreateAssetMenu(fileName = "CampaignNarrative", menuName = "Neon Grid/Campaign Narrative")]
     public sealed class CampaignNarrativeDefinition : ScriptableObject
     {
         [SerializeField] private string campaignId;
         [SerializeField] private List<CampaignIntroPage> introPages =
             new List<CampaignIntroPage>();
+        [SerializeField] private List<CampaignChapterNarrativeEntry> chapterNarratives =
+            new List<CampaignChapterNarrativeEntry>();
 
         public string CampaignId => campaignId;
         public IReadOnlyList<CampaignIntroPage> IntroPages => introPages;
+        public IReadOnlyList<CampaignChapterNarrativeEntry> ChapterNarratives =>
+            chapterNarratives;
 
         public bool AppliesTo(string candidateCampaignId)
         {
             return !string.IsNullOrWhiteSpace(candidateCampaignId) &&
                    string.Equals(campaignId, candidateCampaignId, StringComparison.Ordinal);
+        }
+
+        public bool TryGetChapterNarrative(string chapterId,
+            out CampaignChapterNarrativeEntry entry)
+        {
+            if (!string.IsNullOrWhiteSpace(chapterId))
+                foreach (CampaignChapterNarrativeEntry candidate in chapterNarratives)
+                    if (candidate != null && string.Equals(candidate.ChapterId, chapterId,
+                            StringComparison.Ordinal))
+                    {
+                        entry = candidate;
+                        return true;
+                    }
+            entry = null;
+            return false;
+        }
+
+        public bool HasUniqueChapterIds()
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (CampaignChapterNarrativeEntry entry in chapterNarratives)
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ChapterId) ||
+                    !ids.Add(entry.ChapterId))
+                    return false;
+            return true;
         }
 
 #if UNITY_EDITOR
@@ -46,6 +105,13 @@ namespace NeonGrid.Data
             introPages = pages == null
                 ? new List<CampaignIntroPage>()
                 : new List<CampaignIntroPage>(pages);
+        }
+
+        public void SetChapterNarratives(IEnumerable<CampaignChapterNarrativeEntry> entries)
+        {
+            chapterNarratives = entries == null
+                ? new List<CampaignChapterNarrativeEntry>()
+                : new List<CampaignChapterNarrativeEntry>(entries);
         }
 #endif
     }

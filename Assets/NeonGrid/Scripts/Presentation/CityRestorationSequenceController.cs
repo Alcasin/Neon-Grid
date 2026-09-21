@@ -9,11 +9,15 @@ namespace NeonGrid.Presentation
         private CampaignRuntimeView view;
         private CampaignFlowCoordinator flow;
         private Coroutine routine;
+        private Coroutine statusTailRoutine;
 
         public bool IsRunning { get; private set; }
         public CityRestorationSequencePhase Phase { get; private set; }
         public CityRestorationSequencePlan CurrentPlan { get; private set; }
         public float DurationMultiplier { get; set; } = 1f;
+        public bool IsStatusTailRunning { get; private set; }
+        internal float StatusTailHoldSeconds => ProgrammerUiMetrics.RestorationStatusHoldSeconds;
+        internal float StatusTailFadeSeconds => ProgrammerUiMetrics.RestorationStatusFadeSeconds;
 
         public void Initialize(CampaignRuntimeView runtimeView,
             CampaignFlowCoordinator flowCoordinator)
@@ -25,6 +29,7 @@ namespace NeonGrid.Presentation
         public void EnterMap()
         {
             if (IsRunning) return;
+            CancelStatusTail();
             if (!PreparePendingRestoration()) return;
             routine = StartCoroutine(RunPreparedSequence());
         }
@@ -32,6 +37,7 @@ namespace NeonGrid.Presentation
         internal bool PreparePendingRestoration()
         {
             if (view == null || flow == null) return false;
+            if (IsStatusTailRunning) CancelStatusTail();
 
             ChapterRestorationEvent pending = flow.PeekPendingRestoration();
             if (pending == null)
@@ -77,6 +83,10 @@ namespace NeonGrid.Presentation
                 case CityRestorationSequencePhase.BuildingPowerUp:
                     view.ApplyRestoredNodePowerUp(CurrentPlan,
                         CityRestorationEasing.EaseOutCubic(normalized));
+                    if (normalized >= 1f)
+                        view.ShowRestorationStatus(CurrentPlan.RestoredChapterId);
+                    else
+                        view.HideRestorationStatus();
                     break;
                 case CityRestorationSequencePhase.EnergyTravel:
                     if (CurrentPlan.HasNextChapter)
@@ -101,18 +111,28 @@ namespace NeonGrid.Presentation
             if (!IsRunning || CurrentPlan == null) return false;
 
             Phase = CityRestorationSequencePhase.Settle;
+            string restoredChapterId = CurrentPlan.RestoredChapterId;
+            bool hadVisibleStatus = view.RestorationStatus != null &&
+                                    view.RestorationStatus.IsVisible;
             view.RestoreAuthoritativeMap(false);
+            if (hadVisibleStatus)
+                view.ShowRestorationStatus(restoredChapterId);
             bool consumed = flow.TryConsumePendingRestoration(
                 out ChapterRestorationEvent consumedEvent);
-            if (!consumed || consumedEvent.RestoredChapterId != CurrentPlan.RestoredChapterId)
+            bool consumedExpectedEvent = consumed &&
+                                         consumedEvent.RestoredChapterId == restoredChapterId;
+            if (!consumedExpectedEvent)
             {
                 Debug.LogWarning("The restoration sequence completed, but its pending event " +
                                  "could not be durably consumed. It may replay on a later map visit.",
                     this);
+                view.HideRestorationStatus();
             }
 
             view.SetMapInteractionEnabled(true);
             ResetSequenceState();
+            if (consumedExpectedEvent && hadVisibleStatus)
+                BeginStatusTail();
             return consumed;
         }
 
@@ -125,6 +145,22 @@ namespace NeonGrid.Presentation
                 view.SetMapInteractionEnabled(true);
             }
             ResetSequenceState();
+        }
+
+        internal void CancelStatusTail()
+        {
+            if (statusTailRoutine != null)
+                StopCoroutine(statusTailRoutine);
+            statusTailRoutine = null;
+            IsStatusTailRunning = false;
+            view?.HideRestorationStatus();
+        }
+
+        internal void ApplyStatusTailFade(float progress)
+        {
+            if (!IsStatusTailRunning) return;
+            float normalized = Mathf.Clamp01(progress);
+            view.RestorationStatus?.SetOpacity(1f - normalized);
         }
 
         private IEnumerator RunPreparedSequence()
@@ -151,6 +187,45 @@ namespace NeonGrid.Presentation
                 ProgrammerUiMetrics.CityRestorationSettleSeconds);
             routine = null;
             CompletePreparedSequence();
+        }
+
+        private void BeginStatusTail()
+        {
+            if (statusTailRoutine != null)
+                StopCoroutine(statusTailRoutine);
+            IsStatusTailRunning = true;
+            statusTailRoutine = StartCoroutine(RunStatusTail());
+        }
+
+        private IEnumerator RunStatusTail()
+        {
+            float elapsed = 0f;
+            while (elapsed < ProgrammerUiMetrics.RestorationStatusHoldSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            float fadeDuration = ProgrammerUiMetrics.RestorationStatusFadeSeconds;
+            if (fadeDuration <= 0f)
+            {
+                ApplyStatusTailFade(1f);
+                view.HideRestorationStatus();
+                IsStatusTailRunning = false;
+                statusTailRoutine = null;
+                yield break;
+            }
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                ApplyStatusTailFade(elapsed / fadeDuration);
+                yield return null;
+            }
+            ApplyStatusTailFade(1f);
+            view.HideRestorationStatus();
+            IsStatusTailRunning = false;
+            statusTailRoutine = null;
         }
 
         private IEnumerator WaitPhase(CityRestorationSequencePhase phase, float duration)
@@ -187,10 +262,13 @@ namespace NeonGrid.Presentation
 
         private void OnDisable()
         {
-            if (!IsRunning) return;
-            if (routine != null) StopCoroutine(routine);
-            routine = null;
-            CancelPreparedSequence();
+            if (IsRunning)
+            {
+                if (routine != null) StopCoroutine(routine);
+                routine = null;
+                CancelPreparedSequence();
+            }
+            CancelStatusTail();
         }
 
         private void ResetSequenceState()
