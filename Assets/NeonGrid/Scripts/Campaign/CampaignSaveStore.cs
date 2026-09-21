@@ -257,12 +257,15 @@ namespace NeonGrid.Campaign
                 string expectedNext = entry.restoredChapterIndex + 1 < campaign.Chapters.Count
                     ? campaign.Chapters[entry.restoredChapterIndex + 1].ChapterId
                     : null;
+                string savedNext = string.IsNullOrWhiteSpace(entry.nextChapterId)
+                    ? null
+                    : entry.nextChapterId;
                 bool expectedCampaignComplete =
                     entry.restoredChapterIndex == campaign.Chapters.Count - 1;
                 if (!string.Equals(entry.restoredChapterId, chapter.ChapterId,
                         StringComparison.Ordinal) ||
                     !chapterIds.Add(entry.restoredChapterId) ||
-                    !string.Equals(entry.nextChapterId, expectedNext, StringComparison.Ordinal) ||
+                    !string.Equals(savedNext, expectedNext, StringComparison.Ordinal) ||
                     entry.campaignComplete != expectedCampaignComplete ||
                     !progress.IsChapterRestored(entry.restoredChapterId))
                 {
