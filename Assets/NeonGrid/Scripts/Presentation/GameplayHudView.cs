@@ -40,6 +40,9 @@ namespace NeonGrid.Presentation
 
         public bool IsLeaveConfirmationOpen => leaveConfirmationPanel != null &&
                                                leaveConfirmationPanel.activeSelf;
+        public bool IsCompletionPresentationHeld { get; private set; }
+        public bool IsCompletionPanelVisible => completionPanel != null &&
+                                                completionPanel.activeSelf;
 
         public void Build(Action undo, Action restart, Action requestHint)
         {
@@ -210,7 +213,7 @@ namespace NeonGrid.Presentation
             hintText.text = GetHintText(session);
 
             SessionCompletionResult result = session.CompletionResult;
-            completionPanel.SetActive(result != null);
+            completionPanel.SetActive(result != null && !IsCompletionPresentationHeld);
             if (backButton != null)
                 backButton.gameObject.SetActive(result == null);
             if (result != null)
@@ -222,6 +225,12 @@ namespace NeonGrid.Presentation
                 if (resultActions != null)
                     RefreshResultNavigation();
             }
+        }
+
+        public void SetCompletionPresentationHeld(bool held)
+        {
+            IsCompletionPresentationHeld = held;
+            if (displayedSession != null) Refresh(displayedSession);
         }
 
         private void RefreshResultNavigation()

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f086b76a80e44b5885bc33e45dcb5ac9, type: 3}
+  m_Name: TechnicalNeonPrototype
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CircuitVisualThemeDefinition
+  themeId: technical_neon_prototype
+  displayName: Technical Neon Infrastructure
+  background: {r: 0.019607844, g: 0.03137255, b: 0.0627451, a: 1}
+  board: {r: 0.043137256, g: 0.07058824, b: 0.1254902, a: 1}
+  inactiveConductor: {r: 0.14901961, g: 0.2, b: 0.28627452, a: 1}
+  poweredEnergy: {r: 0.09411765, g: 0.8627451, b: 0.7921569, a: 1}
+  poweredHotCore: {r: 0.7490196, g: 1, b: 0.98039216, a: 1}
+  secondaryBlue: {r: 0.15294118, g: 0.6627451, b: 1, a: 1}
+  powerSource: {r: 1, g: 0.23529412, b: 0.7058824, a: 1}
+  ledObjective: {r: 1, g: 0.84705883, b: 0.2901961, a: 1}
+  success: {r: 0.13333334, g: 0.8745098, b: 0.64705884, a: 1}
+  directionalAccent: {r: 1, g: 0.5411765, b: 0.23921569, a: 1}
+  hint: {r: 1, g: 0.8117647, b: 0.2901961, a: 1}
+  referenceCanvasSize: 256
+  conduitWidth: 30
+  poweredCoreWidth: 11
+  haloWidth: 28
+  housingSprite: {fileID: 0}
+  conductorSprite: {fileID: 0}
+  sourceSymbolSprite: {fileID: 0}
+  ledOffSprite: {fileID: 0}
+  ledOnSprite: {fileID: 0}
+  diodeSymbolSprite: {fileID: 0}
+  switchOpenSprite: {fileID: 0}
+  switchClosedSprite: {fileID: 0}
+  andGateSprite: {fileID: 0}
+  orGateSprite: {fileID: 0}
+  lockOverlaySprite: {fileID: 0}
+  hintOverlaySprite: {fileID: 0}

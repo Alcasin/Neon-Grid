@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NeonGrid.Data;
 using NeonGrid.Simulation;
 using UnityEngine;
 
@@ -27,15 +28,44 @@ namespace NeonGrid.Presentation
         private SpriteRenderer background;
         private TextMesh label;
         private TileHighlightReason highlightReasons;
+        private CircuitVisualThemeDefinition visualTheme;
+        private TechnicalNeonTileRenderer themedRenderer;
 
-        public Color CurrentCircuitColor => center != null ? center.color : Color.clear;
-        public string CurrentLabel => label != null ? label.text : string.Empty;
+        public Color CurrentCircuitColor => themedRenderer != null
+            ? themedRenderer.CurrentCircuitColor
+            : center != null ? center.color : Color.clear;
+        public string CurrentLabel => themedRenderer != null
+            ? themedRenderer.CurrentLabel
+            : label != null ? label.text : string.Empty;
         public bool IsHintHighlighted => (highlightReasons & TileHighlightReason.Hint) != 0;
         public bool IsTutorialHighlighted => (highlightReasons & TileHighlightReason.Tutorial) != 0;
         public TileHighlightReason HighlightReasons => highlightReasons;
+        public bool IsUsingVisualTheme => themedRenderer != null;
+        public CircuitVisualThemeDefinition VisualTheme => visualTheme;
+        public CircuitFunctionalSymbol CurrentFunctionalSymbol => themedRenderer != null
+            ? themedRenderer.CurrentModel.Symbol
+            : CircuitFunctionalSymbol.None;
+        public bool IsVisualLocked => themedRenderer != null &&
+                                      themedRenderer.CurrentModel.IsLocked;
+        public bool IsUnderlyingPowered => themedRenderer != null &&
+                                           themedRenderer.CurrentModel.IsPowered;
+        public float RotatingContentDegrees => themedRenderer?.RotatingContentDegrees ?? 0f;
 
         public void Build(Sprite squareSprite)
         {
+            Build(squareSprite, null);
+        }
+
+        public void Build(Sprite squareSprite, CircuitVisualThemeDefinition theme)
+        {
+            visualTheme = theme;
+            if (visualTheme != null && visualTheme.IsConfigured)
+            {
+                themedRenderer = new TechnicalNeonTileRenderer(transform, squareSprite,
+                    visualTheme);
+                return;
+            }
+
             background = CreatePart("Background", squareSprite, Vector3.zero, new Vector3(0.9f, 0.9f, 1f), 0);
             center = CreatePart("Center", squareSprite, Vector3.zero, new Vector3(0.30f, 0.30f, 1f), 2);
             var labelObject = new GameObject("Component Label");
@@ -52,6 +82,12 @@ namespace NeonGrid.Presentation
 
         public void Refresh(CircuitTileState state, Sprite squareSprite)
         {
+            if (themedRenderer != null)
+            {
+                themedRenderer.Refresh(state);
+                return;
+            }
+
             background.color = TileBackground;
             center.gameObject.SetActive(state.TileType != TileType.Empty);
 
@@ -97,12 +133,22 @@ namespace NeonGrid.Presentation
         public void SetHighlightReasons(TileHighlightReason reasons)
         {
             highlightReasons = reasons;
+            if (themedRenderer != null)
+            {
+                themedRenderer.SetHighlights(reasons);
+                return;
+            }
             if (highlightReasons == TileHighlightReason.None && background != null)
                 background.color = TileBackground;
         }
 
         private void Update()
         {
+            if (themedRenderer != null)
+            {
+                themedRenderer.Tick(Time.unscaledTime);
+                return;
+            }
             if (highlightReasons == TileHighlightReason.None || background == null) return;
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
             // Tutorial takes visual priority if tutorial and hint target the same tile.

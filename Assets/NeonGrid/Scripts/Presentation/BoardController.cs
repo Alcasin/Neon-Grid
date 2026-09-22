@@ -17,10 +17,21 @@ namespace NeonGrid.Presentation
 
         public GameplaySession Session => session;
         public TutorialRuntime Tutorial => tutorial;
+        public BoardView BoardView => boardView;
+        public bool IsCompletionPresentationHeld => hudView != null &&
+                                                     hudView.IsCompletionPresentationHeld;
+        public bool IsCompletionPanelVisible => hudView != null &&
+                                                hudView.IsCompletionPanelVisible;
 
         public void Initialize(LevelDefinition levelDefinition)
         {
             Initialize(new GameplaySession(levelDefinition), null);
+        }
+
+        public void Initialize(LevelDefinition levelDefinition,
+            CircuitVisualThemeDefinition visualTheme)
+        {
+            Initialize(new GameplaySession(levelDefinition), null, null, null, visualTheme);
         }
 
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions)
@@ -31,10 +42,17 @@ namespace NeonGrid.Presentation
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions,
             LevelTutorialDefinition tutorialDefinition, int? levelOrdinal = null)
         {
+            Initialize(gameplaySession, resultActions, tutorialDefinition, levelOrdinal, null);
+        }
+
+        public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions,
+            LevelTutorialDefinition tutorialDefinition, int? levelOrdinal,
+            CircuitVisualThemeDefinition visualTheme)
+        {
             session = gameplaySession ?? throw new System.ArgumentNullException(nameof(gameplaySession));
             tutorial = new TutorialRuntime(tutorialDefinition);
             boardView = gameObject.AddComponent<BoardView>();
-            boardView.Build(session.Board, OnTileTapped);
+            boardView.Build(session.Board, OnTileTapped, visualTheme);
             boardView.SetCompleted(session.IsCompleted);
 
             hudView = gameObject.AddComponent<GameplayHudView>();
@@ -132,6 +150,11 @@ namespace NeonGrid.Presentation
             ApplyHintHighlight();
             hudView.Refresh(session);
             return hint;
+        }
+
+        public void SetCompletionPresentationHeld(bool held)
+        {
+            hudView?.SetCompletionPresentationHeld(held);
         }
 
         private void ApplyHintHighlight()

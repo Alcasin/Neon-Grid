@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NeonGrid.Data;
 using NeonGrid.Simulation;
 using UnityEngine;
 
@@ -12,9 +13,18 @@ namespace NeonGrid.Presentation
         private BoardPointerInput pointerInput;
         private GridPosition? hintPosition;
         private GridPosition? tutorialPosition;
+        public CircuitVisualThemeDefinition VisualTheme { get; private set; }
+        public bool UsesVisualTheme => VisualTheme != null;
 
         public void Build(BoardState board, Action<GridPosition> onTileTapped)
         {
+            Build(board, onTileTapped, null);
+        }
+
+        public void Build(BoardState board, Action<GridPosition> onTileTapped,
+            CircuitVisualThemeDefinition visualTheme)
+        {
+            VisualTheme = visualTheme != null && visualTheme.IsConfigured ? visualTheme : null;
             squareSprite = CreateSquareSprite();
 
             foreach (CircuitTileState tile in board.AllTiles())
@@ -24,7 +34,7 @@ namespace NeonGrid.Presentation
                 tileObject.transform.localPosition = new Vector3(tile.Position.x, tile.Position.y, 0f);
 
                 var view = tileObject.AddComponent<CircuitTileView>();
-                view.Build(squareSprite);
+                view.Build(squareSprite, VisualTheme);
                 tileObject.AddComponent<BoxCollider2D>().size = Vector2.one * 0.9f;
                 tileObject.AddComponent<CircuitTileInput>().Initialize(tile.Position, onTileTapped);
                 tileViews.Add(tile.Position, view);
@@ -57,6 +67,11 @@ namespace NeonGrid.Presentation
         public void SetCompleted(bool completed)
         {
             pointerInput?.SetBoardInputEnabled(!completed);
+        }
+
+        public CircuitTileView GetTileView(GridPosition position)
+        {
+            return tileViews.TryGetValue(position, out CircuitTileView view) ? view : null;
         }
 
         public Bounds GetWorldBounds()
