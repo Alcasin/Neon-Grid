@@ -336,6 +336,8 @@ namespace NeonGrid.Tests
             GameplayHudView themedHud = themedRoot.GetComponent<GameplayHudView>();
             Assert.That(themedHud.UsesProductionSkin, Is.True);
             Assert.That(themedRoot.transform.Find("Gameplay HUD Canvas/Top HUD Keyline"),
+                Is.Null);
+            Assert.That(themedRoot.transform.Find("Gameplay HUD Canvas/Bottom HUD Keyline"),
                 Is.Not.Null);
             Assert.That(themedRoot.transform.Find("Gameplay HUD Canvas/Restart Button")
                 .GetComponent<Outline>(), Is.Not.Null);
@@ -347,6 +349,8 @@ namespace NeonGrid.Tests
             Assert.That(productionRoot.GetComponent<GameplayHudView>().UsesProductionSkin,
                 Is.False);
             Assert.That(productionRoot.transform.Find("Gameplay HUD Canvas/Top HUD Keyline"),
+                Is.Null);
+            Assert.That(productionRoot.transform.Find("Gameplay HUD Canvas/Bottom HUD Keyline"),
                 Is.Null);
             Assert.That(production.PerformPlayerAction(new GridPosition(1, 0)), Is.True);
             Assert.That(production.Session.IsCompleted, Is.True);

@@ -36,22 +36,23 @@ namespace NeonGrid.Presentation
 
         public void Initialize(CampaignDefinition definition, ICampaignProgressStore store)
         {
+            campaign = definition ?? throw new System.ArgumentNullException(nameof(definition));
             EnsureDisplayCamera();
 
-            CampaignLoadResult load = store.Load(definition);
+            CampaignLoadResult load = store.Load(campaign);
             LoadStatus = load.Status;
-            Flow = new CampaignFlowCoordinator(definition, load.Progress, store);
+            Flow = new CampaignFlowCoordinator(campaign, load.Progress, store);
             foreach (string diagnostic in load.Diagnostics)
                 Debug.LogWarning(diagnostic, this);
             Flow.ProgressRecorded += OnProgressRecorded;
 
             Debug.Log($"Neon Grid campaign save path: {store.SavePath}", this);
             campaignView = gameObject.AddComponent<CampaignRuntimeView>();
-            campaignView.Build(definition, load.Progress, id => OpenChapter(id),
+            campaignView.Build(campaign, load.Progress, id => OpenChapter(id),
                 id => StartLevel(id), ShowMap);
             restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
             restorationSequence.Initialize(campaignView, Flow, ShowEndingAfterFinalRestoration);
-            narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
+            narrative = CampaignNarrativeCatalog.LoadForCampaign(campaign.CampaignId);
             if (narrative != null && narrative.IntroPages.Count > 0 &&
                 !load.Progress.IntroCompleted)
             {
@@ -187,7 +188,8 @@ namespace NeonGrid.Presentation
             var resultActions = new GameplayResultActions(Retry, ShowCurrentChapter, ShowMap, Next,
                 ShowCurrentChapter, () => Flow.ResultNavigation);
             boardRoot.AddComponent<BoardController>().Initialize(Flow.ActiveSession, resultActions,
-                Flow.ActiveTutorial, FindLevelOrdinal(Flow.SelectedChapter, Flow.ActiveLevel));
+                Flow.ActiveTutorial, FindLevelOrdinal(Flow.SelectedChapter, Flow.ActiveLevel),
+                campaign.GameplayVisualTheme);
         }
 
         internal static int FindLevelOrdinal(CampaignChapterDefinition chapter,

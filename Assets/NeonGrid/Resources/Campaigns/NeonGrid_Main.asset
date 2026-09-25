@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CampaignDefinition
   campaignId: neon_grid_main
   displayName: Neon Grid
+  gameplayVisualTheme: {fileID: 11400000, guid: d4011d9cb6796db44a195eeabef815e3, type: 2}
   chapters:
   - chapterId: power_station
     displayName: Power Station

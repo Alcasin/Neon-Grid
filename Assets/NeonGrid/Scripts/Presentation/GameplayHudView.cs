@@ -412,8 +412,6 @@ namespace NeonGrid.Presentation
 
         private void CreateProductionHudKeylines(Transform parent)
         {
-            CreateKeyline(parent, "Top HUD Keyline", new Vector2(0.5f, 1f),
-                new Vector2(0f, -126f), new Vector2(700f, 2f));
             CreateKeyline(parent, "Bottom HUD Keyline", new Vector2(0.5f, 0f),
                 new Vector2(0f, 274f), new Vector2(820f, 2f));
         }
