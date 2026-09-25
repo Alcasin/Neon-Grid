@@ -43,7 +43,8 @@ namespace NeonGrid.Presentation
         internal Button PrimaryButton => primaryButton;
         internal Button SkipButton => skipButton;
 
-        public void Build(CampaignNarrativeDefinition narrative, Func<bool> onRequestCompletion)
+        public void Build(CampaignNarrativeDefinition narrative, Func<bool> onRequestCompletion,
+            CampaignUiThemeDefinition theme = null)
         {
             sequence = new CampaignIntroSequence(narrative);
             requestCompletion = onRequestCompletion ??
@@ -96,6 +97,9 @@ namespace NeonGrid.Presentation
                 new Vector2(0f, ButtonCenterY), new Vector2(400f, 104f), PressPrimary, Cyan);
             primaryLabel = primaryButton.transform.Find("Label").GetComponent<Text>();
             PresentCurrentPage();
+            if (theme != null)
+                CampaignUiThemeApplicator.Apply(canvasObject, theme,
+                    CampaignUiPreviewMode.Intro);
         }
 
         public void PressPrimary()

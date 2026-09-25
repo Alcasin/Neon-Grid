@@ -10,22 +10,26 @@ namespace NeonGrid.Data
         [SerializeField] private string campaignId = "campaign";
         [SerializeField] private string displayName = "Campaign";
         [SerializeField] private CircuitVisualThemeDefinition gameplayVisualTheme;
+        [SerializeField] private CampaignUiThemeDefinition campaignUiTheme;
         [SerializeField] private List<CampaignChapterDefinition> chapters =
             new List<CampaignChapterDefinition>();
 
         public string CampaignId => campaignId;
         public string DisplayName => displayName;
         public CircuitVisualThemeDefinition GameplayVisualTheme => gameplayVisualTheme;
+        public CampaignUiThemeDefinition CampaignUiTheme => campaignUiTheme;
         public IReadOnlyList<CampaignChapterDefinition> Chapters => chapters;
 
 #if UNITY_EDITOR
         public void SetData(string newCampaignId, IEnumerable<CampaignChapterDefinition> newChapters,
             string newDisplayName = null,
-            CircuitVisualThemeDefinition newGameplayVisualTheme = null)
+            CircuitVisualThemeDefinition newGameplayVisualTheme = null,
+            CampaignUiThemeDefinition newCampaignUiTheme = null)
         {
             campaignId = newCampaignId;
             if (!string.IsNullOrWhiteSpace(newDisplayName)) displayName = newDisplayName;
             gameplayVisualTheme = newGameplayVisualTheme;
+            campaignUiTheme = newCampaignUiTheme;
             chapters = newChapters == null
                 ? null
                 : new List<CampaignChapterDefinition>(newChapters);

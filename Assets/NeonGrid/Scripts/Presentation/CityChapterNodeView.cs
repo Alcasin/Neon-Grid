@@ -19,6 +19,7 @@ namespace NeonGrid.Presentation
         private Image glow;
         private Image[] buildingParts;
         private RectTransform visualRoot;
+        private Vector3 authoredVisualScale;
         private Vector3 baseVisualScale;
         private bool pulse;
         private float pulseStartedAt;
@@ -46,7 +47,14 @@ namespace NeonGrid.Presentation
             visualRoot = parts != null && parts.Length > 0
                 ? parts[0].transform.parent as RectTransform
                 : null;
-            baseVisualScale = visualRoot != null ? visualRoot.localScale : Vector3.one;
+            authoredVisualScale = visualRoot != null ? visualRoot.localScale : Vector3.one;
+            baseVisualScale = authoredVisualScale;
+        }
+
+        internal void SetPresentationScaleMultiplier(float multiplier)
+        {
+            baseVisualScale = authoredVisualScale * Mathf.Max(0f, multiplier);
+            ResetVisualScale();
         }
 
         public void Present(ChapterMapVisualState state, string text)

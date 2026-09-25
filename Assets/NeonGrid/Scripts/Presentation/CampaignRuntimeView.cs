@@ -39,6 +39,7 @@ namespace NeonGrid.Presentation
         private Text chapterBriefingBody;
         private RectTransform levelGrid;
         private SystemNarrativeStatusView restorationStatus;
+        private CampaignUiThemeDefinition campaignUiTheme;
         private bool usesCityMap;
 
         public bool UsesCityMap => usesCityMap;
@@ -53,9 +54,11 @@ namespace NeonGrid.Presentation
         internal SystemNarrativeStatusView RestorationStatus => restorationStatus;
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
-            Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap)
+            Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap,
+            CampaignUiThemeDefinition theme = null)
         {
             campaign = definition;
+            campaignUiTheme = theme;
             narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
             progress = progressService;
             openChapter = onOpenChapter;
@@ -344,6 +347,7 @@ namespace NeonGrid.Presentation
                 PresentFallbackMap();
             SetMapInteractionEnabled(true);
             SetVisible(true);
+            ApplyTheme(CampaignUiPreviewMode.MapChrome);
         }
 
         internal bool TryPrepareRestoration(ChapterRestorationEvent restorationEvent,
@@ -397,6 +401,7 @@ namespace NeonGrid.Presentation
             }
             SetMapInteractionEnabled(false);
             SetVisible(true);
+            ApplyTheme(CampaignUiPreviewMode.MapChrome);
             return true;
         }
 
@@ -409,7 +414,9 @@ namespace NeonGrid.Presentation
                 restorationStatus?.Hide();
                 return false;
             }
-            return restorationStatus.Show(entry);
+            bool shown = restorationStatus.Show(entry);
+            if (shown) ApplyTheme(CampaignUiPreviewMode.RestorationStatus);
+            return shown;
         }
 
         internal void HideRestorationStatus()
@@ -477,6 +484,7 @@ namespace NeonGrid.Presentation
                 PresentFallbackMap();
             SetMapInteractionEnabled(interactionEnabled);
             SetVisible(true);
+            ApplyTheme(CampaignUiPreviewMode.MapChrome);
         }
 
         internal void SetMapInteractionEnabled(bool enabled)
@@ -570,6 +578,13 @@ namespace NeonGrid.Presentation
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(grid);
+            ApplyTheme(CampaignUiPreviewMode.Selector);
+        }
+
+        private void ApplyTheme(CampaignUiPreviewMode mode)
+        {
+            if (campaignUiTheme != null)
+                CampaignUiThemeApplicator.Apply(canvasObject, campaignUiTheme, mode);
         }
 
         private RectTransform CreateLevelGrid(int rowCount)

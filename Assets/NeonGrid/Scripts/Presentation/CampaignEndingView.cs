@@ -36,7 +36,8 @@ namespace NeonGrid.Presentation
         internal Text PrimaryLabel => primaryLabel;
         internal Button PrimaryButton => primaryButton;
 
-        public void Build(CampaignEndingNarrative narrative, Func<bool> onRequestCompletion)
+        public void Build(CampaignEndingNarrative narrative, Func<bool> onRequestCompletion,
+            CampaignUiThemeDefinition theme = null)
         {
             if (narrative == null || !narrative.IsConfigured)
                 throw new ArgumentException("A configured ending narrative is required.",
@@ -97,6 +98,9 @@ namespace NeonGrid.Presentation
                 narrative.ReturnButtonLabel, font, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 170f), new Vector2(620f, 120f), PressReturnToCity, Success);
             primaryLabel = primaryButton.transform.Find("Label").GetComponent<Text>();
+            if (theme != null)
+                CampaignUiThemeApplicator.Apply(canvasObject, theme,
+                    CampaignUiPreviewMode.Ending);
         }
 
         public void PressReturnToCity()

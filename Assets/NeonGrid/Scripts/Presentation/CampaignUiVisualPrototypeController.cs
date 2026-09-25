@@ -63,24 +63,19 @@ namespace NeonGrid.Presentation
             {
                 case CampaignUiPreviewMode.Intro:
                     IntroView.SetVisible(true);
-                    CampaignUiThemeApplicator.Apply(introRoot, definition.Theme, mode);
                     break;
                 case CampaignUiPreviewMode.Selector:
                     CampaignView.ShowChapter(definition.Campaign.Chapters[0]);
-                    CampaignUiThemeApplicator.Apply(campaignRoot, definition.Theme, mode);
                     break;
                 case CampaignUiPreviewMode.RestorationStatus:
                     CampaignView.ShowMap();
                     CampaignView.ShowRestorationStatus(definition.Campaign.Chapters[0].ChapterId);
-                    CampaignUiThemeApplicator.Apply(campaignRoot, definition.Theme, mode);
                     break;
                 case CampaignUiPreviewMode.Ending:
                     EndingView.SetVisible(true);
-                    CampaignUiThemeApplicator.Apply(endingRoot, definition.Theme, mode);
                     break;
                 case CampaignUiPreviewMode.MapChrome:
                     CampaignView.ShowMap();
-                    CampaignUiThemeApplicator.Apply(campaignRoot, definition.Theme, mode);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
@@ -93,15 +88,17 @@ namespace NeonGrid.Presentation
 
             introRoot = CreateRoot("M15-D1 Intro Preview");
             IntroView = introRoot.AddComponent<CampaignIntroView>();
-            IntroView.Build(definition.Narrative, () => false);
+            IntroView.Build(definition.Narrative, () => false, definition.Theme);
 
             campaignRoot = CreateRoot("M15-D1 Campaign Preview");
             CampaignView = campaignRoot.AddComponent<CampaignRuntimeView>();
-            CampaignView.Build(definition.Campaign, previewProgress, _ => { }, _ => { }, () => { });
+            CampaignView.Build(definition.Campaign, previewProgress, _ => { }, _ => { },
+                () => { }, definition.Theme);
 
             endingRoot = CreateRoot("M15-D1 Ending Preview");
             EndingView = endingRoot.AddComponent<CampaignEndingView>();
-            EndingView.Build(definition.Narrative.EndingNarrative, () => false);
+            EndingView.Build(definition.Narrative.EndingNarrative, () => false,
+                definition.Theme);
         }
 
         private CampaignProgressService CreatePreviewProgress(CampaignDefinition campaign)

@@ -218,8 +218,8 @@ namespace NeonGrid.Presentation
                 as RectTransform;
             if (silhouette == null) return;
 
-            silhouette.localScale = centralGrid.BaseVisualScale *
-                                    CentralGridSilhouetteScaleMultiplier;
+            centralGrid.SetPresentationScaleMultiplier(
+                CentralGridSilhouetteScaleMultiplier);
             Vector2 position = silhouette.anchoredPosition;
             position.y = CentralGridSilhouetteCenterY;
             silhouette.anchoredPosition = position;

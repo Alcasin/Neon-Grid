@@ -49,7 +49,7 @@ namespace NeonGrid.Presentation
             Debug.Log($"Neon Grid campaign save path: {store.SavePath}", this);
             campaignView = gameObject.AddComponent<CampaignRuntimeView>();
             campaignView.Build(campaign, load.Progress, id => OpenChapter(id),
-                id => StartLevel(id), ShowMap);
+                id => StartLevel(id), ShowMap, campaign.CampaignUiTheme);
             restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
             restorationSequence.Initialize(campaignView, Flow, ShowEndingAfterFinalRestoration);
             narrative = CampaignNarrativeCatalog.LoadForCampaign(campaign.CampaignId);
@@ -57,7 +57,7 @@ namespace NeonGrid.Presentation
                 !load.Progress.IntroCompleted)
             {
                 introView = gameObject.AddComponent<CampaignIntroView>();
-                introView.Build(narrative, CompleteIntro);
+                introView.Build(narrative, CompleteIntro, campaign.CampaignUiTheme);
             }
             else
             {
@@ -100,7 +100,7 @@ namespace NeonGrid.Presentation
             if (endingView == null)
             {
                 endingView = gameObject.AddComponent<CampaignEndingView>();
-                endingView.Build(ending, CompleteEnding);
+                endingView.Build(ending, CompleteEnding, campaign.CampaignUiTheme);
             }
             else
             {

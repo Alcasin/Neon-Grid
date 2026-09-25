@@ -19,6 +19,8 @@ namespace NeonGrid.Editor
             "Assets/NeonGrid/Scenes/M12_NeonGrid_Main.unity";
         private const string ProductionThemePath =
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonProductionPrototype.asset";
+        private const string CampaignUiThemePath =
+            "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonCampaignUiPrototype.asset";
 
         private static readonly string[] SourceCampaignPaths =
         {
@@ -65,7 +67,14 @@ namespace NeonGrid.Editor
                 throw new InvalidOperationException(
                     $"Missing or invalid production gameplay theme: {ProductionThemePath}");
 
-            campaign.SetData("neon_grid_main", chapters, "Neon Grid", productionTheme);
+            CampaignUiThemeDefinition campaignUiTheme =
+                AssetDatabase.LoadAssetAtPath<CampaignUiThemeDefinition>(CampaignUiThemePath);
+            if (campaignUiTheme == null || !campaignUiTheme.IsConfigured)
+                throw new InvalidOperationException(
+                    $"Missing or invalid production campaign UI theme: {CampaignUiThemePath}");
+
+            campaign.SetData("neon_grid_main", chapters, "Neon Grid", productionTheme,
+                campaignUiTheme);
             CampaignValidationReport validation = new CampaignValidator().Validate(campaign);
             if (!validation.IsValid)
                 throw new InvalidOperationException("Main production campaign is invalid.");

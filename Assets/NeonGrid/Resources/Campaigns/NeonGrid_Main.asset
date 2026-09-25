@@ -15,6 +15,7 @@ MonoBehaviour:
   campaignId: neon_grid_main
   displayName: Neon Grid
   gameplayVisualTheme: {fileID: 11400000, guid: d4011d9cb6796db44a195eeabef815e3, type: 2}
+  campaignUiTheme: {fileID: 11400000, guid: 983226be5c183624e8ef8360e840cbee, type: 2}
   chapters:
   - chapterId: power_station
     displayName: Power Station

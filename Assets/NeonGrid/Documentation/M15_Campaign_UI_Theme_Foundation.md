@@ -2,7 +2,7 @@
 
 ## Identity and scope
 
-The campaign-facing visual identity is **Technical Neon Interface**: a calm restoration-terminal language that belongs beside the Technical Neon production gameplay skin without borrowing gameplay tile housings. M15-D1 is an isolated visual prototype only. The accepted M13/M14 production presentation remains the no-theme fallback and the production campaign has no campaign-theme association.
+The campaign-facing visual identity is **Technical Neon Interface**: a calm restoration-terminal language that belongs beside the Technical Neon production gameplay skin without borrowing gameplay tile housings. M15-D1 established the isolated visual prototype and M15-D2 associated that accepted theme with the production `neon_grid_main` campaign. The accepted M13/M14 presentation remains the null-theme fallback.
 
 ## Visual language
 
@@ -29,4 +29,4 @@ Depth uses static uGUI layers, shared color data, and lightweight outlines. The 
 
 ## Prototype isolation
 
-`M15_CampaignUiVisualPrototype` reads the production campaign and narrative assets and constructs the authoritative existing views with in-memory preview progress. It never writes campaign progress. The prototype scene is excluded from build settings, and its theme is not assigned to `neon_grid_main`. Production therefore continues to use the accepted programmer-built M13/M14 campaign UI until a later, explicit rollout milestone.
+`M15_CampaignUiVisualPrototype` reads the production campaign and narrative assets and constructs the authoritative existing views with in-memory preview progress. It never writes campaign progress and remains excluded from build settings. M15-D2 reuses the same accepted theme asset through the optional `CampaignDefinition.CampaignUiTheme` association; the production runtime does not route through the prototype scene. Campaigns without that association—including the five source vertical slices—continue to use the accepted M13/M14 fallback.

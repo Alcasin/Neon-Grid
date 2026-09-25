@@ -102,12 +102,10 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionCampaign_HasNoCampaignThemeAssociation()
+        public void ProductionCampaign_UsesAuthoredThemeWithoutControllerSingleton()
         {
             Assert.That(definition.Campaign.CampaignId, Is.EqualTo("neon_grid_main"));
-            Assert.That(typeof(CampaignDefinition).GetFields(
-                    BindingFlags.Instance | BindingFlags.NonPublic)
-                .Any(field => field.FieldType == typeof(CampaignUiThemeDefinition)), Is.False);
+            Assert.That(definition.Campaign.CampaignUiTheme, Is.SameAs(theme));
             Assert.That(typeof(CampaignRuntimeController).GetFields(
                     BindingFlags.Instance | BindingFlags.NonPublic)
                 .Any(field => field.FieldType == typeof(CampaignUiThemeDefinition)), Is.False);
