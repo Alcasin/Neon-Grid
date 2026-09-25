@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f086b76a80e44b5885bc33e45dcb5ac9, type: 3}
-  m_Name: TechnicalNeonPrototype
+  m_Name: TechnicalNeonProductionPrototype
   m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CircuitVisualThemeDefinition
-  themeId: technical_neon_prototype
-  displayName: Technical Neon Infrastructure
-  visualStyle: 0
+  themeId: technical_neon_production_prototype
+  displayName: Technical Neon Production Prototype
+  visualStyle: 1
   background: {r: 0.019607844, g: 0.03137255, b: 0.0627451, a: 1}
   board: {r: 0.043137256, g: 0.07058824, b: 0.1254902, a: 1}
   inactiveConductor: {r: 0.14901961, g: 0.2, b: 0.28627452, a: 1}

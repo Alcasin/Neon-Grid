@@ -15,6 +15,8 @@ namespace NeonGrid.Presentation
         private GridPosition? tutorialPosition;
         public CircuitVisualThemeDefinition VisualTheme { get; private set; }
         public bool UsesVisualTheme => VisualTheme != null;
+        public bool UsesProductionSkin => VisualTheme != null &&
+                                          VisualTheme.UsesProductionTreatment;
 
         public void Build(BoardState board, Action<GridPosition> onTileTapped)
         {
@@ -26,6 +28,9 @@ namespace NeonGrid.Presentation
         {
             VisualTheme = visualTheme != null && visualTheme.IsConfigured ? visualTheme : null;
             squareSprite = CreateSquareSprite();
+            if (UsesProductionSkin)
+                _ = new TechnicalNeonBoardRenderer(transform, squareSprite, VisualTheme,
+                    board.Width, board.Height);
 
             foreach (CircuitTileState tile in board.AllTiles())
             {

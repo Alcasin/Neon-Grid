@@ -12,15 +12,21 @@ namespace NeonGrid.Presentation
         [SerializeField] private GameplayVisualPrototypeDefinition definition;
         [SerializeField] private bool startWithDenseLevel;
         [SerializeField] private bool holdCompletionPresentation = true;
+        [SerializeField] private bool useProductionTheme = true;
 
         private GameObject boardRoot;
         private Text currentLevelLabel;
         private Text completionHoldLabel;
+        private Text themeLabel;
 
         public GameplayVisualPrototypeDefinition Definition => definition;
         public LevelDefinition CurrentLevel { get; private set; }
         public BoardController CurrentBoardController { get; private set; }
         public bool HoldCompletionPresentation => holdCompletionPresentation;
+        public bool UseProductionTheme => useProductionTheme;
+        public CircuitVisualThemeDefinition ActiveTheme => useProductionTheme
+            ? definition?.ProductionVisualTheme
+            : definition?.VisualTheme;
 
         private void Awake()
         {
@@ -55,10 +61,10 @@ namespace NeonGrid.Presentation
             boardRoot = new GameObject($"Technical Neon Board - {level.name}");
             boardRoot.transform.SetParent(transform, false);
             CurrentBoardController = boardRoot.AddComponent<BoardController>();
-            CurrentBoardController.Initialize(level, definition.VisualTheme);
+            CurrentBoardController.Initialize(level, ActiveTheme);
             CurrentBoardController.SetCompletionPresentationHeld(holdCompletionPresentation);
             if (currentLevelLabel != null)
-                currentLevelLabel.text = $"M15 TECHNICAL NEON PROTOTYPE  /  {level.name}";
+                currentLevelLabel.text = $"M15 VISUAL QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
         }
 
         private void ConfigureCamera()
@@ -73,7 +79,7 @@ namespace NeonGrid.Presentation
             camera.orthographic = true;
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = definition.VisualTheme.Background;
+            camera.backgroundColor = ActiveTheme.Background;
             camera.targetDisplay = 0;
         }
 
@@ -94,21 +100,33 @@ namespace NeonGrid.Presentation
 
             currentLevelLabel = CreateText(canvasObject.transform, "Prototype Label", font,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -220f),
-                new Vector2(920f, 54f), 28, definition.VisualTheme.PoweredEnergy);
+                new Vector2(920f, 54f), 28, ActiveTheme.PoweredEnergy);
             CreateButton(canvasObject.transform, "Inspect PS01", "PS01", font,
                 new Vector2(0.36f, 1f), new Vector2(0.36f, 1f), new Vector2(0f, -292f),
-                definition.VisualTheme.Board, definition.VisualTheme.PoweredEnergy,
+                ActiveTheme.Board, ActiveTheme.PoweredEnergy,
                 ShowSimpleLevel);
             CreateButton(canvasObject.transform, "Inspect CG10", "CG10", font,
                 new Vector2(0.64f, 1f), new Vector2(0.64f, 1f), new Vector2(0f, -292f),
-                definition.VisualTheme.Board, definition.VisualTheme.PoweredEnergy,
+                ActiveTheme.Board, ActiveTheme.PoweredEnergy,
                 ShowDenseLevel);
             Button holdButton = CreateButton(canvasObject.transform, "Hold Completion", string.Empty,
                 font, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -380f), definition.VisualTheme.Board,
-                definition.VisualTheme.Hint, ToggleCompletionHold, new Vector2(430f, 68f));
+                new Vector2(0f, -380f), ActiveTheme.Board,
+                ActiveTheme.Hint, ToggleCompletionHold, new Vector2(430f, 68f));
             completionHoldLabel = holdButton.transform.Find("Label").GetComponent<Text>();
             RefreshCompletionHoldLabel();
+            Button b1Button = CreateButton(canvasObject.transform, "Use B1 Theme", "B1 THEME",
+                font, new Vector2(0.36f, 1f), new Vector2(0.36f, 1f),
+                new Vector2(0f, -460f), ActiveTheme.Board, ActiveTheme.PoweredEnergy,
+                () => SetProductionTheme(false));
+            Button b2Button = CreateButton(canvasObject.transform, "Use B2 Theme", "B2 THEME",
+                font, new Vector2(0.64f, 1f), new Vector2(0.64f, 1f),
+                new Vector2(0f, -460f), ActiveTheme.Board, ActiveTheme.PoweredEnergy,
+                () => SetProductionTheme(true));
+            themeLabel = useProductionTheme
+                ? b2Button.transform.Find("Label").GetComponent<Text>()
+                : b1Button.transform.Find("Label").GetComponent<Text>();
+            RefreshThemeControl();
         }
 
         private void EnsureEventSystem()
@@ -172,6 +190,28 @@ namespace NeonGrid.Presentation
             holdCompletionPresentation = held;
             CurrentBoardController?.SetCompletionPresentationHeld(held);
             RefreshCompletionHoldLabel();
+        }
+
+        public void SetProductionTheme(bool enabled)
+        {
+            if (definition == null || useProductionTheme == enabled) return;
+            useProductionTheme = enabled;
+            ConfigureCamera();
+            RefreshThemeControl();
+            ShowLevel(CurrentLevel ?? (startWithDenseLevel
+                ? definition.DenseLevel
+                : definition.SimpleLevel));
+        }
+
+        private void RefreshThemeControl()
+        {
+            if (themeLabel == null) return;
+            Transform selector = themeLabel.transform.parent.parent;
+            Text b1 = selector.Find("Use B1 Theme/Label")?.GetComponent<Text>();
+            Text b2 = selector.Find("Use B2 Theme/Label")?.GetComponent<Text>();
+            if (b1 != null) b1.text = useProductionTheme ? "B1 THEME" : "B1 THEME  [ACTIVE]";
+            if (b2 != null) b2.text = useProductionTheme ? "B2 THEME  [ACTIVE]" : "B2 THEME";
+            themeLabel = useProductionTheme ? b2 : b1;
         }
 
         private void ToggleCompletionHold()

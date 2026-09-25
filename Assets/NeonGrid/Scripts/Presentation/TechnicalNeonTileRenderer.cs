@@ -26,6 +26,7 @@ namespace NeonGrid.Presentation
         private TextMesh label;
         private bool isBuilt;
         private TileHighlightReason highlights;
+        private bool UsesProductionTreatment => theme.UsesProductionTreatment;
 
         public CircuitTileVisualModel CurrentModel { get; private set; }
         public Color CurrentCircuitColor => circuitCenter != null
@@ -97,13 +98,35 @@ namespace NeonGrid.Presentation
         private void BuildStableHousing()
         {
             Sprite housing = theme.HousingSprite != null ? theme.HousingSprite : squareSprite;
+            if (UsesProductionTreatment)
+            {
+                Color socket = Color.Lerp(theme.Board, theme.Background, 0.72f);
+                Color lip = theme.InactiveConductor;
+                lip.a = 0.58f;
+                Color recess = Color.Lerp(theme.Board, theme.Background, 0.36f);
+                Color edge = theme.SecondaryBlue;
+                edge.a = 0.22f;
+                CreatePart(root, "Cell Socket", squareSprite, Vector3.zero,
+                    new Vector3(0.98f, 0.98f, 1f), socket, -2);
+                CreatePart(root, "Socket Inner Lip", squareSprite,
+                    new Vector3(0f, -0.012f, 0f), new Vector3(0.94f, 0.94f, 1f), lip, -1);
+                CreatePart(root, "Housing", housing, Vector3.zero,
+                    new Vector3(0.90f, 0.90f, 1f), theme.Board, 0);
+                CreatePart(root, "Recessed Module Surface", squareSprite,
+                    new Vector3(0f, -0.01f, 0f), new Vector3(0.80f, 0.80f, 1f), recess, 1);
+                CreateBorder(root, "Housing Bevel", 0.90f, 0.022f, edge, 2, null);
+                CreateHousingFasteners();
+            }
+            else
+            {
             CreatePart(root, "Housing", housing, Vector3.zero, new Vector3(0.92f, 0.92f, 1f),
                 theme.Board, 0);
             Color railColor = theme.SecondaryBlue;
             railColor.a = 0.28f;
             CreateBorder(root, "Housing Rail", 0.88f, 0.025f, railColor, 1, null);
-            CreateBorder(root, "Hint Rim", 0.96f, 0.028f, theme.Hint, 8, hintRim);
-            CreateBorder(root, "Tutorial Rim", 0.96f, 0.028f, theme.Success, 9, tutorialRim);
+            }
+            CreateBorder(root, "Hint Rim", 0.96f, 0.028f, theme.Hint, 12, hintRim);
+            CreateBorder(root, "Tutorial Rim", 0.96f, 0.028f, theme.Success, 13, tutorialRim);
             ApplyOverlayVisibility();
         }
 
@@ -128,8 +151,13 @@ namespace NeonGrid.Presentation
                         state.TileType == TileType.Switch));
 
             float hubSize = theme.ToTileUnits(theme.ConduitWidth * 1.35f);
+            if (UsesProductionTreatment)
+                CreatePart(rotatingContent, "Circuit Hub Material Edge", squareSprite,
+                    Vector3.zero, new Vector3(hubSize + 0.04f, hubSize + 0.04f, 1f),
+                    WithAlpha(theme.SecondaryBlue, 0.20f), 4);
             circuitCenter = CreatePart(rotatingContent, "Circuit Base Hub", squareSprite,
-                Vector3.zero, new Vector3(hubSize, hubSize, 1f), theme.InactiveConductor, 3);
+                Vector3.zero, new Vector3(hubSize, hubSize, 1f), theme.InactiveConductor,
+                UsesProductionTreatment ? 5 : 3);
             float hotSize = theme.ToTileUnits(theme.PoweredCoreWidth * 1.25f);
             SpriteRenderer hotCenter = CreatePart(rotatingContent, "Powered Hot Hub", squareSprite,
                 Vector3.zero, new Vector3(hotSize, hotSize, 1f), theme.PoweredHotCore, 6);
@@ -180,20 +208,52 @@ namespace NeonGrid.Presentation
             Sprite conductor = theme.ConductorSprite != null
                 ? theme.ConductorSprite
                 : squareSprite;
+            if (UsesProductionTreatment)
+            {
+                Vector3 collarPosition = outward * 0.45f;
+                Vector3 collarScale = vertical
+                    ? new Vector3(0.18f, 0.10f, 1f)
+                    : new Vector3(0.10f, 0.18f, 1f);
+                Color collar = theme.InactiveConductor;
+                Color collarEdge = theme.SecondaryBlue;
+                collarEdge.a = 0.28f;
+                CreatePart(rotatingContent, "Connector Port Collar", squareSprite,
+                    collarPosition, collarScale, collarEdge, 2);
+                CreatePart(rotatingContent, "Connector Port Recess", squareSprite,
+                    collarPosition, collarScale * 0.72f, collar, 3);
+                float edgeWidth = theme.ToTileUnits(theme.ConduitWidth + 7f);
+                CreatePart(rotatingContent, "Conduit Material Edge", conductor,
+                    position, Scale(edgeWidth), WithAlpha(theme.SecondaryBlue, 0.20f), 3);
+            }
             SpriteRenderer glow = CreatePart(rotatingContent, "Energy Halo", conductor,
-                position, Scale(halo), WithAlpha(theme.PoweredEnergy, 0.18f), 2);
+                position, Scale(halo), WithAlpha(theme.PoweredEnergy, 0.18f),
+                UsesProductionTreatment ? 4 : 2);
             SpriteRenderer baseLayer = CreatePart(rotatingContent, "Circuit Base", conductor,
-                position, Scale(conduit), theme.InactiveConductor, 3);
+                position, Scale(conduit), theme.InactiveConductor,
+                UsesProductionTreatment ? 5 : 3);
             SpriteRenderer energyLayer = CreatePart(rotatingContent, "Powered Energy", conductor,
-                position, Scale(energy), theme.PoweredEnergy, 4);
+                position, Scale(energy), theme.PoweredEnergy,
+                UsesProductionTreatment ? 6 : 4);
             SpriteRenderer hotLayer = CreatePart(rotatingContent, "Powered Hot Core", conductor,
-                position, Scale(core), theme.PoweredHotCore, 5);
+                position, Scale(core), theme.PoweredHotCore,
+                UsesProductionTreatment ? 7 : 5);
             return new PortLayers(baseLayer, glow, energyLayer, hotLayer);
         }
 
         private void BuildSource()
         {
             float core = 0.36f;
+            if (UsesProductionTreatment)
+            {
+                CreatePart(rotatingContent, "Source Chamber Shadow", squareSprite,
+                    new Vector3(0.018f, -0.025f, 0f), new Vector3(0.58f, 0.58f, 1f),
+                    WithAlpha(Color.black, 0.52f), 5);
+                CreateBorder(rotatingContent, "Source Chamber Frame", 0.58f, 0.052f,
+                    WithAlpha(theme.SecondaryBlue, 0.52f), 7, null);
+                CreatePart(rotatingContent, "Source Inner Emission", squareSprite,
+                    Vector3.zero, new Vector3(0.46f, 0.46f, 1f),
+                    WithAlpha(theme.PowerSource, 0.22f), 6, 45f);
+            }
             functionalCore = CreatePart(rotatingContent, "Source Magenta Core", squareSprite,
                 Vector3.zero, new Vector3(core, core, 1f), theme.PowerSource, 6);
             Color reinforcement = theme.SecondaryBlue;
@@ -210,6 +270,15 @@ namespace NeonGrid.Presentation
 
         private void BuildLedObjective()
         {
+            if (UsesProductionTreatment)
+            {
+                CreatePart(rotatingContent, "LED Receiver Backplate", squareSprite,
+                    new Vector3(0.018f, -0.025f, 0f), new Vector3(0.68f, 0.56f, 1f),
+                    WithAlpha(Color.black, 0.48f), 5);
+                CreatePart(rotatingContent, "LED Diffuser Edge", squareSprite,
+                    Vector3.zero, new Vector3(0.58f, 0.48f, 1f),
+                    WithAlpha(theme.LedObjective, 0.24f), 6);
+            }
             ledGlow = CreatePart(rotatingContent, "LED Objective Halo", squareSprite,
                 Vector3.zero, new Vector3(0.68f, 0.58f, 1f),
                 WithAlpha(theme.LedObjective, 0.16f), 5);
@@ -228,6 +297,10 @@ namespace NeonGrid.Presentation
 
         private void BuildDiode()
         {
+            if (UsesProductionTreatment)
+                CreatePart(rotatingContent, "Diode Mechanism Plate", squareSprite,
+                    Vector3.zero, new Vector3(0.50f, 0.44f, 1f),
+                    WithAlpha(theme.InactiveConductor, 0.88f), 6);
             CreatePart(rotatingContent, "Diode Chevron Upper", squareSprite,
                 new Vector3(0.025f, 0.075f, 0f), new Vector3(0.24f, 0.045f, 1f),
                 theme.DirectionalAccent, 7, -35f);
@@ -241,6 +314,18 @@ namespace NeonGrid.Presentation
 
         private void BuildSwitch()
         {
+            if (UsesProductionTreatment)
+            {
+                CreatePart(rotatingContent, "Switch Mechanism Bed", squareSprite,
+                    Vector3.zero, new Vector3(0.58f, 0.42f, 1f),
+                    WithAlpha(theme.InactiveConductor, 0.72f), 6);
+                CreatePart(rotatingContent, "Switch Left Terminal Collar", squareSprite,
+                    new Vector3(-0.20f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f),
+                    WithAlpha(theme.PoweredHotCore, 0.38f), 6);
+                CreatePart(rotatingContent, "Switch Right Terminal Collar", squareSprite,
+                    new Vector3(0.20f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f),
+                    WithAlpha(theme.PoweredHotCore, 0.38f), 6);
+            }
             CreatePart(rotatingContent, "Switch Left Contact", squareSprite,
                 new Vector3(-0.20f, 0f, 0f), new Vector3(0.11f, 0.11f, 1f),
                 theme.SecondaryBlue, 7);
@@ -258,6 +343,7 @@ namespace NeonGrid.Presentation
         private void BuildAndGate()
         {
             Color color = theme.SecondaryBlue;
+            if (UsesProductionTreatment) BuildGateMount("AND");
             Color body = color;
             body.a = 0.58f;
             CreatePart(rotatingContent, "AND Gate Body", squareSprite,
@@ -275,6 +361,7 @@ namespace NeonGrid.Presentation
         private void BuildOrGate()
         {
             Color color = theme.DirectionalAccent;
+            if (UsesProductionTreatment) BuildGateMount("OR");
             Color body = color;
             body.a = 0.50f;
             CreatePart(rotatingContent, "OR Gate Body", squareSprite,
@@ -299,19 +386,70 @@ namespace NeonGrid.Presentation
                 emitter.color = emitterColor;
         }
 
+        private void BuildGateMount(string gateName)
+        {
+            Color mount = theme.InactiveConductor;
+            Color keyline = theme.SecondaryBlue;
+            keyline.a = 0.24f;
+            CreatePart(rotatingContent, $"{gateName} Gate Module Shadow", squareSprite,
+                new Vector3(0.018f, -0.025f, 0f), new Vector3(0.64f, 0.62f, 1f),
+                WithAlpha(Color.black, 0.44f), 5);
+            CreatePart(rotatingContent, $"{gateName} Gate Module Bed", squareSprite,
+                Vector3.zero, new Vector3(0.60f, 0.58f, 1f),
+                WithAlpha(mount, 0.82f), 6);
+            CreateBorder(rotatingContent, $"{gateName} Gate Module Keyline", 0.60f,
+                0.024f, keyline, 7, null);
+        }
+
+        private void CreateHousingFasteners()
+        {
+            Color collar = theme.InactiveConductor;
+            Color bolt = theme.SecondaryBlue;
+            bolt.a = 0.48f;
+            Vector3[] positions =
+            {
+                new Vector3(-0.37f, 0.37f, 0f),
+                new Vector3(0.37f, 0.37f, 0f),
+                new Vector3(-0.37f, -0.37f, 0f),
+                new Vector3(0.37f, -0.37f, 0f)
+            };
+            for (int index = 0; index < positions.Length; index++)
+            {
+                CreatePart(root, $"Housing Fastener Collar {index + 1}", squareSprite,
+                    positions[index], new Vector3(0.075f, 0.075f, 1f), collar, 3);
+                CreatePart(root, $"Housing Fastener Bolt {index + 1}", squareSprite,
+                    positions[index], new Vector3(0.032f, 0.032f, 1f), bolt, 4, 45f);
+            }
+        }
+
         private void BuildCornerClamps()
         {
-            Color clamp = theme.InactiveConductor;
+            Color clamp = UsesProductionTreatment
+                ? Color.Lerp(theme.InactiveConductor, theme.SecondaryBlue, 0.38f)
+                : theme.InactiveConductor;
+            float clampWidth = UsesProductionTreatment ? 0.24f : 0.16f;
+            float clampHeight = UsesProductionTreatment ? 0.075f : 0.055f;
+            float boltSize = UsesProductionTreatment ? 0.075f : 0.05f;
             CreatePart(root, "Lock Clamp Top Left", squareSprite,
-                new Vector3(-0.37f, 0.37f, 0f), new Vector3(0.16f, 0.055f, 1f), clamp, 7);
+                new Vector3(-0.37f, 0.37f, 0f),
+                new Vector3(clampWidth, clampHeight, 1f), clamp, 9);
+            if (UsesProductionTreatment)
+                CreatePart(root, "Lock Clamp Top Left Vertical", squareSprite,
+                    new Vector3(-0.43f, 0.31f, 0f),
+                    new Vector3(clampHeight, clampWidth, 1f), clamp, 9);
             CreatePart(root, "Lock Clamp Top Left Bolt", squareSprite,
-                new Vector3(-0.37f, 0.34f, 0f), new Vector3(0.05f, 0.05f, 1f),
-                theme.SecondaryBlue, 8);
+                new Vector3(-0.37f, 0.34f, 0f), new Vector3(boltSize, boltSize, 1f),
+                theme.SecondaryBlue, 10, UsesProductionTreatment ? 45f : 0f);
             CreatePart(root, "Lock Clamp Bottom Right", squareSprite,
-                new Vector3(0.37f, -0.37f, 0f), new Vector3(0.16f, 0.055f, 1f), clamp, 7);
+                new Vector3(0.37f, -0.37f, 0f),
+                new Vector3(clampWidth, clampHeight, 1f), clamp, 9);
+            if (UsesProductionTreatment)
+                CreatePart(root, "Lock Clamp Bottom Right Vertical", squareSprite,
+                    new Vector3(0.43f, -0.31f, 0f),
+                    new Vector3(clampHeight, clampWidth, 1f), clamp, 9);
             CreatePart(root, "Lock Clamp Bottom Right Bolt", squareSprite,
-                new Vector3(0.37f, -0.34f, 0f), new Vector3(0.05f, 0.05f, 1f),
-                theme.SecondaryBlue, 8);
+                new Vector3(0.37f, -0.34f, 0f), new Vector3(boltSize, boltSize, 1f),
+                theme.SecondaryBlue, 10, UsesProductionTreatment ? 45f : 0f);
         }
 
         private void CreateLabel(string value, float characterSize, int sortingOrder)

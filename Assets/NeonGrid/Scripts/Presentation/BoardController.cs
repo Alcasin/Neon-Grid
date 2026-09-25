@@ -56,7 +56,8 @@ namespace NeonGrid.Presentation
             boardView.SetCompleted(session.IsCompleted);
 
             hudView = gameObject.AddComponent<GameplayHudView>();
-            hudView.Build(() => Undo(), Restart, () => RequestHint(), resultActions, levelOrdinal);
+            hudView.Build(() => Undo(), Restart, () => RequestHint(), resultActions,
+                levelOrdinal, visualTheme);
             hudView.Refresh(session);
             ApplyTutorialPresentation();
             RefreshBoardFraming(true);

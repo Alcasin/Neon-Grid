@@ -3,6 +3,12 @@ using UnityEngine;
 
 namespace NeonGrid.Data
 {
+    public enum CircuitVisualStyle
+    {
+        TechnicalPrototype,
+        ProductionPrototype
+    }
+
     [CreateAssetMenu(fileName = "CircuitVisualTheme",
         menuName = "Neon Grid/Circuit Visual Theme")]
     public sealed class CircuitVisualThemeDefinition : ScriptableObject
@@ -10,6 +16,8 @@ namespace NeonGrid.Data
         [Header("Identity")]
         [SerializeField] private string themeId = "technical_neon_prototype";
         [SerializeField] private string displayName = "Technical Neon Infrastructure";
+        [SerializeField] private CircuitVisualStyle visualStyle =
+            CircuitVisualStyle.TechnicalPrototype;
 
         [Header("Semantic Palette")]
         [SerializeField] private Color background = new Color32(0x05, 0x08, 0x10, 0xFF);
@@ -46,6 +54,9 @@ namespace NeonGrid.Data
 
         public string ThemeId => themeId;
         public string DisplayName => displayName;
+        public CircuitVisualStyle VisualStyle => visualStyle;
+        public bool UsesProductionTreatment =>
+            visualStyle == CircuitVisualStyle.ProductionPrototype;
         public Color Background => background;
         public Color Board => board;
         public Color InactiveConductor => inactiveConductor;
@@ -87,17 +98,34 @@ namespace NeonGrid.Data
         {
             return referencePixels / referenceCanvasSize;
         }
+
+#if UNITY_EDITOR
+        public void SetIdentity(string id, string name, CircuitVisualStyle style)
+        {
+            themeId = id;
+            displayName = name;
+            visualStyle = style;
+        }
+#endif
     }
 
     public static class CircuitVisualThemeCatalog
     {
         public const string TechnicalNeonPrototypeResourcePath =
             "VisualThemes/TechnicalNeonPrototype";
+        public const string TechnicalNeonProductionPrototypeResourcePath =
+            "VisualThemes/TechnicalNeonProductionPrototype";
 
         public static CircuitVisualThemeDefinition LoadTechnicalNeonPrototype()
         {
             return Resources.Load<CircuitVisualThemeDefinition>(
                 TechnicalNeonPrototypeResourcePath);
+        }
+
+        public static CircuitVisualThemeDefinition LoadTechnicalNeonProductionPrototype()
+        {
+            return Resources.Load<CircuitVisualThemeDefinition>(
+                TechnicalNeonProductionPrototypeResourcePath);
         }
     }
 }

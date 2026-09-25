@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NeonGrid.Campaign;
+using NeonGrid.Data;
 using NeonGrid.Session;
 using NeonGrid.Simulation;
 using UnityEngine;
@@ -37,6 +38,10 @@ namespace NeonGrid.Presentation
         private Font font;
         private GameplayResultActions resultActions;
         private GameplaySession displayedSession;
+        private CircuitVisualThemeDefinition visualTheme;
+
+        public bool UsesProductionSkin => visualTheme != null &&
+                                          visualTheme.UsesProductionTreatment;
 
         public bool IsLeaveConfirmationOpen => leaveConfirmationPanel != null &&
                                                leaveConfirmationPanel.activeSelf;
@@ -50,9 +55,11 @@ namespace NeonGrid.Presentation
         }
 
         public void Build(Action undo, Action restart, Action requestHint,
-            GameplayResultActions resultActions, int? levelOrdinal = null)
+            GameplayResultActions resultActions, int? levelOrdinal = null,
+            CircuitVisualThemeDefinition theme = null)
         {
             this.resultActions = resultActions;
+            visualTheme = theme;
             EnsureEventSystem();
 
             canvasObject = new GameObject("Gameplay HUD Canvas");
@@ -65,6 +72,7 @@ namespace NeonGrid.Presentation
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
+            if (UsesProductionSkin) CreateProductionHudKeylines(canvasObject.transform);
 
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             moveText = CreateText(canvasObject.transform, "Move Count", font,
@@ -169,6 +177,7 @@ namespace NeonGrid.Presentation
                 leaveConfirmationPanel.SetActive(false);
             }
             completionPanel.SetActive(false);
+            if (UsesProductionSkin) ApplyProductionTypography();
         }
 
         public void ShowTutorial(string message)
@@ -330,7 +339,7 @@ namespace NeonGrid.Presentation
             eventSystemObject.AddComponent<InputSystemUIInputModule>();
         }
 
-        private static GameObject CreatePanel(Transform parent, string name, Vector2 anchorMin,
+        private GameObject CreatePanel(Transform parent, string name, Vector2 anchorMin,
             Vector2 anchorMax, Vector2 anchoredPosition, Vector2 size)
         {
             var panel = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -341,7 +350,11 @@ namespace NeonGrid.Presentation
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = anchoredPosition;
             rect.sizeDelta = size;
-            panel.GetComponent<Image>().color = PanelColor;
+            Image image = panel.GetComponent<Image>();
+            image.color = UsesProductionSkin
+                ? WithAlpha(Color.Lerp(visualTheme.Board, visualTheme.Background, 0.18f), 0.96f)
+                : PanelColor;
+            if (UsesProductionSkin) AddProductionOutline(panel, 0.28f);
             return panel;
         }
 
@@ -365,20 +378,26 @@ namespace NeonGrid.Presentation
             return text;
         }
 
-        private static Button CreateButton(Transform parent, string name, string caption, Font font,
+        private Button CreateButton(Transform parent, string name, string caption, Font font,
             Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Action command,
             Vector2? size = null)
         {
             GameObject buttonObject = CreatePanel(parent, name, anchorMin, anchorMax, anchoredPosition,
                 size ?? new Vector2(280f, 100f));
             Image image = buttonObject.GetComponent<Image>();
-            image.color = ButtonColor;
+            image.color = UsesProductionSkin
+                ? WithAlpha(Color.Lerp(visualTheme.Board, visualTheme.SecondaryBlue, 0.12f), 0.98f)
+                : ButtonColor;
             Button button = buttonObject.AddComponent<Button>();
             button.targetGraphic = image;
             ColorBlock colors = button.colors;
-            colors.highlightedColor = AccentColor;
-            colors.selectedColor = AccentColor;
-            colors.disabledColor = new Color(0.12f, 0.13f, 0.18f, 0.75f);
+            colors.highlightedColor = UsesProductionSkin
+                ? WithAlpha(visualTheme.PoweredEnergy, 0.75f)
+                : AccentColor;
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = UsesProductionSkin
+                ? WithAlpha(visualTheme.InactiveConductor, 0.68f)
+                : new Color(0.12f, 0.13f, 0.18f, 0.75f);
             button.colors = colors;
             button.onClick.AddListener(() => command?.Invoke());
 
@@ -389,6 +408,49 @@ namespace NeonGrid.Presentation
             text.rectTransform.offsetMax = Vector2.zero;
             text.text = caption;
             return button;
+        }
+
+        private void CreateProductionHudKeylines(Transform parent)
+        {
+            CreateKeyline(parent, "Top HUD Keyline", new Vector2(0.5f, 1f),
+                new Vector2(0f, -126f), new Vector2(700f, 2f));
+            CreateKeyline(parent, "Bottom HUD Keyline", new Vector2(0.5f, 0f),
+                new Vector2(0f, 274f), new Vector2(820f, 2f));
+        }
+
+        private void CreateKeyline(Transform parent, string name, Vector2 anchor,
+            Vector2 position, Vector2 size)
+        {
+            GameObject line = CreatePanel(parent, name, anchor, anchor, position, size);
+            Image image = line.GetComponent<Image>();
+            image.color = WithAlpha(visualTheme.PoweredEnergy, 0.20f);
+            image.raycastTarget = false;
+        }
+
+        private void ApplyProductionTypography()
+        {
+            if (levelIdentityText != null) levelIdentityText.fontStyle = FontStyle.Bold;
+            if (completionTitleText != null) completionTitleText.fontStyle = FontStyle.Bold;
+            Button[] buttons = canvasObject.GetComponentsInChildren<Button>(true);
+            foreach (Button button in buttons)
+            {
+                Text label = button.GetComponentInChildren<Text>(true);
+                if (label != null) label.fontStyle = FontStyle.Bold;
+            }
+        }
+
+        private void AddProductionOutline(GameObject target, float alpha)
+        {
+            var outline = target.AddComponent<Outline>();
+            outline.effectColor = WithAlpha(visualTheme.SecondaryBlue, alpha);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+            outline.useGraphicAlpha = true;
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            color.a = alpha;
+            return color;
         }
 
     }

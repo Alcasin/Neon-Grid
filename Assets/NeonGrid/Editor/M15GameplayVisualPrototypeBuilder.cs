@@ -12,6 +12,8 @@ namespace NeonGrid.Editor
     {
         private const string ThemeDirectory = "Assets/NeonGrid/Resources/VisualThemes";
         private const string ThemePath = ThemeDirectory + "/TechnicalNeonPrototype.asset";
+        private const string ProductionThemePath =
+            ThemeDirectory + "/TechnicalNeonProductionPrototype.asset";
         private const string PrototypeDirectory = "Assets/NeonGrid/Resources/VisualPrototypes";
         private const string PrototypePath =
             PrototypeDirectory + "/M15_GameplayVisualPrototype.asset";
@@ -30,6 +32,20 @@ namespace NeonGrid.Editor
                 theme = ScriptableObject.CreateInstance<CircuitVisualThemeDefinition>();
                 AssetDatabase.CreateAsset(theme, ThemePath);
             }
+            theme.SetIdentity("technical_neon_prototype", "Technical Neon Infrastructure",
+                CircuitVisualStyle.TechnicalPrototype);
+            EditorUtility.SetDirty(theme);
+
+            CircuitVisualThemeDefinition productionTheme =
+                AssetDatabase.LoadAssetAtPath<CircuitVisualThemeDefinition>(ProductionThemePath);
+            if (productionTheme == null)
+            {
+                productionTheme = ScriptableObject.CreateInstance<CircuitVisualThemeDefinition>();
+                AssetDatabase.CreateAsset(productionTheme, ProductionThemePath);
+            }
+            productionTheme.SetIdentity("technical_neon_production_prototype",
+                "Technical Neon Production Prototype", CircuitVisualStyle.ProductionPrototype);
+            EditorUtility.SetDirty(productionTheme);
 
             LevelDefinition ps01 = Resources.Load<LevelDefinition>("Levels/PowerStation/PS_01");
             LevelDefinition cg10 = Resources.Load<LevelDefinition>("Levels/CentralGrid/CG_10");
@@ -43,7 +59,7 @@ namespace NeonGrid.Editor
                 prototype = ScriptableObject.CreateInstance<GameplayVisualPrototypeDefinition>();
                 AssetDatabase.CreateAsset(prototype, PrototypePath);
             }
-            prototype.SetData(theme, ps01, cg10);
+            prototype.SetData(theme, productionTheme, ps01, cg10);
             EditorUtility.SetDirty(prototype);
             AssetDatabase.SaveAssets();
 
@@ -55,7 +71,7 @@ namespace NeonGrid.Editor
             camera.orthographic = true;
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = theme.Background;
+            camera.backgroundColor = productionTheme.Background;
             var root = new GameObject("M15 Gameplay Visual Prototype");
             root.AddComponent<GameplayVisualPrototypeController>().SetDefinition(prototype);
             EditorSceneManager.SaveScene(scene, ScenePath);

@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: M15_GameplayVisualPrototype
   m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.GameplayVisualPrototypeDefinition
   visualTheme: {fileID: 11400000, guid: 8eee7a3ac50330640abf69b02612cc8f, type: 2}
+  productionVisualTheme: {fileID: 11400000, guid: d4011d9cb6796db44a195eeabef815e3, type: 2}
   simpleLevel: {fileID: 11400000, guid: 24d6b5a6f9ac7ea4d932b35d6f3dc956, type: 2}
   denseLevel: {fileID: 11400000, guid: fdc6a5f69d8d8cf4a8781ce44627bd60, type: 2}
