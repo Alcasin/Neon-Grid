@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a94f37babedf3d428c259ff2c84fca9, type: 3}
+  m_Name: PowerStation
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CityBuildingArtDefinition
+  chapterId: power_station
+  baseArchitecture: {fileID: 21300000, guid: 900fd2daede2ec742be9a8aecc8f85f3, type: 3}
+  warmLights: {fileID: 21300000, guid: 23f8141e590a62442b7290b96096abff, type: 3}
+  electricalEnergy: {fileID: 21300000, guid: 75d965db44deb5d438be34ded3c4a451, type: 3}
+  restoredCore: {fileID: 21300000, guid: 08711b84f80a6a14dac4b31ad9e82dc7, type: 3}
+  baseTint: {r: 1, g: 1, b: 1, a: 1}
+  warmTint: {r: 1, g: 0.69, b: 0.32, a: 1}
+  energyTint: {r: 0.12, g: 0.85, b: 0.88, a: 1}
+  coreTint: {r: 0.55, g: 1, b: 0.9, a: 1}
+  stateOpacity:
+  - {x: 0.65, y: 0, z: 0, w: 0}
+  - {x: 0.75, y: 0.35, z: 0, w: 0}
+  - {x: 0.85, y: 0.65, z: 0.3, w: 0}
+  - {x: 0.95, y: 0.85, z: 0.65, w: 0}
+  - {x: 1, y: 1, z: 1, w: 0.85}
+  footprintFraction: {x: 0.9, y: 0.7}
+  localOffset: {x: 0, y: 0}
+  localScale: 1
