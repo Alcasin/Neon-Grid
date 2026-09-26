@@ -8,21 +8,35 @@ using UnityEngine.UI;
 
 namespace NeonGrid.Presentation
 {
+    public enum CityBuildingArtPreviewSource
+    {
+        Prototype,
+        Final
+    }
+
     public sealed class CityBuildingArtPrototypeController : MonoBehaviour
     {
         [SerializeField] private CampaignDefinition campaign;
         [SerializeField] private CityBuildingArtDefinition powerStation;
         [SerializeField] private CityBuildingArtDefinition centralGrid;
+        [SerializeField] private CityBuildingArtDefinition finalPowerStation;
+        [SerializeField] private CityBuildingArtDefinition finalCentralGrid;
         private CityBuildingArtView[] art;
         private CityChapterNodeView[] nodes;
         private int selected;
         private Text selectionLabel;
+        private UnityEngine.UI.Button finalSourceButton;
+        private Text finalSourceLabel;
         private Coroutine emphasis;
         public CampaignRuntimeView MapView { get; private set; }
         public CampaignProgressService PreviewProgress { get; private set; }
         public CityBuildingArtDefinition PowerStation => powerStation;
         public CityBuildingArtDefinition CentralGrid => centralGrid;
         public CampaignDefinition Campaign => campaign;
+        public CityBuildingArtDefinition FinalPowerStation => finalPowerStation;
+        public CityBuildingArtDefinition FinalCentralGrid => finalCentralGrid;
+        public CityBuildingArtPreviewSource PreviewSource { get; private set; }
+        public bool FinalArtAvailable => HasFinalArt(0) || HasFinalArt(1);
 
         private void Awake() => Initialize();
 
@@ -51,6 +65,7 @@ namespace NeonGrid.Presentation
             // Map remains context, not a second campaign navigation implementation.
             MapView.SetMapInteractionEnabled(false);
             BuildControls();
+            PreviewSource = CityBuildingArtPreviewSource.Prototype;
             SelectBuilding(0);
         }
 
@@ -62,6 +77,9 @@ namespace NeonGrid.Presentation
             if (index < 0 || index >= art.Length) throw new ArgumentOutOfRangeException(nameof(index));
             StopEmphasis();
             selected = index;
+            if (PreviewSource == CityBuildingArtPreviewSource.Final && !HasFinalArt(selected))
+                ShowSource(CityBuildingArtPreviewSource.Prototype);
+            UpdateFinalSourceButton();
             UpdateCaption();
         }
 
@@ -71,6 +89,29 @@ namespace NeonGrid.Presentation
             StopEmphasis();
             PresentSample(selected, stateIndex);
             UpdateCaption();
+        }
+
+        public bool ShowSource(CityBuildingArtPreviewSource source)
+        {
+            StopEmphasis();
+            if (source == CityBuildingArtPreviewSource.Final && !HasFinalArt(selected))
+            {
+                UpdateCaption();
+                return false;
+            }
+            CityBuildingArtDefinition[] prototypes = { powerStation, centralGrid };
+            CityBuildingArtDefinition[] finals = { finalPowerStation, finalCentralGrid };
+            for (int index = 0; index < art.Length; index++)
+            {
+                CityBuildingArtDefinition definition = source == CityBuildingArtPreviewSource.Final &&
+                                                       HasFinalArt(index)
+                    ? finals[index]
+                    : prototypes[index];
+                if (!art[index].TrySetDefinition(definition)) return false;
+            }
+            PreviewSource = source;
+            UpdateCaption();
+            return true;
         }
 
         private void PresentSample(int index, int stateIndex)
@@ -116,7 +157,9 @@ namespace NeonGrid.Presentation
 
         private void UpdateCaption()
         {
-            selectionLabel.text = $"DEV ART QA — {nodes[selected].ChapterId} / {art[selected].VisualState}\n" +
+            string availability = HasFinalArt(selected) ? string.Empty : " • FINAL ART MISSING";
+            selectionLabel.text = $"DEV ART QA — {PreviewSource} / {nodes[selected].ChapterId} / " +
+                                  $"{art[selected].VisualState}{availability}\n" +
                                   "Sample labels only • no progress or save writes";
         }
 
@@ -133,9 +176,16 @@ namespace NeonGrid.Presentation
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
             selectionLabel = Label(root.transform, "QA Selection", new Vector2(0f, 198f), new Vector2(900f, 60f));
-            Button(root.transform, "POWER STATION", -280f, 132f, 260f, () => SelectBuilding(0));
-            Button(root.transform, "CENTRAL GRID", 0f, 132f, 260f, () => SelectBuilding(1));
-            Button(root.transform, "EMPHASIS", 280f, 132f, 260f, PreviewEmphasis);
+            Button(root.transform, "POWER STATION", 0f, 132f, 176f, () => SelectBuilding(0));
+            Button(root.transform, "CENTRAL GRID", 192f, 132f, 176f, () => SelectBuilding(1));
+            Button(root.transform, "EMPHASIS", 384f, 132f, 176f, PreviewEmphasis);
+            Button(root.transform, "PROTOTYPE", -384f, 132f, 176f,
+                () => ShowSource(CityBuildingArtPreviewSource.Prototype));
+            finalSourceButton = Button(root.transform,
+                HasFinalArt(selected) ? "FINAL" : "FINAL MISSING", -192f, 132f, 176f,
+                () => ShowSource(CityBuildingArtPreviewSource.Final));
+            finalSourceLabel = finalSourceButton.transform.Find("Label").GetComponent<Text>();
+            UpdateFinalSourceButton();
             string[] labels = { "LOCKED", "STAGE 1", "STAGE 2", "STAGE 3", "RESTORED" };
             for (int index = 0; index < labels.Length; index++)
             {
@@ -144,7 +194,8 @@ namespace NeonGrid.Presentation
             }
         }
 
-        private static void Button(Transform parent, string text, float x, float y, float width, Action action)
+        private static UnityEngine.UI.Button Button(Transform parent, string text, float x,
+            float y, float width, Action action)
         {
             var root = new GameObject("QA " + text, typeof(RectTransform), typeof(Image), typeof(Button));
             root.transform.SetParent(parent, false);
@@ -160,6 +211,7 @@ namespace NeonGrid.Presentation
             Text label = Label(root.transform, "Label", Vector2.zero, rect.sizeDelta);
             label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             label.text = text;
+            return button;
         }
 
         private static Text Label(Transform parent, string name, Vector2 position, Vector2 size)
@@ -178,6 +230,23 @@ namespace NeonGrid.Presentation
             return label;
         }
 
+        private bool HasFinalArt(int index)
+        {
+            CityBuildingArtDefinition definition = index == 0
+                ? finalPowerStation
+                : finalCentralGrid;
+            return definition != null && definition.IsConfigured;
+        }
+
+        private void UpdateFinalSourceButton()
+        {
+            if (finalSourceButton == null) return;
+            bool available = HasFinalArt(selected);
+            finalSourceButton.interactable = available;
+            if (finalSourceLabel != null)
+                finalSourceLabel.text = available ? "FINAL" : "FINAL MISSING";
+        }
+
 #if UNITY_EDITOR
         public void SetData(CampaignDefinition source, CityBuildingArtDefinition ordinary,
             CityBuildingArtDefinition central)
@@ -185,6 +254,13 @@ namespace NeonGrid.Presentation
             campaign = source;
             powerStation = ordinary;
             centralGrid = central;
+        }
+
+        public void SetFinalDefinitions(CityBuildingArtDefinition ordinary,
+            CityBuildingArtDefinition central)
+        {
+            finalPowerStation = ordinary;
+            finalCentralGrid = central;
         }
 #endif
     }

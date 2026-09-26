@@ -34,6 +34,7 @@ namespace NeonGrid.Data
         public Vector2 FootprintFraction => footprintFraction;
         public Vector2 LocalOffset => localOffset;
         public float LocalScale => localScale;
+        public bool HasBaseLayer => baseArchitecture != null;
 
         public bool IsConfigured
         {
@@ -99,6 +100,26 @@ namespace NeonGrid.Data
             electricalEnergy = energy;
             restoredCore = core;
             footprintFraction = footprint;
+        }
+
+        public void SetData(string association, Sprite architecture, Sprite warm, Sprite energy,
+            Sprite core, Color architectureTint, Color facilityTint, Color networkTint,
+            Color restoredTint, Vector4[] opacityProfile, Vector2 footprint,
+            Vector2 offset, float scale)
+        {
+            chapterId = association;
+            baseArchitecture = architecture;
+            warmLights = warm;
+            electricalEnergy = energy;
+            restoredCore = core;
+            baseTint = architectureTint;
+            warmTint = facilityTint;
+            energyTint = networkTint;
+            coreTint = restoredTint;
+            stateOpacity = opacityProfile;
+            footprintFraction = footprint;
+            localOffset = offset;
+            localScale = scale;
         }
 #endif
     }

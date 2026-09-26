@@ -234,6 +234,8 @@ MonoBehaviour:
   campaign: {fileID: 11400000, guid: ab4036c26b950e84ebc90723b0d1830d, type: 2}
   powerStation: {fileID: 11400000, guid: a61e9a19c2d6fb0478c71c23e15b9a3d, type: 2}
   centralGrid: {fileID: 11400000, guid: be2e84e7dd3ab4e4eb19c075100e0c54, type: 2}
+  finalPowerStation: {fileID: 11400000, guid: acf1afcae80acf844a56af944ae80649, type: 2}
+  finalCentralGrid: {fileID: 11400000, guid: 84f0c635ff5f17647a91e656ba91e7dd, type: 2}
 --- !u!4 &1351767804
 Transform:
   m_ObjectHideFlags: 0

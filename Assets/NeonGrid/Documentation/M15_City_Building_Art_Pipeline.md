@@ -125,6 +125,154 @@ an existing definition. No presentation code edit is required to replace art.
 Re-run `CityBuildingArtTests`, inspect all states at map scale, then the regression suite.
 Production rollout needs a separately authorized task; do not assign art to production.
 
+## M15-E1B — final-art binding contract (prepared, art not supplied)
+
+E1B adds production-ready definitions without connecting them to the production map:
+
+- `Art/CityBuildings/PowerStation/PowerStation_Final.asset` → `power_station`
+- `Art/CityBuildings/CentralGrid/CentralGrid_Final.asset` → `central_grid`
+
+Stable `ChapterId` is the sole association. Chapter index, display text, level ID and
+scene names are never used. Both definitions are separate from E1A prototype assets.
+
+Expected authored files are exactly:
+
+```text
+Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Base.png
+Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_WarmLights.png
+Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Energy.png
+Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Core.png
+Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Base.png
+Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_WarmLights.png
+Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Energy.png
+Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Core.png
+```
+
+Power Station authoring target is a 1024×1024 transparent canvas: grounded industrial
+hall, strong roof massing, twin stacks, dark graphite/navy structure, restrained warm
+service lights and progressively introduced cyan infrastructure. Central Grid target
+is 1536×1536: symmetric radial support hub, central technical tower/core, readable
+dark structure and controlled cyan routing. Source dimensions are recommendations;
+all four files for one building must share their actual dimensions and registration.
+
+`CityBuildingArtAssetValidator` reports rather than repairs: missing mandatory base,
+wrong chapter ID, non-Sprite texture, non-Single mode, disabled alpha/sRGB, enabled
+mipmaps, non-Bilinear filtering, non-centered/mismatched pivots, canvas mismatch and
+invalid definition data. Optional overlays may be absent; the base remains mandatory.
+The preparation command deliberately does not modify importers to conceal a failure.
+
+E1B authored opacity profiles differ slightly by building:
+
+| State | Power Station base/warm/energy/core | Central Grid base/warm/energy/core |
+| --- | --- | --- |
+| Locked | 1 / 0 / 0 / 0 | 1 / 0 / 0 / 0 |
+| Stage 1 | 1 / .28 / 0 / 0 | 1 / .32 / 0 / 0 |
+| Stage 2 | 1 / .62 / .18 / 0 | 1 / .70 / .22 / 0 |
+| Stage 3 | 1 / .88 / .63 / .12 | 1 / .90 / .72 / .30 |
+| Restored | 1 / 1 / 1 / .65 | 1 / 1 / 1 / 1 |
+
+The architecture remains readable at full alpha; authored Base art supplies its dark
+material values. Warm facility activity precedes electrical energy. Central Grid gains
+more core emphasis at Stage 3/Restored while retaining dark structural regions.
+
+Run **Neon Grid > Prepare M15 Final City Building Art Bindings** after importing or
+updating authored PNGs. The command creates missing definition/folder assets, binds
+only Sprites Unity can actually load at the exact contract paths, preserves import
+errors for validation, and updates only the isolated comparison scene references.
+It never generates images and never assigns final art to a production campaign/node.
+
+The isolated scene provides `PROTOTYPE / FINAL` switching. `FINAL` is disabled and
+marked missing until both final definitions have valid base sprites. State and emphasis
+controls operate on whichever valid source is selected; switching reuses the existing
+four Images and assigns registered sprites/tints without rebuilding on state changes.
+Production `CampaignRuntimeView` continues to create only programmer silhouettes.
+
+Final-art QA after files are supplied:
+
+1. Import every supplied layer using Sprite 2D/UI, Single, alpha + sRGB enabled,
+   mipmaps off, Bilinear, centered pivot. Do not trim layers independently.
+2. Run the preparation command. Resolve every validation issue; do not use prototype
+   images or importer auto-fixes as substitutes.
+3. Open `M15_CityBuildingArtPrototype.unity`, enter Play and compare PROTOTYPE/FINAL.
+4. For each building, inspect all five states and repeated EMPHASIS at 1080×1920,
+   1080×2340 and 720×1280. Check pixel registration, label clearance, readable dark
+   architecture, warm-first activation, restrained cyan and zero transform drift.
+5. Confirm Central Grid retains center Y 76, effective scale 1.075 and approximately
+   20–30% greater map prominence; confirm Power Station remains inside 210×150.
+6. Open production `M12_NeonGrid_Main.unity` and confirm it still uses placeholders.
+   Do not authorize rollout based only on automated tests.
+
+At E1B preparation time all eight authored PNGs listed above are absent. The final
+definitions intentionally contain null sprite slots, fail mandatory-base validation,
+and leave FINAL comparison disabled. E1A prototype art remains available and no
+substitute final artwork was generated. Final visual acceptance is therefore pending.
+
+E1B automated verification in Unity 6000.3.8f1:
+
+- E1B focused: 32/32 passed; E1A focused: 35/35 passed.
+- Requested combined regressions: 465/465 passed.
+- Complete EditMode suite: 928/928 passed.
+- 0 failed, 0 skipped, 0 inconclusive, 0 C# compiler errors/warnings.
+- Production Resources and ProjectSettings have no working-tree modifications.
+- The comparison scene remains excluded from Editor build settings.
+
+## M15-E1B.1 — final Power Station overlays
+
+The manually supplied `PowerStation_Base.png` is authoritative and locked. It is a
+1254×1254 RGBA PNG with real alpha and SHA-256
+`C713B39D3E579A13DDC3F4672896D7F49E32D203C918FDCA5D7F7698E05CC343`.
+It imports as Sprite 2D/UI, Single, Full Rect, center pivot, Input Texture Alpha,
+alpha-is-transparency and sRGB on, mipmaps/read-write/physics shape off, Clamp,
+Bilinear, max size 2048 and no compression. E1B.1 does not rewrite this file.
+
+`Tools/Art/GeneratePowerStationOverlays.py` uses Pillow and hand-authored masks in
+the locked image's exact coordinate space. It asserts the Base hash before and after
+generation, never samples or redraws architecture, never crops/scales/rotates the
+canvas, and writes only three transparent registered 1254×1254 RGBA overlays:
+
+- `PowerStation_WarmLights.png`: three sparse, segmented amber service-light clusters,
+  subordinate machinery indicators and warm-white hot points. The clusters are sized
+  to remain readable at the 189×105 map footprint; they do not reproduce the yellow
+  rail network or outline the architecture.
+- `PowerStation_Energy.png`: a limited set of narrow cyan major-pipe/conduit routes
+  plus two restrained stack-base arcs. It does not outline the silhouette.
+- `PowerStation_Core.png`: six small final-state junctions, with three cyan-white hot
+  centers. There is no reactor sphere or large roof fill.
+
+Solid effects are intersected with Base alpha. Compact Gaussian halos are constrained
+to a 15-pixel dilation of authored building alpha, preventing rectangular matte/glow
+artifacts. At meaningful alpha above 8/255, Warm covers under .8%, Energy under 2%,
+and Core under .3% of the source canvas. The accepted Power Station opacity profile
+is `(1,0,0,0)`, `(1,.42,0,0)`, `(1,.72,.24,0)`,
+`(1,.88,.63,.12)`, `(1,1,1,.65)`.
+Final definitions use neutral white layer tints because these authored PNG overlays
+already contain their intended amber/cyan color; this prevents double-tint darkening.
+
+`M15PowerStationOverlayImportConfigurator` explicitly configures generated overlay
+importers to the locked Base contract after first rejecting any canvas mismatch. The
+general E1B preparation step then binds all four Sprites to `PowerStation_Final.asset`
+and validates them; it still reports Central Grid missing. Final mode is now available
+per selected building: Power Station can compare Prototype/Final while Central Grid
+remains prototype-only. Switching source reuses the same four Images.
+
+`Documentation/Previews/PowerStation_StatePreview.png` is a development-only strip
+showing Locked through Restored at the actual 189×105 map display size. It is not a
+scene/build dependency. This preview supports composition review but does not replace
+manual Game-view acceptance at 1080×1920, 1080×2340 and 720×1280.
+
+Manual acceptance for E1B.1:
+
+1. Open `M15_CityBuildingArtPrototype.unity`, enter Play and select Power Station.
+2. Alternate PROTOTYPE and FINAL; confirm the FINAL architecture is the supplied Base,
+   with no crop, shift, scale, perspective or registration change between layers.
+3. Cycle all five states. Confirm warm lights appear first, cyan remains controlled,
+   and Restored retains graphite/navy architecture instead of becoming a glow blob.
+4. Run EMPHASIS at least ten times and switch states/source between cycles. Confirm
+   all four layers remain registered and settle to the exact authored transform.
+5. Repeat at 1080×1920, 1080×2340 and 720×1280; inspect label/progress/star clearance.
+6. Select Central Grid and confirm FINAL is unavailable. Open production M12 and
+   confirm the City Map still uses the accepted programmer silhouettes.
+
 ## Manual visual acceptance
 
 1. Open `Assets/NeonGrid/Scenes/M15_CityBuildingArtPrototype.unity`, enter Play.

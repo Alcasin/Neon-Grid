@@ -17,6 +17,8 @@ namespace NeonGrid.Presentation
         private Vector3 baseScale;
         private Quaternion baseRotation;
         private bool initialized;
+        private string chapterId;
+        private RectTransform visualRegion;
         public CityBuildingArtDefinition Definition { get; private set; }
         public ChapterMapVisualState VisualState { get; private set; }
         public bool UsesArt { get; private set; }
@@ -29,24 +31,38 @@ namespace NeonGrid.Presentation
             if (initialized) throw new InvalidOperationException("Art view is already initialized.");
             if (visualRegion == null) throw new ArgumentNullException(nameof(visualRegion));
             initialized = true;
-            Definition = definition;
+            this.chapterId = chapterId;
+            this.visualRegion = visualRegion;
             fallback = placeholderParts ?? Array.Empty<Image>();
             fallbackEnabled = new bool[fallback.Length];
             for (int index = 0; index < fallback.Length; index++)
                 fallbackEnabled[index] = fallback[index] != null && fallback[index].enabled;
-            UsesArt = definition != null && definition.IsConfigured &&
-                      definition.ChapterId == chapterId;
+            Definition = definition;
+            UsesArt = IsUsable(definition);
             if (!UsesArt) return;
+            CreateArtRoot();
+            BindDefinition(definition);
+        }
 
+        public bool TrySetDefinition(CityBuildingArtDefinition definition)
+        {
+            if (!initialized || !IsUsable(definition)) return false;
+            if (artRoot == null) CreateArtRoot();
+            BindDefinition(definition);
+            return true;
+        }
+
+        private bool IsUsable(CityBuildingArtDefinition definition)
+        {
+            return definition != null && definition.IsConfigured &&
+                   definition.ChapterId == chapterId;
+        }
+
+        private void CreateArtRoot()
+        {
             var root = new GameObject("Authored Building Art", typeof(RectTransform));
             artRoot = root.GetComponent<RectTransform>();
             artRoot.SetParent(visualRegion, false);
-            artRoot.sizeDelta = Vector2.Scale(visualRegion.sizeDelta, definition.FootprintFraction);
-            artRoot.anchoredPosition = definition.LocalOffset;
-            artRoot.localScale = Vector3.one * definition.LocalScale;
-            basePosition = artRoot.localPosition;
-            baseScale = artRoot.localScale;
-            baseRotation = artRoot.localRotation;
             string[] names = { "Base Architecture", "Warm Facility Lights", "Electrical Energy", "Restored Core" };
             for (int index = 0; index < layers.Length; index++)
             {
@@ -56,14 +72,27 @@ namespace NeonGrid.Presentation
                 image.rectTransform.anchorMin = Vector2.zero;
                 image.rectTransform.anchorMax = Vector2.one;
                 image.rectTransform.sizeDelta = Vector2.zero;
-                image.sprite = definition.GetSprite(index);
                 image.raycastTarget = false;
                 // Registered layers share a canvas; never derive dimensions from source pixels.
                 image.type = Image.Type.Simple;
                 layers[index] = image;
             }
+        }
+
+        private void BindDefinition(CityBuildingArtDefinition definition)
+        {
+            Definition = definition;
+            UsesArt = true;
+            artRoot.gameObject.SetActive(true);
+            artRoot.sizeDelta = Vector2.Scale(visualRegion.sizeDelta, definition.FootprintFraction);
+            artRoot.anchoredPosition = definition.LocalOffset;
+            artRoot.localRotation = Quaternion.identity;
+            artRoot.localScale = Vector3.one * definition.LocalScale;
+            basePosition = artRoot.localPosition;
+            baseScale = artRoot.localScale;
+            baseRotation = artRoot.localRotation;
             SetFallback(false);
-            Present(ChapterMapVisualState.Locked);
+            Present(VisualState);
         }
 
         public void Present(CampaignChapterState chapterState, int completed, int total)
