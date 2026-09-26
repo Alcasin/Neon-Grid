@@ -336,6 +336,64 @@ Manual acceptance for E1B.2:
 7. Exit Play and open production M12. Confirm both buildings still use the accepted
    programmer silhouettes and no final-art prototype controls or bindings are present.
 
+## M15-E1C — production rollout for Power Station and Central Grid
+
+Production campaign data now owns an optional list of `CampaignCityBuildingArtBinding`
+records. Each record associates a stable authored chapter ID with one
+`CityBuildingArtDefinition`; display names, chapter indexes, level IDs and hierarchy
+names are never used for lookup. `neon_grid_main` contains exactly:
+
+- `power_station` → `PowerStation_Final.asset`
+- `central_grid` → `CentralGrid_Final.asset`
+
+Substation, Control Center and Automation Plant have no binding and therefore retain
+their accepted programmer-art silhouettes. Final art remains environmental map content
+on the campaign, separate from `CampaignUiThemeDefinition`.
+
+`MainCampaignBuilder` loads and validates both accepted definitions, authors the two
+stable-ID bindings after cloning the five source chapters, and fails clearly if either
+accepted production definition is missing or invalid. Rebuilding repeatedly produces
+the same campaign asset. Vertical-slice campaigns remain unbound and use fallback UI.
+
+During production node construction, `CampaignRuntimeView` resolves optional art from
+the campaign and passes it to `CityChapterNodeView`. A valid definition creates one
+`CityBuildingArtView` with four Images beneath the existing Building Silhouette root.
+No binding creates no art component. Missing, mismatched or invalid optional art emits
+validation diagnostics but remains runtime-safe: the existing silhouette stays visible.
+Null binding records, duplicate IDs and unknown chapter IDs remain validation errors.
+
+The chapter node continues to own its hit target, label, M13 visual state and resolved
+themed silhouette transform. Final art only mirrors the shared
+`CityMapPresentationModel` state. The existing restoration focus, power-up, reveal and
+network-pulse animations scale the common silhouette root, so all registered layers
+move together and settle to the same authored/themed base transform. No art state is
+written to saves: load and replay derive it again from campaign progress.
+
+The shared M13 progression semantics remain authoritative: Locked chapters use Locked;
+an available chapter with 0–3 completed levels uses Stage 1, 4–6 Stage 2, 7–9 Stage 3,
+and 10 Restored. Therefore a fresh campaign intentionally displays available Power
+Station at Stage 1 and locked Central Grid at Locked. Stars affect labels only, never
+building restoration state.
+
+The existing editor-only **Neon Grid > Narrative QA** window now includes deterministic
+Power Station Stage 1/2/3/Restored and Central Grid Stage 1/2/3 presets. It retains the
+existing automatic production-save backup and explicit restore flow; no debug controls
+are added to production runtime UI.
+
+Production manual QA:
+
+1. Back up the current production save in **Neon Grid > Narrative QA**.
+2. Prepare Fresh Map, Power Station Stage 1/2/3/Restored and First Restoration Pending.
+3. Run `M12_NeonGrid_Main.unity`; inspect the map and first restoration sequence.
+4. Prepare Central Grid Stage 1/2/3, Final Restoration Pending, Ending Pending and
+   Post-Ending Complete; inspect each production lifecycle state.
+5. Repeat map inspection at 1080×1920, 1080×2340 and 720×1280. Confirm final Power
+   Station and Central Grid remain label-safe while the other three silhouettes remain
+   unchanged and every original node hit target remains authoritative.
+6. Replay an already completed Power Station and Central Grid level, return to the map
+   and confirm their Restored art state remains derived from progress.
+7. Restore the Narrative QA backup when finished.
+
 ## Manual visual acceptance
 
 1. Open `Assets/NeonGrid/Scenes/M15_CityBuildingArtPrototype.unity`, enter Play.

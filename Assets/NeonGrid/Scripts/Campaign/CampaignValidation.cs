@@ -30,7 +30,14 @@ namespace NeonGrid.Campaign
         EmptyTutorialMessage,
         TutorialTargetOutOfBounds,
         TutorialTargetEmpty,
-        TutorialCompletionIncompatible
+        TutorialCompletionIncompatible,
+        NullCityBuildingArtBinding,
+        EmptyCityBuildingArtChapterId,
+        DuplicateCityBuildingArtChapterId,
+        UnknownCityBuildingArtChapterId,
+        MissingCityBuildingArtDefinition,
+        MismatchedCityBuildingArtDefinition,
+        InvalidCityBuildingArtDefinition
     }
 
     public sealed class CampaignValidationIssue
@@ -166,7 +173,59 @@ namespace NeonGrid.Campaign
                 }
             }
 
+            ValidateCityBuildingArt(campaign, chapterIds, report);
+
             return report;
+        }
+
+        private static void ValidateCityBuildingArt(CampaignDefinition campaign,
+            HashSet<string> chapterIds, CampaignValidationReport report)
+        {
+            if (campaign.CityBuildingArt == null) return;
+            var boundChapterIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < campaign.CityBuildingArt.Count; index++)
+            {
+                CampaignCityBuildingArtBinding binding = campaign.CityBuildingArt[index];
+                if (binding == null)
+                {
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.NullCityBuildingArtBinding,
+                        $"City building art binding at index {index} is null.");
+                    continue;
+                }
+                if (string.IsNullOrWhiteSpace(binding.ChapterId))
+                {
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.EmptyCityBuildingArtChapterId,
+                        $"City building art binding at index {index} has no chapter ID.");
+                    continue;
+                }
+                if (!boundChapterIds.Add(binding.ChapterId))
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.DuplicateCityBuildingArtChapterId,
+                        $"City building art for '{binding.ChapterId}' is duplicated.");
+                if (!chapterIds.Contains(binding.ChapterId))
+                    report.Add(CampaignValidationSeverity.Error,
+                        CampaignValidationCode.UnknownCityBuildingArtChapterId,
+                        $"City building art targets unknown chapter '{binding.ChapterId}'.");
+                if (binding.ArtDefinition == null)
+                {
+                    report.Add(CampaignValidationSeverity.Warning,
+                        CampaignValidationCode.MissingCityBuildingArtDefinition,
+                        $"City building art for '{binding.ChapterId}' has no definition.");
+                    continue;
+                }
+                if (!string.Equals(binding.ArtDefinition.ChapterId, binding.ChapterId,
+                        StringComparison.Ordinal))
+                    report.Add(CampaignValidationSeverity.Warning,
+                        CampaignValidationCode.MismatchedCityBuildingArtDefinition,
+                        $"City building art for '{binding.ChapterId}' references definition " +
+                        $"'{binding.ArtDefinition.ChapterId}'.");
+                if (!binding.ArtDefinition.IsConfigured)
+                    report.Add(CampaignValidationSeverity.Warning,
+                        CampaignValidationCode.InvalidCityBuildingArtDefinition,
+                        $"City building art for '{binding.ChapterId}' is not configured.");
+            }
         }
 
         private static void ValidateTutorial(CampaignLevelEntry entry,

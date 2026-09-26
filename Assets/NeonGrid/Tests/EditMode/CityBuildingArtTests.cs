@@ -292,15 +292,30 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionMapStillUsesPlaceholders_AndAcceptedThemeBindings()
+        public void ProductionMapUsesTwoFinalArtBindings_AndAcceptedThemeBindings()
         {
             var root = NewObject("Production unchanged");
             CampaignRuntimeView view = root.AddComponent<CampaignRuntimeView>();
             view.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { }, () => { }, campaign.CampaignUiTheme);
             view.ShowMap();
-            Assert.That(view.GetComponentsInChildren<CityBuildingArtView>(true), Is.Empty);
+            CityBuildingArtView[] productionArt = view.GetComponentsInChildren<
+                CityBuildingArtView>(true);
+            Assert.That(productionArt, Has.Length.EqualTo(2));
+            Assert.That(productionArt.Select(art => art.Definition.ChapterId),
+                Is.EquivalentTo(new[] { "power_station", "central_grid" }));
             foreach (CityChapterNodeView node in view.GetComponentsInChildren<CityChapterNodeView>())
-                Assert.That(node.transform.Find("Building Silhouette").GetComponentsInChildren<Image>().All(image => image.enabled), Is.True);
+            {
+                bool hasFinalArt = node.ChapterId == "power_station" || node.ChapterId == "central_grid";
+                Assert.That(node.BuildingArtView != null && node.BuildingArtView.UsesArt,
+                    Is.EqualTo(hasFinalArt), node.ChapterId);
+                Image[] programmerParts = node.transform.Find("Building Silhouette")
+                    .GetComponentsInChildren<Image>()
+                    .Where(image => !hasFinalArt ||
+                                    !image.transform.IsChildOf(node.BuildingArtView.ArtRoot))
+                    .ToArray();
+                Assert.That(programmerParts.All(image => image.enabled), Is.EqualTo(!hasFinalArt),
+                    node.ChapterId);
+            }
             Assert.That(campaign.CampaignUiTheme, Is.SameAs(CampaignUiThemeCatalog.LoadTechnicalNeonPrototype()));
             Assert.That(campaign.GameplayVisualTheme, Is.SameAs(CircuitVisualThemeCatalog.LoadTechnicalNeonProductionPrototype()));
         }

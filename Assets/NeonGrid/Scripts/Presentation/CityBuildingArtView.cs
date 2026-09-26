@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace NeonGrid.Presentation
 {
-    // Opt-in only: production nodes do not create this component.
+    // Optional authored-art layer; nodes without a valid binding retain programmer-art fallback.
     public sealed class CityBuildingArtView : MonoBehaviour
     {
         private readonly Image[] layers = new Image[4];

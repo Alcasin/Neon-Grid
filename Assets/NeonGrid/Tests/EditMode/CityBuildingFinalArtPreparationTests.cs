@@ -231,21 +231,21 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionMapAndBuildSettings_DoNotDependOnFinalOrPrototypeArt()
+        public void ProductionMapUsesOnlyAcceptedFinalArtAndBuildExcludesPrototypeScene()
         {
             var root = NewObject("Production map");
             CampaignRuntimeView map = root.AddComponent<CampaignRuntimeView>();
             map.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
                 () => { }, campaign.CampaignUiTheme);
             map.ShowMap();
-            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true), Is.Empty);
+            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true)
+                .Select(view => view.Definition.ChapterId),
+                Is.EquivalentTo(new[] { "power_station", "central_grid" }));
             Assert.That(EditorBuildSettings.scenes.Select(scene => scene.path),
                 Has.None.EqualTo(M15CityBuildingArtPrototypeBuilder.ScenePath));
             foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
             {
                 string[] dependencies = AssetDatabase.GetDependencies(scene.path);
-                Assert.That(dependencies.Any(path => path.StartsWith(
-                    M15CityBuildingFinalArtPreparation.Root)), Is.False);
                 Assert.That(dependencies.Any(path => path.StartsWith(
                     M15CityBuildingArtPrototypeBuilder.DirectoryPath)), Is.False);
             }

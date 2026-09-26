@@ -110,6 +110,23 @@ namespace NeonGrid.Editor
                 MessageType.Warning);
             DrawPresetButton("Prepare FRESH INTRO", NarrativeQaPreset.FreshIntro);
             DrawPresetButton("Prepare FRESH MAP / INTRO COMPLETE", NarrativeQaPreset.FreshMap);
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Production Building Art States", EditorStyles.boldLabel);
+            DrawPresetButton("Prepare POWER STATION — STAGE 1",
+                NarrativeQaPreset.PowerStationStage1);
+            DrawPresetButton("Prepare POWER STATION — STAGE 2",
+                NarrativeQaPreset.PowerStationStage2);
+            DrawPresetButton("Prepare POWER STATION — STAGE 3",
+                NarrativeQaPreset.PowerStationStage3);
+            DrawPresetButton("Prepare POWER STATION — RESTORED",
+                NarrativeQaPreset.PowerStationRestored);
+            DrawPresetButton("Prepare CENTRAL GRID — STAGE 1",
+                NarrativeQaPreset.CentralGridStage1);
+            DrawPresetButton("Prepare CENTRAL GRID — STAGE 2",
+                NarrativeQaPreset.CentralGridStage2);
+            DrawPresetButton("Prepare CENTRAL GRID — STAGE 3",
+                NarrativeQaPreset.CentralGridStage3);
+            EditorGUILayout.Space();
             DrawPresetButton("Prepare FIRST RESTORATION PENDING",
                 NarrativeQaPreset.FirstRestorationPending);
             DrawPresetButton("Prepare FINAL RESTORATION PENDING",

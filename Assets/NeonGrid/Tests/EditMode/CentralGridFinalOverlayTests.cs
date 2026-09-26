@@ -232,7 +232,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void PreviewArtifactsRemainDevelopmentOnlyAndProductionUsesPlaceholders()
+        public void PreviewArtifactsRemainDevelopmentOnlyAndProductionUsesAcceptedCentralFinalArt()
         {
             Assert.That(File.Exists(
                 "Assets/NeonGrid/Documentation/Previews/CentralGrid_StatePreview.png"), Is.True);
@@ -246,10 +246,9 @@ namespace NeonGrid.Tests
             map.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
                 () => { }, campaign.CampaignUiTheme);
             map.ShowMap();
-            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true), Is.Empty);
-            foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
-                Assert.That(AssetDatabase.GetDependencies(scene.path),
-                    Has.None.StartsWith(M15CityBuildingFinalArtPreparation.CentralDirectory));
+            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true)
+                .Single(view => view.Definition.ChapterId == "central_grid").Definition,
+                Is.SameAs(finalCentral));
         }
 
         [Test]

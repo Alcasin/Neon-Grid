@@ -201,7 +201,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void PreviewArtifactIsDevelopmentOnly_ProductionRemainsPlaceholderBound()
+        public void PreviewArtifactIsDevelopmentOnly_ProductionUsesAcceptedPowerFinalArt()
         {
             const string preview =
                 "Assets/NeonGrid/Documentation/Previews/PowerStation_StatePreview.png";
@@ -213,10 +213,9 @@ namespace NeonGrid.Tests
             map.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
                 () => { }, campaign.CampaignUiTheme);
             map.ShowMap();
-            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true), Is.Empty);
-            foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
-                Assert.That(AssetDatabase.GetDependencies(scene.path),
-                    Has.None.StartsWith(M15CityBuildingFinalArtPreparation.PowerDirectory));
+            Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true)
+                .Single(view => view.Definition.ChapterId == "power_station").Definition,
+                Is.SameAs(finalPower));
         }
 
         [Test]

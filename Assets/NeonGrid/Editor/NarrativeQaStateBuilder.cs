@@ -13,6 +13,13 @@ namespace NeonGrid.Editor
     {
         FreshIntro,
         FreshMap,
+        PowerStationStage1,
+        PowerStationStage2,
+        PowerStationStage3,
+        PowerStationRestored,
+        CentralGridStage1,
+        CentralGridStage2,
+        CentralGridStage3,
         FirstRestorationPending,
         FinalRestorationPending,
         EndingPending,
@@ -36,6 +43,37 @@ namespace NeonGrid.Editor
                     break;
                 case NarrativeQaPreset.FreshMap:
                     progress.SetIntroCompleted(true);
+                    break;
+                case NarrativeQaPreset.PowerStationStage1:
+                    progress.SetIntroCompleted(true);
+                    CompleteLevels(progress, campaign.Chapters[0], 1);
+                    break;
+                case NarrativeQaPreset.PowerStationStage2:
+                    progress.SetIntroCompleted(true);
+                    CompleteLevels(progress, campaign.Chapters[0], 4);
+                    break;
+                case NarrativeQaPreset.PowerStationStage3:
+                    progress.SetIntroCompleted(true);
+                    CompleteLevels(progress, campaign.Chapters[0], 7);
+                    break;
+                case NarrativeQaPreset.PowerStationRestored:
+                    progress.SetIntroCompleted(true);
+                    CompleteChapter(progress, campaign.Chapters[0]);
+                    break;
+                case NarrativeQaPreset.CentralGridStage1:
+                    progress.SetIntroCompleted(true);
+                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
+                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 1);
+                    break;
+                case NarrativeQaPreset.CentralGridStage2:
+                    progress.SetIntroCompleted(true);
+                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
+                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 4);
+                    break;
+                case NarrativeQaPreset.CentralGridStage3:
+                    progress.SetIntroCompleted(true);
+                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
+                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 7);
                     break;
                 case NarrativeQaPreset.FirstRestorationPending:
                     progress.SetIntroCompleted(true);
@@ -78,11 +116,25 @@ namespace NeonGrid.Editor
                 CompleteChapter(progress, chapter);
         }
 
+        private static void CompleteThroughChapter(CampaignProgressService progress,
+            CampaignDefinition campaign, int exclusiveChapterIndex)
+        {
+            for (int index = 0; index < exclusiveChapterIndex; index++)
+                CompleteChapter(progress, campaign.Chapters[index]);
+        }
+
         private static void CompleteChapter(CampaignProgressService progress,
             CampaignChapterDefinition chapter)
         {
-            foreach (CampaignLevelEntry level in chapter.Levels)
+            CompleteLevels(progress, chapter, chapter.Levels.Count);
+        }
+
+        private static void CompleteLevels(CampaignProgressService progress,
+            CampaignChapterDefinition chapter, int count)
+        {
+            for (int index = 0; index < Mathf.Clamp(count, 0, chapter.Levels.Count); index++)
             {
+                CampaignLevelEntry level = chapter.Levels[index];
                 const int moves = 4;
                 const int optimalMoves = 1;
                 StarEvaluationResult stars = new StarEvaluator().Evaluate(true, moves,

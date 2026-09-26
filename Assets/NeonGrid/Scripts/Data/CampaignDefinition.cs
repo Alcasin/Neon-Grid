@@ -13,12 +13,25 @@ namespace NeonGrid.Data
         [SerializeField] private CampaignUiThemeDefinition campaignUiTheme;
         [SerializeField] private List<CampaignChapterDefinition> chapters =
             new List<CampaignChapterDefinition>();
+        [SerializeField] private List<CampaignCityBuildingArtBinding> cityBuildingArt =
+            new List<CampaignCityBuildingArtBinding>();
 
         public string CampaignId => campaignId;
         public string DisplayName => displayName;
         public CircuitVisualThemeDefinition GameplayVisualTheme => gameplayVisualTheme;
         public CampaignUiThemeDefinition CampaignUiTheme => campaignUiTheme;
         public IReadOnlyList<CampaignChapterDefinition> Chapters => chapters;
+        public IReadOnlyList<CampaignCityBuildingArtBinding> CityBuildingArt => cityBuildingArt;
+
+        public CityBuildingArtDefinition GetCityBuildingArt(string chapterId)
+        {
+            if (string.IsNullOrWhiteSpace(chapterId) || cityBuildingArt == null) return null;
+            foreach (CampaignCityBuildingArtBinding binding in cityBuildingArt)
+                if (binding != null && string.Equals(binding.ChapterId, chapterId,
+                        StringComparison.Ordinal))
+                    return binding.ArtDefinition;
+            return null;
+        }
 
 #if UNITY_EDITOR
         public void SetData(string newCampaignId, IEnumerable<CampaignChapterDefinition> newChapters,
@@ -34,7 +47,31 @@ namespace NeonGrid.Data
                 ? null
                 : new List<CampaignChapterDefinition>(newChapters);
         }
+
+        public void SetCityBuildingArt(IEnumerable<CampaignCityBuildingArtBinding> bindings)
+        {
+            cityBuildingArt = bindings == null
+                ? new List<CampaignCityBuildingArtBinding>()
+                : new List<CampaignCityBuildingArtBinding>(bindings);
+        }
 #endif
+    }
+
+    [Serializable]
+    public sealed class CampaignCityBuildingArtBinding
+    {
+        [SerializeField] private string chapterId;
+        [SerializeField] private CityBuildingArtDefinition artDefinition;
+
+        public string ChapterId => chapterId;
+        public CityBuildingArtDefinition ArtDefinition => artDefinition;
+
+        public CampaignCityBuildingArtBinding(string chapterId,
+            CityBuildingArtDefinition artDefinition)
+        {
+            this.chapterId = chapterId;
+            this.artDefinition = artDefinition;
+        }
     }
 
     [Serializable]

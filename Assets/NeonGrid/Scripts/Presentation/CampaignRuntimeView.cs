@@ -41,6 +41,7 @@ namespace NeonGrid.Presentation
         private SystemNarrativeStatusView restorationStatus;
         private CampaignUiThemeDefinition campaignUiTheme;
         private bool usesCityMap;
+        private bool useCampaignBuildingArt;
 
         public bool UsesCityMap => usesCityMap;
         public bool IsVisible => canvasObject != null && canvasObject.activeSelf;
@@ -55,10 +56,11 @@ namespace NeonGrid.Presentation
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
             Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap,
-            CampaignUiThemeDefinition theme = null)
+            CampaignUiThemeDefinition theme = null, bool includeCampaignBuildingArt = true)
         {
             campaign = definition;
             campaignUiTheme = theme;
+            useCampaignBuildingArt = includeCampaignBuildingArt;
             narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
             progress = progressService;
             openChapter = onOpenChapter;
@@ -177,7 +179,8 @@ namespace NeonGrid.Presentation
                 Image[] parts = CreateBuildingSilhouette(silhouetteRect, entry.Silhouette);
 
                 CityChapterNodeView node = button.gameObject.AddComponent<CityChapterNodeView>();
-                node.Initialize(chapter.ChapterId, button, label, glow, parts);
+                node.Initialize(chapter.ChapterId, button, label, glow, parts,
+                    useCampaignBuildingArt ? campaign.GetCityBuildingArt(chapter.ChapterId) : null);
                 cityNodes.Add(chapter.ChapterId, node);
             }
 

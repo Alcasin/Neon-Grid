@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using NeonGrid.Data;
 
 namespace NeonGrid.Presentation
 {
@@ -21,6 +22,7 @@ namespace NeonGrid.Presentation
         private RectTransform visualRoot;
         private Vector3 authoredVisualScale;
         private Vector3 baseVisualScale;
+        private CityBuildingArtView buildingArtView;
         private bool pulse;
         private float pulseStartedAt;
         private Color glowColor;
@@ -35,9 +37,10 @@ namespace NeonGrid.Presentation
         public Vector3 VisualScale => visualRoot != null ? visualRoot.localScale : Vector3.one;
         public float ArrivalCueStrength { get; private set; }
         public float NetworkPulseStrength { get; private set; }
+        public CityBuildingArtView BuildingArtView => buildingArtView;
 
         public void Initialize(string chapterId, Button nodeButton, Text nodeLabel, Image nodeGlow,
-            Image[] parts)
+            Image[] parts, CityBuildingArtDefinition buildingArt = null)
         {
             ChapterId = chapterId;
             button = nodeButton;
@@ -49,6 +52,11 @@ namespace NeonGrid.Presentation
                 : null;
             authoredVisualScale = visualRoot != null ? visualRoot.localScale : Vector3.one;
             baseVisualScale = authoredVisualScale;
+            if (buildingArt != null && visualRoot != null)
+            {
+                buildingArtView = gameObject.AddComponent<CityBuildingArtView>();
+                buildingArtView.Initialize(buildingArt, chapterId, visualRoot, buildingParts);
+            }
         }
 
         internal void SetPresentationScaleMultiplier(float multiplier)
@@ -60,6 +68,7 @@ namespace NeonGrid.Presentation
         public void Present(ChapterMapVisualState state, string text)
         {
             VisualState = state;
+            PresentBuildingArt(state);
             label.text = text;
             button.interactable = state != ChapterMapVisualState.Locked;
             SetPulse(state != ChapterMapVisualState.Locked &&
@@ -106,6 +115,7 @@ namespace NeonGrid.Presentation
             VisualState = normalized >= 1f
                 ? ChapterMapVisualState.Restored
                 : ChapterMapVisualState.ProgressStage3;
+            PresentBuildingArt(VisualState);
             SetPulse(false);
             glowColor = Color.Lerp(ProgressColors[2], RestoredColor, normalized);
             glowColor.a = Mathf.Lerp(0.16f, 0.30f, normalized) + initialSurge * 0.14f;
@@ -132,6 +142,7 @@ namespace NeonGrid.Presentation
             VisualState = normalized >= 1f
                 ? ChapterMapVisualState.ProgressStage1
                 : ChapterMapVisualState.Locked;
+            PresentBuildingArt(VisualState);
             button.interactable = normalized >= 1f;
             SetPulse(normalized >= 1f);
             ArrivalCueStrength = arrival;
@@ -156,6 +167,7 @@ namespace NeonGrid.Presentation
             float normalized = Mathf.Clamp01(progress);
             NetworkPulseStrength = Mathf.Sin(normalized * Mathf.PI);
             VisualState = ChapterMapVisualState.Restored;
+            PresentBuildingArt(VisualState);
             SetPulse(false);
             Color color = Color.Lerp(RestoredColor, Color.white,
                 NetworkPulseStrength * 0.12f);
@@ -188,6 +200,13 @@ namespace NeonGrid.Presentation
         private void ResetVisualScale()
         {
             if (visualRoot != null) visualRoot.localScale = baseVisualScale;
+        }
+
+        private void PresentBuildingArt(ChapterMapVisualState state)
+        {
+            if (buildingArtView != null && buildingArtView.UsesArt &&
+                buildingArtView.VisualState != state)
+                buildingArtView.Present(state);
         }
 
         private void Update()

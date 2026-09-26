@@ -21,6 +21,10 @@ namespace NeonGrid.Editor
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonProductionPrototype.asset";
         private const string CampaignUiThemePath =
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonCampaignUiPrototype.asset";
+        internal const string PowerStationArtPath =
+            "Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Final.asset";
+        internal const string CentralGridArtPath =
+            "Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Final.asset";
 
         private static readonly string[] SourceCampaignPaths =
         {
@@ -75,6 +79,15 @@ namespace NeonGrid.Editor
 
             campaign.SetData("neon_grid_main", chapters, "Neon Grid", productionTheme,
                 campaignUiTheme);
+            CityBuildingArtDefinition powerStationArt = LoadFinalArt(PowerStationArtPath,
+                "power_station");
+            CityBuildingArtDefinition centralGridArt = LoadFinalArt(CentralGridArtPath,
+                "central_grid");
+            campaign.SetCityBuildingArt(new[]
+            {
+                new CampaignCityBuildingArtBinding("power_station", powerStationArt),
+                new CampaignCityBuildingArtBinding("central_grid", centralGridArt)
+            });
             CampaignValidationReport validation = new CampaignValidator().Validate(campaign);
             if (!validation.IsValid)
                 throw new InvalidOperationException("Main production campaign is invalid.");
@@ -84,6 +97,22 @@ namespace NeonGrid.Editor
             EnsureRuntimeScene(campaign);
             EnsureSceneInBuildSettings();
             Debug.Log($"Built Neon Grid main campaign from accepted source campaigns. Scene: {ScenePath}");
+        }
+
+        private static CityBuildingArtDefinition LoadFinalArt(string path, string chapterId)
+        {
+            CityBuildingArtDefinition definition =
+                AssetDatabase.LoadAssetAtPath<CityBuildingArtDefinition>(path);
+            if (definition == null || definition.ChapterId != chapterId ||
+                !definition.IsConfigured)
+                throw new InvalidOperationException(
+                    $"Missing or invalid final city building art for '{chapterId}': {path}");
+            IReadOnlyList<string> issues = CityBuildingArtAssetValidator.Validate(definition,
+                chapterId);
+            if (issues.Count > 0)
+                throw new InvalidOperationException($"Invalid final city building art for " +
+                    $"'{chapterId}': {string.Join("; ", issues)}");
+            return definition;
         }
 
         private static CampaignChapterDefinition CloneChapter(CampaignChapterDefinition source)

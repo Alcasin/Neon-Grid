@@ -49,7 +49,8 @@ namespace NeonGrid.Presentation
             var root = new GameObject("E1A Map Context");
             root.transform.SetParent(transform, false);
             MapView = root.AddComponent<CampaignRuntimeView>();
-            MapView.Build(campaign, PreviewProgress, _ => { }, _ => { }, () => { }, campaign.CampaignUiTheme);
+            MapView.Build(campaign, PreviewProgress, _ => { }, _ => { }, () => { },
+                campaign.CampaignUiTheme, false);
             MapView.ShowMap();
             nodes = new[] { FindNode(powerStation.ChapterId), FindNode(centralGrid.ChapterId) };
             art = new CityBuildingArtView[2];
