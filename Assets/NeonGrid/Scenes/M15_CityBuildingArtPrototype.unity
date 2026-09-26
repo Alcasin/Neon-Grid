@@ -237,6 +237,7 @@ MonoBehaviour:
   finalPowerStation: {fileID: 11400000, guid: acf1afcae80acf844a56af944ae80649, type: 2}
   finalCentralGrid: {fileID: 11400000, guid: 84f0c635ff5f17647a91e656ba91e7dd, type: 2}
   finalSubstation: {fileID: 11400000, guid: d533bbd9864268649aadb203e2090d6e, type: 2}
+  finalControlCenter: {fileID: 11400000, guid: 7665e6065fa45be408da4369b16855c9, type: 2}
 --- !u!4 &1351767804
 Transform:
   m_ObjectHideFlags: 0

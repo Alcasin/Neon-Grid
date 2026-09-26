@@ -462,3 +462,24 @@ Substation silhouette in Prototype mode and reuses the same four final Image obj
 in Final mode. Invalid or missing Substation final art leaves the programmer silhouette
 visible. `neon_grid_main` is intentionally unchanged and continues to bind only final
 Power Station and Central Grid art; Substation is not a production binding in this pass.
+
+## Control Center isolated final-art preparation
+
+`ControlCenter_Source.png` remains the immutable `1484×1060` geometry source. The
+editor-only `M15ControlCenterFinalArtPreparation` tool centers it without cropping or
+scaling on a transparent `1484×1484` registered canvas. The derived Base neutralizes
+only command-room, monitor, service-indicator and beacon emission while retaining the
+tower, dishes, platforms, equipment, rails, supports and non-emissive painted detail.
+
+The registered overlays provide restrained warm operational rooms and beacons, sparse
+cyan communications/routing activation, and compact restored command-core highlights.
+All four runtime textures use the shared final-art importer contract.
+`ControlCenter_Final.asset` uses stable ID `control_center` and the authored cumulative
+five-state opacity profile. `ControlCenter_StatePreview.png` is deterministic,
+documentation-only, and excluded from production dependencies.
+
+The existing prototype uses the accepted programmer Control Center silhouette in
+Prototype mode and one reused four-Image art view in Final mode. Invalid or missing
+Control Center final art preserves fallback. Production remains the E1C rollout:
+Power Station and Central Grid final, with Substation, Control Center and Automation
+Plant still unbound programmer-art chapters.

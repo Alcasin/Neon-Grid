@@ -102,7 +102,8 @@ namespace NeonGrid.Editor
             CityBuildingArtPrototypeController controller = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<
                     CityBuildingArtPrototypeController>(true)).Single();
-            controller.SetFinalDefinitions(power, central);
+            controller.SetFinalDefinitions(power, central, controller.FinalSubstation,
+                controller.FinalControlCenter);
             EditorUtility.SetDirty(controller);
             EditorSceneManager.SaveScene(scene);
         }
