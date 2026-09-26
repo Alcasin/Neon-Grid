@@ -251,9 +251,8 @@ already contain their intended amber/cyan color; this prevents double-tint darke
 `M15PowerStationOverlayImportConfigurator` explicitly configures generated overlay
 importers to the locked Base contract after first rejecting any canvas mismatch. The
 general E1B preparation step then binds all four Sprites to `PowerStation_Final.asset`
-and validates them; it still reports Central Grid missing. Final mode is now available
-per selected building: Power Station can compare Prototype/Final while Central Grid
-remains prototype-only. Switching source reuses the same four Images.
+and validates them. At E1B.1 acceptance, Central Grid was still missing and therefore
+remained prototype-only. Switching source reuses the same four Images.
 
 `Documentation/Previews/PowerStation_StatePreview.png` is a development-only strip
 showing Locked through Restored at the actual 189×105 map display size. It is not a
@@ -270,8 +269,72 @@ Manual acceptance for E1B.1:
 4. Run EMPHASIS at least ten times and switch states/source between cycles. Confirm
    all four layers remain registered and settle to the exact authored transform.
 5. Repeat at 1080×1920, 1080×2340 and 720×1280; inspect label/progress/star clearance.
-6. Select Central Grid and confirm FINAL is unavailable. Open production M12 and
-   confirm the City Map still uses the accepted programmer silhouettes.
+6. Open production M12 and confirm the City Map still uses the accepted programmer
+   silhouettes. E1B.2 supersedes the earlier Central Grid FINAL-missing check.
+
+## M15-E1B.2 — final Central Grid overlays
+
+The manually supplied `CentralGrid_Base.png` is authoritative and locked. It is a
+1278×1278 RGBA PNG with real 0–255 alpha and SHA-256
+`C42FA4773C5A0430D7E6DF2A559B895F065B66F6181AF52B51BAAAE1858B3ECB`.
+The Base is an isolated radial infrastructure hub with a dominant central tower. It
+imports as Sprite 2D/UI, Single, Full Rect, center pivot `(639,639)`, Input Texture
+Alpha, alpha-is-transparency and sRGB on, mipmaps/read-write/physics shape off, Clamp,
+Bilinear, max size 2048 and no compression. E1B.2 never rewrites this file.
+
+`Tools/Art/GenerateCentralGridOverlays.py` uses Pillow and hand-authored masks in the
+locked Base's exact coordinate system. It asserts the Base hash before and after every
+run and writes only three registered transparent RGBA overlays:
+
+- `CentralGrid_WarmLights.png`: four readable amber service banks, selected tower and
+  arm indicators, restrained inner-ring activity and warm-white hot points. It does
+  not illuminate every module or trace the complete silhouette.
+- `CentralGrid_Energy.png`: selected cyan central-ring sectors, five primary radial
+  distribution routes, paired tower conduits and limited interface nodes. Graphite
+  architecture remains visible between routes.
+- `CentralGrid_Core.png`: a narrow central-tower focal column, compact cyan-white hot
+  center, restrained ring reinforcement and five final-state distribution nodes.
+  It does not introduce a full-building bloom or obscure the tower geometry.
+
+All final layers retain neutral white tints because their intended amber/cyan colors
+are authored into the PNGs. The accepted Central Grid profile remains the prepared E1B
+profile: `(1,0,0,0)`, `(1,.32,0,0)`, `(1,.70,.22,0)`,
+`(1,.90,.72,.30)`, `(1,1,1,1)`. This preserves warm-only Stage 1, subtle first cyan
+at Stage 2, a clear radial network at Stage 3 and the strongest central core only when
+Restored.
+
+The isolated prototype binds all four final Central Grid layers to
+`CentralGrid_Final.asset` under stable association `central_grid`. Both buildings now
+support Prototype/Final comparison without creating additional Images. Production
+campaign scenes remain placeholder-bound and have no dependency on final-art assets.
+
+`Documentation/Previews/CentralGrid_StatePreview.png` shows the five Central Grid
+states at the inherited real map footprint of approximately 246×154. The separate
+`PowerStation_CentralGrid_Comparison.png` shows final Power Station at 189×105 beside
+final Central Grid at 246×154. This preserves the accepted 1.30 width hierarchy:
+Central Grid is approximately 20–30% more prominent due to silhouette, tower and
+existing map scale rather than indiscriminate brightness. Both previews are
+development-only and excluded from build dependencies.
+
+Central Grid remains at authored node `(40,-300)`, outer node `350×330`, themed visual
+scale `1.075` and center Y `76`. Its `.88×.7` art rectangle reserves the D2 lower
+label/progress/star safe area. E1B.2 does not change M13/D2 geometry.
+
+Manual acceptance for E1B.2:
+
+1. Open `M15_CityBuildingArtPrototype.unity`, enter Play and select Central Grid.
+2. Alternate PROTOTYPE and FINAL. Confirm FINAL uses the supplied radial Base and all
+   four layers remain perfectly registered with no crop, shift or geometry change.
+3. Cycle Locked, Stage 1, Stage 2, Stage 3 and Restored. Confirm warm-first activation,
+   subtle Stage 2 cyan, clear Stage 3 routing and a strong but compact restored core.
+4. Compare final Central Grid with final Power Station. Confirm Central Grid is roughly
+   20–30% more prominent while Power Station remains visually intact.
+5. Run EMPHASIS at least ten times while switching state/source. Confirm exact transform
+   return, no layer separation, alpha drift, hierarchy growth or label collision.
+6. Repeat at 1080×1920, 1080×2340 and 720×1280. Inspect the tower, radial arms,
+   label/progress/star clearance and restored-glow restraint.
+7. Exit Play and open production M12. Confirm both buildings still use the accepted
+   programmer silhouettes and no final-art prototype controls or bindings are present.
 
 ## Manual visual acceptance
 

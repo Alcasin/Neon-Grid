@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CentralGrid_Final
   m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CityBuildingArtDefinition
   chapterId: central_grid
-  baseArchitecture: {fileID: 0}
-  warmLights: {fileID: 0}
-  electricalEnergy: {fileID: 0}
-  restoredCore: {fileID: 0}
+  baseArchitecture: {fileID: 21300000, guid: c8c94a92713ed9c41b1631ede4350ef3, type: 3}
+  warmLights: {fileID: 21300000, guid: e9dfb4a9dcf7d6648877b561533e4fe9, type: 3}
+  electricalEnergy: {fileID: 21300000, guid: 8d629a7d25c0a3245abc5564c96430f7, type: 3}
+  restoredCore: {fileID: 21300000, guid: 5456cb38b9a97374f94cb05f1a842525, type: 3}
   baseTint: {r: 1, g: 1, b: 1, a: 1}
   warmTint: {r: 1, g: 1, b: 1, a: 1}
   energyTint: {r: 1, g: 1, b: 1, a: 1}

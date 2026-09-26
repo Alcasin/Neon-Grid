@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
@@ -15,9 +14,11 @@ using UnityEngine.UI;
 
 namespace NeonGrid.Tests
 {
-    public sealed class PowerStationFinalOverlayTests
+    public sealed class CentralGridFinalOverlayTests
     {
         private const string ExpectedBaseHash =
+            "C42FA4773C5A0430D7E6DF2A559B895F065B66F6181AF52B51BAAAE1858B3ECB";
+        private const string ExpectedPowerBaseHash =
             "C713B39D3E579A13DDC3F4672896D7F49E32D203C918FDCA5D7F7698E05CC343";
         private readonly List<UnityEngine.Object> cleanup = new List<UnityEngine.Object>();
         private CityBuildingArtDefinition finalPower;
@@ -47,89 +48,99 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void LockedBase_IsExactApprovedRgbaAssetAndWasNotReencoded()
+        public void LockedBase_IsExactAuthoritativeSquareRgbaAsset()
         {
-            string path = M15CityBuildingFinalArtPreparation.PowerLayerPaths[0];
+            string path = M15CityBuildingFinalArtPreparation.CentralLayerPaths[0];
             Assert.That(File.Exists(path), Is.True);
-            using (SHA256 hash = SHA256.Create())
-                Assert.That(BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path)))
-                    .Replace("-", string.Empty), Is.EqualTo(ExpectedBaseHash));
+            Assert.That(Hash(path), Is.EqualTo(ExpectedBaseHash));
             Texture2D texture = LoadSource(path);
             Assert.That(new Vector2Int(texture.width, texture.height),
-                Is.EqualTo(new Vector2Int(1254, 1254)));
+                Is.EqualTo(new Vector2Int(1278, 1278)));
             Color32[] pixels = texture.GetPixels32();
             Assert.That(pixels.Any(pixel => pixel.a == 0), Is.True);
             Assert.That(pixels.Any(pixel => pixel.a == 255), Is.True);
         }
 
         [Test]
-        public void AllFourSpritesExistShareExactCanvasPivotAndImportContract()
+        public void FourFinalLayers_ShareCanvasPivotImportContractAndStableAssociation()
         {
-            Assert.That(finalPower.IsConfigured, Is.True);
-            Assert.That(finalPower.ChapterId, Is.EqualTo("power_station"));
-            for (int layer = 0; layer < 4; layer++)
-                Assert.That(finalPower.GetTint(layer), Is.EqualTo(Color.white),
-                    "Authored overlay colors must not be multiplied by a second color tint.");
-            Assert.That(CityBuildingArtAssetValidator.Validate(finalPower, "power_station"),
+            Assert.That(finalCentral, Is.Not.Null);
+            Assert.That(finalCentral.ChapterId, Is.EqualTo("central_grid"));
+            Assert.That(finalCentral.IsConfigured, Is.True);
+            Assert.That(CityBuildingArtAssetValidator.Validate(finalCentral, "central_grid"),
                 Is.Empty);
-            Sprite baseSprite = finalPower.GetSprite(0);
-            Assert.That(baseSprite.rect.size, Is.EqualTo(new Vector2(1254, 1254)));
-            Assert.That(baseSprite.pivot, Is.EqualTo(new Vector2(627, 627)));
+            Sprite architecture = finalCentral.GetSprite(0);
+            Assert.That(architecture.rect.size, Is.EqualTo(new Vector2(1278f, 1278f)));
+            Assert.That(architecture.pivot, Is.EqualTo(new Vector2(639f, 639f)));
             for (int layer = 0; layer < 4; layer++)
             {
-                string path = M15CityBuildingFinalArtPreparation.PowerLayerPaths[layer];
+                string path = M15CityBuildingFinalArtPreparation.CentralLayerPaths[layer];
                 Assert.That(File.Exists(path), Is.True);
-                Sprite sprite = finalPower.GetSprite(layer);
+                Assert.That(finalCentral.GetTint(layer), Is.EqualTo(Color.white));
+                Sprite sprite = finalCentral.GetSprite(layer);
                 Assert.That(sprite, Is.Not.Null);
-                Assert.That(sprite.rect, Is.EqualTo(baseSprite.rect));
-                Assert.That(sprite.pivot, Is.EqualTo(baseSprite.pivot));
+                Assert.That(sprite.rect, Is.EqualTo(architecture.rect));
+                Assert.That(sprite.pivot, Is.EqualTo(architecture.pivot));
             }
         }
 
-        [TestCase(1, 0.008f)]
-        [TestCase(2, 0.020f)]
-        [TestCase(3, 0.003f)]
-        public void OverlaySource_IsTransparentSparseAndContainsNoOpaqueCanvas(int layer,
+        [TestCase(1, 0.04f)]
+        [TestCase(2, 0.09f)]
+        [TestCase(3, 0.06f)]
+        public void OverlaySource_IsTransparentControlledAndHasNoBlackMatte(int layer,
             float maximumCoverage)
         {
-            string path = M15CityBuildingFinalArtPreparation.PowerLayerPaths[layer];
-            Texture2D texture = LoadSource(path);
+            Texture2D texture = LoadSource(
+                M15CityBuildingFinalArtPreparation.CentralLayerPaths[layer]);
             Color32[] pixels = texture.GetPixels32();
-            // Ignore sub-4% Gaussian tail pixels which are intentionally compact local glow.
             int visible = pixels.Count(pixel => pixel.a > 8);
             Assert.That(visible, Is.GreaterThan(0));
             Assert.That(visible / (float)pixels.Length, Is.LessThan(maximumCoverage));
             Assert.That(pixels.Any(pixel => pixel.a == 0), Is.True);
             Assert.That(pixels.Where(pixel => pixel.a > 0).All(pixel =>
-                pixel.r + pixel.g + pixel.b > 0), Is.True,
-                "Overlay alpha must not carry semi-transparent black matte pixels.");
+                pixel.r + pixel.g + pixel.b > 0), Is.True);
         }
 
         [Test]
-        public void FiveStatesUseAcceptedPowerProfileAndStableBaseGeometry()
+        public void FiveStates_AreCumulativeAndKeepStableBaseGeometry()
         {
-            CityBuildingArtView view = Standalone(finalPower);
-            Sprite architecture = finalPower.GetSprite(0);
+            CityBuildingArtView view = Standalone(finalCentral, "central_grid",
+                new Vector2(260f, 205f));
             int[] activeLayers = { 1, 2, 3, 4, 4 };
+            Vector4[] expected =
+            {
+                new Vector4(1f, 0f, 0f, 0f),
+                new Vector4(1f, 0.32f, 0f, 0f),
+                new Vector4(1f, 0.70f, 0.22f, 0f),
+                new Vector4(1f, 0.90f, 0.72f, 0.30f),
+                new Vector4(1f, 1f, 1f, 1f)
+            };
             for (int state = 0; state < 5; state++)
             {
                 view.Present((ChapterMapVisualState)state);
                 Image[] images = view.ArtRoot.GetComponentsInChildren<Image>(true);
-                Assert.That(images[0].sprite, Is.SameAs(architecture));
+                Assert.That(finalCentral.GetOpacity((ChapterMapVisualState)state),
+                    Is.EqualTo(expected[state]));
                 Assert.That(images.Count(image => image.enabled), Is.EqualTo(activeLayers[state]));
-                Assert.That(view.ArtRoot.sizeDelta, Is.EqualTo(new Vector2(189f, 105f)));
+                Assert.That(images[0].sprite, Is.SameAs(finalCentral.GetSprite(0)));
+                if (state > 0)
+                    for (int layer = 0; layer < 4; layer++)
+                        Assert.That(expected[state][layer],
+                            Is.GreaterThanOrEqualTo(expected[state - 1][layer]));
             }
-            Assert.That(finalPower.GetOpacity(ChapterMapVisualState.Restored),
-                Is.EqualTo(new Vector4(1f, 1f, 1f, 0.65f)));
+            Assert.That(view.ArtRoot.sizeDelta.x, Is.EqualTo(228.8f).Within(0.001f));
+            Assert.That(view.ArtRoot.sizeDelta.y, Is.EqualTo(143.5f).Within(0.001f));
         }
 
         [Test]
-        public void PrototypeFinalSwitch_ReusesHierarchyWithBothFinalDefinitions()
+        public void PrototypeFinalSwitch_ReusesSameFourImagesForBothBuildings()
         {
             CityBuildingArtPrototypeController controller = Controller();
             CityBuildingArtView[] views = controller.GetComponentsInChildren<
                 CityBuildingArtView>(true);
             int[] roots = views.Select(view => view.ArtRoot.GetInstanceID()).ToArray();
+            int[][] children = views.Select(view => view.ArtRoot.Cast<Transform>()
+                .Select(child => child.GetInstanceID()).ToArray()).ToArray();
             for (int cycle = 0; cycle < 10; cycle++)
             {
                 Assert.That(controller.ShowSource(CityBuildingArtPreviewSource.Final), Is.True);
@@ -137,21 +148,19 @@ namespace NeonGrid.Tests
                 Assert.That(views[1].Definition, Is.SameAs(finalCentral));
                 Assert.That(controller.ShowSource(CityBuildingArtPreviewSource.Prototype), Is.True);
                 Assert.That(views[0].Definition, Is.SameAs(prototypePower));
-                Assert.That(views.Select(view => view.ArtRoot.GetInstanceID()), Is.EqualTo(roots));
-                Assert.That(views.All(view => view.ArtRoot.childCount == 4), Is.True);
+                Assert.That(views[1].Definition, Is.SameAs(prototypeCentral));
             }
-            controller.ShowSource(CityBuildingArtPreviewSource.Final);
-            controller.SelectBuilding(1);
-            Assert.That(controller.PreviewSource,
-                Is.EqualTo(CityBuildingArtPreviewSource.Final));
-            Assert.That(controller.ShowSource(CityBuildingArtPreviewSource.Final), Is.True);
-            Assert.That(finalCentral.IsConfigured, Is.True);
+            Assert.That(views.Select(view => view.ArtRoot.GetInstanceID()), Is.EqualTo(roots));
+            for (int index = 0; index < views.Length; index++)
+                Assert.That(views[index].ArtRoot.Cast<Transform>()
+                    .Select(child => child.GetInstanceID()), Is.EqualTo(children[index]));
         }
 
         [Test]
-        public void TenEmphasisCycles_ReturnExactTransformWithoutLayerSeparation()
+        public void TenEmphasisCycles_ReturnCentralGridToExactRegisteredTransform()
         {
-            CityBuildingArtView view = Standalone(finalPower);
+            CityBuildingArtView view = Standalone(finalCentral, "central_grid",
+                new Vector2(260f, 205f));
             Vector3 position = view.ArtRoot.localPosition;
             Vector3 scale = view.ArtRoot.localScale;
             Quaternion rotation = view.ArtRoot.localRotation;
@@ -159,6 +168,7 @@ namespace NeonGrid.Tests
                 .Select(child => child.localPosition).ToArray();
             for (int cycle = 0; cycle < 10; cycle++)
             {
+                view.Present((ChapterMapVisualState)(cycle % 5));
                 view.ApplyEmphasis(1f);
                 view.ResetEmphasis();
                 Assert.That(view.ArtRoot.localPosition, Is.EqualTo(position));
@@ -169,10 +179,28 @@ namespace NeonGrid.Tests
             }
         }
 
+        [Test]
+        public void RealMapScale_KeepsCentralGridTwentyToThirtyPercentWiderThanPowerStation()
+        {
+            CityBuildingArtPrototypeController controller = Controller();
+            Assert.That(controller.ShowSource(CityBuildingArtPreviewSource.Final), Is.True);
+            CityBuildingArtView[] views = controller.GetComponentsInChildren<
+                CityBuildingArtView>(true);
+            CityBuildingArtView power = views.Single(view =>
+                view.GetComponent<CityChapterNodeView>().ChapterId == "power_station");
+            CityBuildingArtView central = views.Single(view =>
+                view.GetComponent<CityChapterNodeView>().ChapterId == "central_grid");
+            Bounds powerBounds = BoundsIn(power.ArtRoot, power.GetComponent<CityChapterNodeView>().transform);
+            Bounds centralBounds = BoundsIn(central.ArtRoot,
+                central.GetComponent<CityChapterNodeView>().transform);
+            Assert.That(centralBounds.size.x / powerBounds.size.x, Is.InRange(1.20f, 1.31f));
+            Assert.That(centralBounds.size.y, Is.GreaterThan(powerBounds.size.y));
+        }
+
         [TestCase(1080, 1920)]
         [TestCase(1080, 2340)]
         [TestCase(720, 1280)]
-        public void FinalPowerStation_FitsRealMapRegionAtPortraitResolution(int width, int height)
+        public void FinalCentralGrid_PreservesD2SafeAreaAtPortraitResolution(int width, int height)
         {
             CityBuildingArtPrototypeController controller = Controller();
             Assert.That(controller.ShowSource(CityBuildingArtPreviewSource.Final), Is.True);
@@ -186,8 +214,13 @@ namespace NeonGrid.Tests
             Canvas.ForceUpdateCanvases();
             CityBuildingArtView view = controller.GetComponentsInChildren<
                 CityBuildingArtView>(true).Single(item =>
-                item.GetComponent<CityChapterNodeView>().ChapterId == "power_station");
+                item.GetComponent<CityChapterNodeView>().ChapterId == "central_grid");
             CityChapterNodeView node = view.GetComponent<CityChapterNodeView>();
+            Assert.That(node.HitArea.sizeDelta, Is.EqualTo(new Vector2(350f, 330f)));
+            Assert.That(node.HitArea.anchoredPosition, Is.EqualTo(new Vector2(40f, -300f)));
+            RectTransform visual = (RectTransform)node.transform.Find("Building Silhouette");
+            Assert.That(visual.anchoredPosition.y, Is.EqualTo(76f));
+            Assert.That(visual.localScale.x, Is.EqualTo(1.075f).Within(0.0001f));
             view.Present(ChapterMapVisualState.Restored);
             view.ApplyEmphasis(1f);
             Bounds art = BoundsIn(view.ArtRoot, node.transform);
@@ -196,16 +229,16 @@ namespace NeonGrid.Tests
             Assert.That(art.min.x, Is.GreaterThan(node.HitArea.rect.xMin));
             Assert.That(art.max.x, Is.LessThan(node.HitArea.rect.xMax));
             Assert.That(art.max.y, Is.LessThan(node.HitArea.rect.yMax));
-            Assert.That(view.ArtRoot.GetComponentsInChildren<Image>(true)
-                .Count(image => image.enabled), Is.EqualTo(4));
         }
 
         [Test]
-        public void PreviewArtifactIsDevelopmentOnly_ProductionRemainsPlaceholderBound()
+        public void PreviewArtifactsRemainDevelopmentOnlyAndProductionUsesPlaceholders()
         {
-            const string preview =
-                "Assets/NeonGrid/Documentation/Previews/PowerStation_StatePreview.png";
-            Assert.That(File.Exists(preview), Is.True);
+            Assert.That(File.Exists(
+                "Assets/NeonGrid/Documentation/Previews/CentralGrid_StatePreview.png"), Is.True);
+            Assert.That(File.Exists(
+                "Assets/NeonGrid/Documentation/Previews/PowerStation_CentralGrid_Comparison.png"),
+                Is.True);
             Assert.That(EditorBuildSettings.scenes.Select(scene => scene.path),
                 Has.None.EqualTo(M15CityBuildingArtPrototypeBuilder.ScenePath));
             var root = NewObject("Production");
@@ -216,21 +249,19 @@ namespace NeonGrid.Tests
             Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true), Is.Empty);
             foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
                 Assert.That(AssetDatabase.GetDependencies(scene.path),
-                    Has.None.StartsWith(M15CityBuildingFinalArtPreparation.PowerDirectory));
+                    Has.None.StartsWith(M15CityBuildingFinalArtPreparation.CentralDirectory));
         }
 
         [Test]
-        public void CentralGridFinalAvailability_DoesNotAlterPowerStationContract()
+        public void PowerStationAuthoritativeBaseRemainsUnchanged()
         {
-            Assert.That(M15CityBuildingFinalArtPreparation.CentralLayerPaths,
-                Has.All.Matches<string>(path => File.Exists(path)));
-            Assert.That(finalCentral.IsConfigured, Is.True);
-            Assert.That(finalPower.IsConfigured, Is.True);
+            Assert.That(Hash(M15CityBuildingFinalArtPreparation.PowerLayerPaths[0]),
+                Is.EqualTo(ExpectedPowerBaseHash));
         }
 
         private CityBuildingArtPrototypeController Controller()
         {
-            GameObject root = NewObject("E1B.1 Preview");
+            GameObject root = NewObject("E1B.2 Preview");
             CityBuildingArtPrototypeController controller =
                 root.AddComponent<CityBuildingArtPrototypeController>();
             controller.SetData(campaign, prototypePower, prototypeCentral);
@@ -239,15 +270,16 @@ namespace NeonGrid.Tests
             return controller;
         }
 
-        private CityBuildingArtView Standalone(CityBuildingArtDefinition definition)
+        private CityBuildingArtView Standalone(CityBuildingArtDefinition definition,
+            string chapterId, Vector2 regionSize)
         {
-            GameObject root = NewObject("Power Region", typeof(RectTransform));
-            ((RectTransform)root.transform).sizeDelta = new Vector2(210f, 150f);
+            GameObject root = NewObject("Art Region", typeof(RectTransform));
+            ((RectTransform)root.transform).sizeDelta = regionSize;
             Image placeholder = new GameObject("Placeholder", typeof(RectTransform),
                 typeof(Image)).GetComponent<Image>();
             placeholder.transform.SetParent(root.transform, false);
             CityBuildingArtView view = root.AddComponent<CityBuildingArtView>();
-            view.Initialize(definition, "power_station", (RectTransform)root.transform,
+            view.Initialize(definition, chapterId, (RectTransform)root.transform,
                 new[] { placeholder });
             return view;
         }
@@ -270,6 +302,13 @@ namespace NeonGrid.Tests
         private static CityBuildingArtDefinition Prototype(string name) =>
             AssetDatabase.LoadAssetAtPath<CityBuildingArtDefinition>(
                 M15CityBuildingArtPrototypeBuilder.DirectoryPath + "/" + name + ".asset");
+
+        private static string Hash(string path)
+        {
+            using (SHA256 hash = SHA256.Create())
+                return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path)))
+                    .Replace("-", string.Empty);
+        }
 
         private static Bounds BoundsIn(RectTransform rect, Transform relativeTo)
         {
