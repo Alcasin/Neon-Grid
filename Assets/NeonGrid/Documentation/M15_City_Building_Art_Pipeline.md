@@ -439,3 +439,26 @@ Portrait coverage is structural at 1080×1920, 1080×2340 and 720×1280, includi
 full art rectangles under maximum emphasis and QA controls versus map label bounds.
 Manual Game-view visual acceptance remains required; no subjective art-quality or
 on-device performance signoff is claimed.
+
+## Substation isolated final-art preparation
+
+`Substation_Source.png` is the immutable geometry source. The editor-only
+`M15SubstationFinalArtPreparation` tool centers its `1484×1060` RGBA pixels on a
+transparent `1484×1484` canvas, preserving the silhouette and perspective. It
+neutralizes only the authored emissive control-building windows and warning beacon in
+the derived Base, then draws sparse deterministic amber facility, cyan distribution,
+and compact restored-instrument overlays in the same registered coordinate system.
+The source file is never overwritten.
+
+The four derived textures use the normal final-art import contract: Sprite (2D and
+UI), Single, Full Rect, centered pivot, input alpha, sRGB, no mipmaps, no Read/Write,
+Bilinear, Clamp, max size 2048, and no compression. `Substation_Final.asset` uses the
+stable `substation` ID and the shared cumulative five-state profile philosophy.
+The deterministic documentation-only `Substation_StatePreview.png` shows all five
+registered states and is not referenced by production scenes or build settings.
+
+This preparation remains isolated. The E1 prototype uses the existing programmer
+Substation silhouette in Prototype mode and reuses the same four final Image objects
+in Final mode. Invalid or missing Substation final art leaves the programmer silhouette
+visible. `neon_grid_main` is intentionally unchanged and continues to bind only final
+Power Station and Central Grid art; Substation is not a production binding in this pass.
