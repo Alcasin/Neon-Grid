@@ -483,3 +483,25 @@ Prototype mode and one reused four-Image art view in Final mode. Invalid or miss
 Control Center final art preserves fallback. Production remains the E1C rollout:
 Power Station and Central Grid final, with Substation, Control Center and Automation
 Plant still unbound programmer-art chapters.
+
+## Automation Plant isolated final-art preparation
+
+`AutomationPlant_Source.png` remains the immutable `1536×1024` geometry source. The
+editor-only `M15AutomationPlantFinalArtPreparation` tool centers its pixels without
+cropping, scaling or rotation on a transparent `1536×1536` registered canvas. The
+derived Base neutralizes only localized facility windows, service lights, machine-bay
+emission and safety beacons while preserving the modular factory silhouette,
+perspective, machinery, conveyors, platforms, rails, pipes and painted detail.
+
+The registered overlays provide restrained amber facility activation, sparse cyan
+automation/conduit routing, and compact restored machine-bay instrumentation. All four
+runtime textures use the established final-art import contract.
+`AutomationPlant_Final.asset` uses stable ID `automation_plant` and its exact cumulative
+five-state opacity profile. `AutomationPlant_StatePreview.png` is deterministic,
+documentation-only, and excluded from production dependencies.
+
+The isolated prototype retains the programmer Automation Plant silhouette in Prototype
+mode and reuses one four-Image art view in Final mode. Missing, invalid or mismatched art
+safely retains fallback. Production remains the E1C rollout: only Power Station and
+Central Grid use final art; Substation, Control Center and Automation Plant remain
+programmer-art chapters in the production campaign.

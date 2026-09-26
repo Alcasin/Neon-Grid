@@ -11,24 +11,24 @@ using UnityEngine.SceneManagement;
 
 namespace NeonGrid.Editor
 {
-    /// <summary>Deterministic, editor-only Control Center final-art preparation.</summary>
-    public static class M15ControlCenterFinalArtPreparation
+    /// <summary>Deterministic, editor-only Automation Plant final-art preparation.</summary>
+    public static class M15AutomationPlantFinalArtPreparation
     {
-        public const string Directory = M15CityBuildingFinalArtPreparation.Root + "/ControlCenter";
-        public const string SourcePath = Directory + "/ControlCenter_Source.png";
-        public const string DefinitionPath = Directory + "/ControlCenter_Final.asset";
+        public const string Directory = M15CityBuildingFinalArtPreparation.Root + "/AutomationPlant";
+        public const string SourcePath = Directory + "/AutomationPlant_Source.png";
+        public const string DefinitionPath = Directory + "/AutomationPlant_Final.asset";
         public const string PreviewPath =
-            "Assets/NeonGrid/Documentation/Previews/ControlCenter_StatePreview.png";
+            "Assets/NeonGrid/Documentation/Previews/AutomationPlant_StatePreview.png";
         public static readonly string[] LayerPaths =
         {
-            Directory + "/ControlCenter_Base.png",
-            Directory + "/ControlCenter_WarmLights.png",
-            Directory + "/ControlCenter_Energy.png",
-            Directory + "/ControlCenter_Core.png"
+            Directory + "/AutomationPlant_Base.png",
+            Directory + "/AutomationPlant_WarmLights.png",
+            Directory + "/AutomationPlant_Energy.png",
+            Directory + "/AutomationPlant_Core.png"
         };
 
-        private static readonly Color32 Warm = new Color32(255, 178, 58, 255);
-        private static readonly Color32 Energy = new Color32(54, 221, 242, 255);
+        private static readonly Color32 Warm = new Color32(255, 177, 48, 255);
+        private static readonly Color32 Energy = new Color32(54, 222, 242, 255);
         private static readonly Color32 Core = new Color32(190, 255, 250, 255);
         private static readonly Vector4[] Profile =
         {
@@ -39,11 +39,11 @@ namespace NeonGrid.Editor
             new Vector4(1f, 1f, 1f, 0.76f)
         };
 
-        [MenuItem("Neon Grid/Prepare M15 Control Center Final Art")]
+        [MenuItem("Neon Grid/Prepare M15 Automation Plant Final Art")]
         public static void Prepare()
         {
             if (!File.Exists(SourcePath))
-                throw new FileNotFoundException("Authoritative Control Center source is missing.",
+                throw new FileNotFoundException("Authoritative Automation Plant source is missing.",
                     SourcePath);
             GenerateLayers();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
@@ -58,26 +58,26 @@ namespace NeonGrid.Editor
             }
             Sprite[] sprites = LayerPaths.Select(path =>
                 AssetDatabase.LoadAssetAtPath<Sprite>(path)).ToArray();
-            definition.SetData("control_center", sprites[0], sprites[1], sprites[2], sprites[3],
+            definition.SetData("automation_plant", sprites[0], sprites[1], sprites[2], sprites[3],
                 Color.white, Color.white, Color.white, Color.white, Profile,
-                new Vector2(0.78f, 0.78f), new Vector2(0f, 24f), 1f);
+                new Vector2(0.92f, 0.74f), new Vector2(0f, 18f), 1f);
             EditorUtility.SetDirty(definition);
             AssetDatabase.SaveAssets();
 
             IReadOnlyList<string> issues = CityBuildingArtAssetValidator.Validate(definition,
-                "control_center");
+                "automation_plant");
             if (issues.Count > 0)
-                throw new InvalidOperationException("Control Center final art validation failed:\n" +
+                throw new InvalidOperationException("Automation Plant final art validation failed:\n" +
                                                     string.Join("\n", issues));
             BindIsolatedPrototype(definition);
-            Debug.Log("Prepared valid isolated Control Center final art. Production bindings unchanged.");
+            Debug.Log("Prepared valid isolated Automation Plant final art. Production bindings unchanged.");
         }
 
         private static void GenerateLayers()
         {
             var source = new Texture2D(2, 2, TextureFormat.RGBA32, false);
             if (!ImageConversion.LoadImage(source, File.ReadAllBytes(SourcePath), false))
-                throw new InvalidOperationException("Control Center source PNG could not be decoded.");
+                throw new InvalidOperationException("Automation Plant source PNG could not be decoded.");
             try
             {
                 int size = Mathf.Max(source.width, source.height);
@@ -93,63 +93,63 @@ namespace NeonGrid.Editor
                 {
                     Color32 pixel = sourcePixels[y * source.width + x];
                     int topY = source.height - 1 - y;
-                    if (IsEmissiveRegion(x, topY) && IsEmission(pixel))
+                    if (IsEmissiveRegion(x, topY) &&
+                        (IsEmission(pixel) || IsBrightFixture(x, topY, pixel)))
                         pixel = Neutralize(pixel);
                     basePixels[(y + yOffset) * size + x + xOffset] = pixel;
                 }
 
-                // Warm-first activation: command room, entry strips, service indicators, beacons.
-                GlowRectangle(warmPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(503, 486, 58, 104), Warm, 13f, 0.46f);
-                GlowRectangle(warmPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(568, 492, 120, 91), Warm, 15f, 0.58f);
-                GlowRectangle(warmPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(695, 500, 119, 92), Warm, 15f, 0.58f);
-                GlowRectangle(warmPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(821, 514, 84, 108), Warm, 13f, 0.48f);
-                RectInt[] serviceLights =
+                // Warm-first activation: facility windows, service strips and safety beacons.
+                RectInt[] facilityLights =
                 {
-                    new RectInt(237, 568, 37, 15), new RectInt(382, 608, 18, 61),
-                    new RectInt(526, 686, 57, 15), new RectInt(610, 696, 58, 15),
-                    new RectInt(763, 702, 18, 62), new RectInt(1004, 747, 18, 40),
-                    new RectInt(1050, 742, 83, 13), new RectInt(1261, 732, 61, 14)
+                    new RectInt(695, 157, 20, 119), new RectInt(787, 175, 20, 119),
+                    new RectInt(697, 286, 17, 72), new RectInt(816, 296, 16, 68),
+                    new RectInt(225, 533, 65, 19), new RectInt(487, 526, 57, 23),
+                    new RectInt(631, 544, 64, 20), new RectInt(822, 580, 60, 20),
+                    new RectInt(379, 569, 19, 88), new RectInt(985, 632, 19, 105),
+                    new RectInt(598, 574, 139, 137), new RectInt(780, 613, 145, 141)
                 };
-                foreach (RectInt light in serviceLights)
+                foreach (RectInt light in facilityLights)
                     GlowRectangle(warmPixels, size, xOffset, yOffset, source.height,
-                        light, Warm, 8f, 0.58f);
+                        light, Warm, light.width > 100 ? 14f : 9f,
+                        light.width > 100 ? 0.44f : 0.62f);
                 Vector2[] beacons =
                 {
-                    new Vector2(718, 44), new Vector2(767, 220),
-                    new Vector2(502, 263), new Vector2(414, 390),
-                    new Vector2(1020, 388), new Vector2(1307, 604)
+                    new Vector2(771, 57), new Vector2(969, 232),
+                    new Vector2(327, 400), new Vector2(1368, 402)
                 };
                 foreach (Vector2 beacon in beacons)
                     GlowDisc(warmPixels, size, xOffset + Mathf.RoundToInt(beacon.x),
                         yOffset + source.height - 1 - Mathf.RoundToInt(beacon.y),
-                        7f, 16f, Warm, 0.68f);
+                        7f, 18f, Warm, 0.70f);
 
-                // Sparse communication/network activation on authored tower and conduits.
+                // Sparse automation/routing activation follows authored conveyors and conduits.
                 Polyline(energyPixels, size, xOffset, yOffset, source.height,
-                    new[] { new Vector2(718, 92), new Vector2(718, 198),
-                        new Vector2(716, 310), new Vector2(715, 405) }, Energy, 2f, 7f, 0.65f);
+                    new[] { new Vector2(760, 106), new Vector2(760, 246),
+                        new Vector2(760, 376) }, Energy, 2.2f, 8f, 0.62f);
                 Polyline(energyPixels, size, xOffset, yOffset, source.height,
-                    new[] { new Vector2(551, 647), new Vector2(690, 624),
-                        new Vector2(823, 648), new Vector2(940, 684) }, Energy, 2.3f, 8f, 0.62f);
+                    new[] { new Vector2(480, 713), new Vector2(589, 747),
+                        new Vector2(700, 784), new Vector2(789, 820) },
+                    Energy, 2.4f, 8f, 0.58f);
                 Polyline(energyPixels, size, xOffset, yOffset, source.height,
-                    new[] { new Vector2(907, 626), new Vector2(981, 665),
-                        new Vector2(1082, 690), new Vector2(1188, 706) }, Energy, 2f, 7f, 0.54f);
+                    new[] { new Vector2(743, 716), new Vector2(839, 753),
+                        new Vector2(930, 792), new Vector2(1023, 834) },
+                    Energy, 2.4f, 8f, 0.58f);
+                Polyline(energyPixels, size, xOffset, yOffset, source.height,
+                    new[] { new Vector2(1018, 464), new Vector2(1105, 486),
+                        new Vector2(1206, 506) }, Energy, 2f, 7f, 0.52f);
                 GlowRectangle(energyPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(592, 527, 58, 34), Energy, 7f, 0.55f);
+                    new RectInt(654, 635, 43, 26), Energy, 7f, 0.54f);
                 GlowRectangle(energyPixels, size, xOffset, yOffset, source.height,
-                    new RectInt(703, 539, 58, 34), Energy, 7f, 0.55f);
+                    new RectInt(846, 681, 43, 27), Energy, 7f, 0.54f);
 
-                // Compact restored command-core and tower status highlights.
+                // Compact restored machine-bay and tower instrumentation highlights.
+                GlowDisc(corePixels, size, xOffset + 675,
+                    yOffset + source.height - 1 - 654, 5f, 14f, Core, 0.72f);
+                GlowDisc(corePixels, size, xOffset + 865,
+                    yOffset + source.height - 1 - 704, 5f, 14f, Core, 0.72f);
                 GlowRectangle(corePixels, size, xOffset, yOffset, source.height,
-                    new RectInt(641, 522, 34, 18), Core, 7f, 0.68f);
-                GlowRectangle(corePixels, size, xOffset, yOffset, source.height,
-                    new RectInt(765, 548, 28, 17), Core, 7f, 0.64f);
-                GlowDisc(corePixels, size, xOffset + 718,
-                    yOffset + source.height - 1 - 44, 4f, 11f, Core, 0.72f);
+                    new RectInt(744, 357, 31, 13), Core, 6f, 0.64f);
 
                 WritePng(LayerPaths[0], size, size, basePixels);
                 WritePng(LayerPaths[1], size, size, warmPixels);
@@ -160,22 +160,14 @@ namespace NeonGrid.Editor
             finally { UnityEngine.Object.DestroyImmediate(source); }
         }
 
-        private static bool IsEmissiveRegion(int x, int y)
-        {
-            return InRect(x, y, 492, 914, 470, 634) ||
-                   InRect(x, y, 220, 286, 550, 603) ||
-                   InRect(x, y, 367, 416, 590, 686) ||
-                   InRect(x, y, 510, 683, 672, 726) ||
-                   InRect(x, y, 748, 795, 682, 780) ||
-                   InRect(x, y, 980, 1160, 716, 810) ||
-                   InRect(x, y, 1242, 1336, 705, 790) ||
-                   InRect(x, y, 695, 737, 15, 75) ||
-                   InRect(x, y, 742, 790, 190, 247) ||
-                   InRect(x, y, 480, 524, 235, 291) ||
-                   InRect(x, y, 392, 437, 360, 418) ||
-                   InRect(x, y, 998, 1043, 360, 420) ||
-                   InRect(x, y, 1285, 1332, 575, 632);
-        }
+        private static bool IsEmissiveRegion(int x, int y) =>
+            InRect(x, y, 680, 730, 140, 375) || InRect(x, y, 775, 845, 155, 380) ||
+            InRect(x, y, 205, 306, 515, 570) || InRect(x, y, 360, 415, 550, 675) ||
+            InRect(x, y, 470, 560, 510, 570) || InRect(x, y, 615, 710, 525, 585) ||
+            InRect(x, y, 805, 900, 560, 620) || InRect(x, y, 965, 1025, 610, 750) ||
+            InRect(x, y, 580, 755, 555, 730) || InRect(x, y, 760, 945, 595, 775) ||
+            InRect(x, y, 744, 794, 30, 85) || InRect(x, y, 942, 994, 205, 260) ||
+            InRect(x, y, 300, 352, 370, 430) || InRect(x, y, 1340, 1394, 370, 435);
 
         private static bool InRect(int x, int y, int xMin, int xMax, int yMin, int yMax) =>
             x >= xMin && x <= xMax && y >= yMin && y <= yMax;
@@ -185,10 +177,27 @@ namespace NeonGrid.Editor
             if (pixel.a == 0) return false;
             bool warm = pixel.r > 125 && pixel.r > pixel.b * 1.28f &&
                         pixel.g > pixel.b * 1.08f;
-            bool monitor = pixel.b > 85 && pixel.g > 75 &&
-                           pixel.b > pixel.r * 1.08f;
             bool beacon = pixel.r > 125 && pixel.r > pixel.g * 1.25f;
-            return warm || monitor || beacon;
+            return warm || beacon;
+        }
+
+        private static bool IsBrightFixture(int x, int y, Color32 pixel)
+        {
+            if (pixel.a == 0 || pixel.r + pixel.g + pixel.b < 500) return false;
+            return InRect(x, y, 690, 720, 150, 285) ||
+                   InRect(x, y, 782, 812, 168, 302) ||
+                   InRect(x, y, 690, 720, 280, 370) ||
+                   InRect(x, y, 810, 838, 290, 372) ||
+                   InRect(x, y, 215, 298, 525, 560) ||
+                   InRect(x, y, 372, 405, 560, 666) ||
+                   InRect(x, y, 478, 553, 518, 558) ||
+                   InRect(x, y, 622, 704, 536, 592) ||
+                   InRect(x, y, 812, 890, 572, 610) ||
+                   InRect(x, y, 975, 1013, 620, 745) ||
+                   InRect(x, y, 748, 792, 30, 86) ||
+                   InRect(x, y, 944, 994, 205, 260) ||
+                   InRect(x, y, 302, 352, 370, 430) ||
+                   InRect(x, y, 1340, 1394, 370, 435);
         }
 
         private static Color32 Neutralize(Color32 pixel)
@@ -222,7 +231,7 @@ namespace NeonGrid.Editor
             importer.SaveAndReimport();
         }
 
-        private static void BindIsolatedPrototype(CityBuildingArtDefinition controlCenter)
+        private static void BindIsolatedPrototype(CityBuildingArtDefinition automationPlant)
         {
             Scene scene = EditorSceneManager.OpenScene(M15CityBuildingArtPrototypeBuilder.ScenePath,
                 OpenSceneMode.Single);
@@ -230,8 +239,8 @@ namespace NeonGrid.Editor
                 .SelectMany(root => root.GetComponentsInChildren<
                     CityBuildingArtPrototypeController>(true)).Single();
             controller.SetFinalDefinitions(controller.FinalPowerStation,
-                controller.FinalCentralGrid, controller.FinalSubstation, controlCenter,
-                controller.FinalAutomationPlant);
+                controller.FinalCentralGrid, controller.FinalSubstation,
+                controller.FinalControlCenter, automationPlant);
             EditorUtility.SetDirty(controller);
             EditorSceneManager.SaveScene(scene);
         }

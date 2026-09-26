@@ -24,6 +24,7 @@ namespace NeonGrid.Presentation
         [SerializeField] private CityBuildingArtDefinition finalCentralGrid;
         [SerializeField] private CityBuildingArtDefinition finalSubstation;
         [SerializeField] private CityBuildingArtDefinition finalControlCenter;
+        [SerializeField] private CityBuildingArtDefinition finalAutomationPlant;
         private CityBuildingArtView[] art;
         private CityChapterNodeView[] nodes;
         private int selected;
@@ -40,9 +41,10 @@ namespace NeonGrid.Presentation
         public CityBuildingArtDefinition FinalCentralGrid => finalCentralGrid;
         public CityBuildingArtDefinition FinalSubstation => finalSubstation;
         public CityBuildingArtDefinition FinalControlCenter => finalControlCenter;
+        public CityBuildingArtDefinition FinalAutomationPlant => finalAutomationPlant;
         public CityBuildingArtPreviewSource PreviewSource { get; private set; }
         public bool FinalArtAvailable => HasFinalArt(0) || HasFinalArt(1) || HasFinalArt(2) ||
-                                         HasFinalArt(3);
+                                         HasFinalArt(3) || HasFinalArt(4);
 
         private void Awake() => Initialize();
 
@@ -64,6 +66,8 @@ namespace NeonGrid.Presentation
                 nodeList.Add(FindNode("substation"));
             if (IsValidFinal(finalControlCenter, "control_center"))
                 nodeList.Add(FindNode("control_center"));
+            if (IsValidFinal(finalAutomationPlant, "automation_plant"))
+                nodeList.Add(FindNode("automation_plant"));
             nodes = nodeList.ToArray();
             art = new CityBuildingArtView[nodes.Length];
             for (int index = 0; index < nodes.Length; index++)
@@ -72,7 +76,8 @@ namespace NeonGrid.Presentation
                 Image[] placeholders = region.GetComponentsInChildren<Image>();
                 art[index] = nodes[index].gameObject.AddComponent<CityBuildingArtView>();
                 CityBuildingArtDefinition initial = index == 0 ? powerStation :
-                    index == 1 ? centralGrid : index == 2 ? finalSubstation : finalControlCenter;
+                    index == 1 ? centralGrid : index == 2 ? finalSubstation :
+                    index == 3 ? finalControlCenter : finalAutomationPlant;
                 art[index].Initialize(initial,
                     nodes[index].ChapterId, region, placeholders);
                 PresentSample(index, 0);
@@ -116,9 +121,10 @@ namespace NeonGrid.Presentation
                 UpdateCaption();
                 return false;
             }
-            CityBuildingArtDefinition[] prototypes = { powerStation, centralGrid, null, null };
+            CityBuildingArtDefinition[] prototypes = { powerStation, centralGrid, null, null, null };
             CityBuildingArtDefinition[] finals =
-                { finalPowerStation, finalCentralGrid, finalSubstation, finalControlCenter };
+                { finalPowerStation, finalCentralGrid, finalSubstation, finalControlCenter,
+                    finalAutomationPlant };
             for (int index = 0; index < art.Length; index++)
             {
                 if (index >= 2)
@@ -204,19 +210,23 @@ namespace NeonGrid.Presentation
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
             selectionLabel = Label(root.transform, "QA Selection", new Vector2(0f, 198f), new Vector2(900f, 60f));
-            Button(root.transform, "POWER", -136f, 132f, 125f, () => SelectBuilding(0));
+            const float qaWidth = 110f;
+            Button(root.transform, "POWER", -180f, 132f, qaWidth, () => SelectBuilding(0));
             if (nodes.Length > 2)
-                Button(root.transform, "SUBSTATION", 0f, 132f, 125f,
+                Button(root.transform, "SUBSTATION", -60f, 132f, qaWidth,
                     () => SelectBuilding(2));
             if (nodes.Length > 3)
-                Button(root.transform, "CONTROL", 136f, 132f, 125f,
+                Button(root.transform, "CONTROL", 60f, 132f, qaWidth,
                     () => SelectBuilding(3));
-            Button(root.transform, "CENTRAL", 272f, 132f, 125f, () => SelectBuilding(1));
-            Button(root.transform, "EMPHASIS", 408f, 132f, 125f, PreviewEmphasis);
-            Button(root.transform, "PROTOTYPE", -408f, 132f, 125f,
+            if (nodes.Length > 4)
+                Button(root.transform, "AUTO", 180f, 132f, qaWidth,
+                    () => SelectBuilding(4));
+            Button(root.transform, "CENTRAL", 300f, 132f, qaWidth, () => SelectBuilding(1));
+            Button(root.transform, "EMPHASIS", 420f, 132f, qaWidth, PreviewEmphasis);
+            Button(root.transform, "PROTOTYPE", -420f, 132f, qaWidth,
                 () => ShowSource(CityBuildingArtPreviewSource.Prototype));
             finalSourceButton = Button(root.transform,
-                HasFinalArt(selected) ? "FINAL" : "FINAL MISSING", -272f, 132f, 125f,
+                HasFinalArt(selected) ? "FINAL" : "FINAL MISSING", -300f, 132f, qaWidth,
                 () => ShowSource(CityBuildingArtPreviewSource.Final));
             finalSourceLabel = finalSourceButton.transform.Find("Label").GetComponent<Text>();
             UpdateFinalSourceButton();
@@ -266,11 +276,13 @@ namespace NeonGrid.Presentation
 
         private bool HasFinalArt(int index)
         {
-            if (index < 0 || index > 3) return false;
+            if (index < 0 || index > 4) return false;
             CityBuildingArtDefinition definition = index == 0 ? finalPowerStation :
-                index == 1 ? finalCentralGrid : index == 2 ? finalSubstation : finalControlCenter;
+                index == 1 ? finalCentralGrid : index == 2 ? finalSubstation :
+                index == 3 ? finalControlCenter : finalAutomationPlant;
             string chapterId = index == 0 ? "power_station" :
-                index == 1 ? "central_grid" : index == 2 ? "substation" : "control_center";
+                index == 1 ? "central_grid" : index == 2 ? "substation" :
+                index == 3 ? "control_center" : "automation_plant";
             return IsValidFinal(definition, chapterId);
         }
 
@@ -298,12 +310,14 @@ namespace NeonGrid.Presentation
 
         public void SetFinalDefinitions(CityBuildingArtDefinition ordinary,
             CityBuildingArtDefinition central, CityBuildingArtDefinition substation = null,
-            CityBuildingArtDefinition controlCenter = null)
+            CityBuildingArtDefinition controlCenter = null,
+            CityBuildingArtDefinition automationPlant = null)
         {
             finalPowerStation = ordinary;
             finalCentralGrid = central;
             finalSubstation = substation;
             finalControlCenter = controlCenter;
+            finalAutomationPlant = automationPlant;
         }
 #endif
     }

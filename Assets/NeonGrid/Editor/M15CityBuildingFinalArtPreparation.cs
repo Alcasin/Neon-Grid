@@ -103,7 +103,7 @@ namespace NeonGrid.Editor
                 .SelectMany(root => root.GetComponentsInChildren<
                     CityBuildingArtPrototypeController>(true)).Single();
             controller.SetFinalDefinitions(power, central, controller.FinalSubstation,
-                controller.FinalControlCenter);
+                controller.FinalControlCenter, controller.FinalAutomationPlant);
             EditorUtility.SetDirty(controller);
             EditorSceneManager.SaveScene(scene);
         }

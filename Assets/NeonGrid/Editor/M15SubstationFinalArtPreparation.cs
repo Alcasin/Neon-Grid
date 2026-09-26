@@ -212,7 +212,8 @@ namespace NeonGrid.Editor
                 .SelectMany(root => root.GetComponentsInChildren<
                     CityBuildingArtPrototypeController>(true)).Single();
             controller.SetFinalDefinitions(controller.FinalPowerStation,
-                controller.FinalCentralGrid, substation, controller.FinalControlCenter);
+                controller.FinalCentralGrid, substation, controller.FinalControlCenter,
+                controller.FinalAutomationPlant);
             EditorUtility.SetDirty(controller);
             EditorSceneManager.SaveScene(scene);
         }
