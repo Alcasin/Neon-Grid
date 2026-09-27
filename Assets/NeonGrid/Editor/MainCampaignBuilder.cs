@@ -23,6 +23,12 @@ namespace NeonGrid.Editor
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonCampaignUiPrototype.asset";
         internal const string PowerStationArtPath =
             "Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Final.asset";
+        internal const string SubstationArtPath =
+            "Assets/NeonGrid/Art/CityBuildings/Substation/Substation_Final.asset";
+        internal const string ControlCenterArtPath =
+            "Assets/NeonGrid/Art/CityBuildings/ControlCenter/ControlCenter_Final.asset";
+        internal const string AutomationPlantArtPath =
+            "Assets/NeonGrid/Art/CityBuildings/AutomationPlant/AutomationPlant_Final.asset";
         internal const string CentralGridArtPath =
             "Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Final.asset";
 
@@ -81,11 +87,20 @@ namespace NeonGrid.Editor
                 campaignUiTheme);
             CityBuildingArtDefinition powerStationArt = LoadFinalArt(PowerStationArtPath,
                 "power_station");
+            CityBuildingArtDefinition substationArt = LoadFinalArt(SubstationArtPath,
+                "substation");
+            CityBuildingArtDefinition controlCenterArt = LoadFinalArt(ControlCenterArtPath,
+                "control_center");
+            CityBuildingArtDefinition automationPlantArt = LoadFinalArt(AutomationPlantArtPath,
+                "automation_plant");
             CityBuildingArtDefinition centralGridArt = LoadFinalArt(CentralGridArtPath,
                 "central_grid");
             campaign.SetCityBuildingArt(new[]
             {
                 new CampaignCityBuildingArtBinding("power_station", powerStationArt),
+                new CampaignCityBuildingArtBinding("substation", substationArt),
+                new CampaignCityBuildingArtBinding("control_center", controlCenterArt),
+                new CampaignCityBuildingArtBinding("automation_plant", automationPlantArt),
                 new CampaignCityBuildingArtBinding("central_grid", centralGridArt)
             });
             CampaignValidationReport validation = new CampaignValidator().Validate(campaign);

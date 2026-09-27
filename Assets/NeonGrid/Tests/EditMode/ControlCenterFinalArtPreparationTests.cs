@@ -248,7 +248,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void PrototypeSceneBindsControlButProductionCampaignRemainsExactlyE1C()
+        public void PrototypeSceneAndProductionCampaignBindAcceptedControlDefinition()
         {
             Assert.That(File.Exists(M15ControlCenterFinalArtPreparation.PreviewPath), Is.True);
             Scene scene = EditorSceneManager.OpenScene(M15CityBuildingArtPrototypeBuilder.ScenePath,
@@ -262,8 +262,9 @@ namespace NeonGrid.Tests
             }
             finally { EditorSceneManager.CloseScene(scene, true); }
             Assert.That(campaign.CityBuildingArt.Select(binding => binding.ChapterId),
-                Is.EqualTo(new[] { "power_station", "central_grid" }));
-            Assert.That(campaign.GetCityBuildingArt("control_center"), Is.Null);
+                Is.EqualTo(new[] { "power_station", "substation", "control_center",
+                    "automation_plant", "central_grid" }));
+            Assert.That(campaign.GetCityBuildingArt("control_center"), Is.SameAs(control));
             Assert.That(EditorBuildSettings.scenes.Select(item => item.path),
                 Has.None.EqualTo(M15CityBuildingArtPrototypeBuilder.ScenePath));
         }

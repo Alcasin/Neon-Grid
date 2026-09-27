@@ -292,7 +292,7 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionMapUsesTwoFinalArtBindings_AndAcceptedThemeBindings()
+        public void ProductionMapUsesFiveFinalArtBindings_AndAcceptedThemeBindings()
         {
             var root = NewObject("Production unchanged");
             CampaignRuntimeView view = root.AddComponent<CampaignRuntimeView>();
@@ -300,12 +300,13 @@ namespace NeonGrid.Tests
             view.ShowMap();
             CityBuildingArtView[] productionArt = view.GetComponentsInChildren<
                 CityBuildingArtView>(true);
-            Assert.That(productionArt, Has.Length.EqualTo(2));
+            Assert.That(productionArt, Has.Length.EqualTo(5));
             Assert.That(productionArt.Select(art => art.Definition.ChapterId),
-                Is.EquivalentTo(new[] { "power_station", "central_grid" }));
+                Is.EquivalentTo(new[] { "power_station", "substation", "control_center",
+                    "automation_plant", "central_grid" }));
             foreach (CityChapterNodeView node in view.GetComponentsInChildren<CityChapterNodeView>())
             {
-                bool hasFinalArt = node.ChapterId == "power_station" || node.ChapterId == "central_grid";
+                const bool hasFinalArt = true;
                 Assert.That(node.BuildingArtView != null && node.BuildingArtView.UsesArt,
                     Is.EqualTo(hasFinalArt), node.ChapterId);
                 Image[] programmerParts = node.transform.Find("Building Silhouette")

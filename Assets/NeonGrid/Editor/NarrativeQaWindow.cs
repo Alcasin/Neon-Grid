@@ -120,6 +120,15 @@ namespace NeonGrid.Editor
                 NarrativeQaPreset.PowerStationStage3);
             DrawPresetButton("Prepare POWER STATION — RESTORED",
                 NarrativeQaPreset.PowerStationRestored);
+            DrawChapterArtPresets("SUBSTATION", NarrativeQaPreset.SubstationStage1,
+                NarrativeQaPreset.SubstationStage2, NarrativeQaPreset.SubstationStage3,
+                NarrativeQaPreset.SubstationRestored);
+            DrawChapterArtPresets("CONTROL CENTER", NarrativeQaPreset.ControlCenterStage1,
+                NarrativeQaPreset.ControlCenterStage2, NarrativeQaPreset.ControlCenterStage3,
+                NarrativeQaPreset.ControlCenterRestored);
+            DrawChapterArtPresets("AUTOMATION PLANT", NarrativeQaPreset.AutomationPlantStage1,
+                NarrativeQaPreset.AutomationPlantStage2, NarrativeQaPreset.AutomationPlantStage3,
+                NarrativeQaPreset.AutomationPlantRestored);
             DrawPresetButton("Prepare CENTRAL GRID — STAGE 1",
                 NarrativeQaPreset.CentralGridStage1);
             DrawPresetButton("Prepare CENTRAL GRID — STAGE 2",
@@ -129,6 +138,12 @@ namespace NeonGrid.Editor
             EditorGUILayout.Space();
             DrawPresetButton("Prepare FIRST RESTORATION PENDING",
                 NarrativeQaPreset.FirstRestorationPending);
+            DrawPresetButton("Prepare SUBSTATION RESTORATION PENDING",
+                NarrativeQaPreset.SubstationRestorationPending);
+            DrawPresetButton("Prepare CONTROL CENTER RESTORATION PENDING",
+                NarrativeQaPreset.ControlCenterRestorationPending);
+            DrawPresetButton("Prepare AUTOMATION PLANT RESTORATION PENDING",
+                NarrativeQaPreset.AutomationPlantRestorationPending);
             DrawPresetButton("Prepare FINAL RESTORATION PENDING",
                 NarrativeQaPreset.FinalRestorationPending);
             DrawPresetButton("Prepare ENDING PENDING", NarrativeQaPreset.EndingPending);
@@ -139,6 +154,15 @@ namespace NeonGrid.Editor
         private void DrawPresetButton(string label, NarrativeQaPreset preset)
         {
             if (GUILayout.Button(label, GUILayout.Height(30f))) PreparePreset(preset);
+        }
+
+        private void DrawChapterArtPresets(string chapter, NarrativeQaPreset stage1,
+            NarrativeQaPreset stage2, NarrativeQaPreset stage3, NarrativeQaPreset restored)
+        {
+            DrawPresetButton($"Prepare {chapter} — STAGE 1", stage1);
+            DrawPresetButton($"Prepare {chapter} — STAGE 2", stage2);
+            DrawPresetButton($"Prepare {chapter} — STAGE 3", stage3);
+            DrawPresetButton($"Prepare {chapter} — RESTORED", restored);
         }
 
         private void DrawValidation()

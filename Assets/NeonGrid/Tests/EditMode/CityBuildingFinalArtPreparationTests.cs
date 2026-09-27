@@ -240,7 +240,8 @@ namespace NeonGrid.Tests
             map.ShowMap();
             Assert.That(map.GetComponentsInChildren<CityBuildingArtView>(true)
                 .Select(view => view.Definition.ChapterId),
-                Is.EquivalentTo(new[] { "power_station", "central_grid" }));
+                Is.EquivalentTo(new[] { "power_station", "substation", "control_center",
+                    "automation_plant", "central_grid" }));
             Assert.That(EditorBuildSettings.scenes.Select(scene => scene.path),
                 Has.None.EqualTo(M15CityBuildingArtPrototypeBuilder.ScenePath));
             foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)

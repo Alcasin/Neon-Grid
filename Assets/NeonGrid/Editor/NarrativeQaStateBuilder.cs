@@ -17,10 +17,25 @@ namespace NeonGrid.Editor
         PowerStationStage2,
         PowerStationStage3,
         PowerStationRestored,
+        SubstationStage1,
+        SubstationStage2,
+        SubstationStage3,
+        SubstationRestored,
+        ControlCenterStage1,
+        ControlCenterStage2,
+        ControlCenterStage3,
+        ControlCenterRestored,
+        AutomationPlantStage1,
+        AutomationPlantStage2,
+        AutomationPlantStage3,
+        AutomationPlantRestored,
         CentralGridStage1,
         CentralGridStage2,
         CentralGridStage3,
         FirstRestorationPending,
+        SubstationRestorationPending,
+        ControlCenterRestorationPending,
+        AutomationPlantRestorationPending,
         FinalRestorationPending,
         EndingPending,
         PostEndingComplete
@@ -60,25 +75,64 @@ namespace NeonGrid.Editor
                     progress.SetIntroCompleted(true);
                     CompleteChapter(progress, campaign.Chapters[0]);
                     break;
+                case NarrativeQaPreset.SubstationStage1:
+                    PrepareChapter(progress, campaign, 1, 1);
+                    break;
+                case NarrativeQaPreset.SubstationStage2:
+                    PrepareChapter(progress, campaign, 1, 4);
+                    break;
+                case NarrativeQaPreset.SubstationStage3:
+                    PrepareChapter(progress, campaign, 1, 7);
+                    break;
+                case NarrativeQaPreset.SubstationRestored:
+                    PrepareChapter(progress, campaign, 1, campaign.Chapters[1].Levels.Count);
+                    break;
+                case NarrativeQaPreset.ControlCenterStage1:
+                    PrepareChapter(progress, campaign, 2, 1);
+                    break;
+                case NarrativeQaPreset.ControlCenterStage2:
+                    PrepareChapter(progress, campaign, 2, 4);
+                    break;
+                case NarrativeQaPreset.ControlCenterStage3:
+                    PrepareChapter(progress, campaign, 2, 7);
+                    break;
+                case NarrativeQaPreset.ControlCenterRestored:
+                    PrepareChapter(progress, campaign, 2, campaign.Chapters[2].Levels.Count);
+                    break;
+                case NarrativeQaPreset.AutomationPlantStage1:
+                    PrepareChapter(progress, campaign, 3, 1);
+                    break;
+                case NarrativeQaPreset.AutomationPlantStage2:
+                    PrepareChapter(progress, campaign, 3, 4);
+                    break;
+                case NarrativeQaPreset.AutomationPlantStage3:
+                    PrepareChapter(progress, campaign, 3, 7);
+                    break;
+                case NarrativeQaPreset.AutomationPlantRestored:
+                    PrepareChapter(progress, campaign, 3, campaign.Chapters[3].Levels.Count);
+                    break;
                 case NarrativeQaPreset.CentralGridStage1:
-                    progress.SetIntroCompleted(true);
-                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
-                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 1);
+                    PrepareChapter(progress, campaign, campaign.Chapters.Count - 1, 1);
                     break;
                 case NarrativeQaPreset.CentralGridStage2:
-                    progress.SetIntroCompleted(true);
-                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
-                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 4);
+                    PrepareChapter(progress, campaign, campaign.Chapters.Count - 1, 4);
                     break;
                 case NarrativeQaPreset.CentralGridStage3:
-                    progress.SetIntroCompleted(true);
-                    CompleteThroughChapter(progress, campaign, campaign.Chapters.Count - 1);
-                    CompleteLevels(progress, campaign.Chapters[campaign.Chapters.Count - 1], 7);
+                    PrepareChapter(progress, campaign, campaign.Chapters.Count - 1, 7);
                     break;
                 case NarrativeQaPreset.FirstRestorationPending:
                     progress.SetIntroCompleted(true);
                     CompleteChapter(progress, campaign.Chapters[0]);
                     progress.QueuePendingRestoration(campaign.Chapters[0].ChapterId);
+                    break;
+                case NarrativeQaPreset.SubstationRestorationPending:
+                    PreparePendingRestoration(progress, campaign, 1);
+                    break;
+                case NarrativeQaPreset.ControlCenterRestorationPending:
+                    PreparePendingRestoration(progress, campaign, 2);
+                    break;
+                case NarrativeQaPreset.AutomationPlantRestorationPending:
+                    PreparePendingRestoration(progress, campaign, 3);
                     break;
                 case NarrativeQaPreset.FinalRestorationPending:
                     progress.SetIntroCompleted(true);
@@ -114,6 +168,24 @@ namespace NeonGrid.Editor
         {
             foreach (CampaignChapterDefinition chapter in campaign.Chapters)
                 CompleteChapter(progress, chapter);
+        }
+
+        private static void PrepareChapter(CampaignProgressService progress,
+            CampaignDefinition campaign, int chapterIndex, int completedLevels)
+        {
+            progress.SetIntroCompleted(true);
+            CompleteThroughChapter(progress, campaign, chapterIndex);
+            CompleteLevels(progress, campaign.Chapters[chapterIndex], completedLevels);
+        }
+
+        private static void PreparePendingRestoration(CampaignProgressService progress,
+            CampaignDefinition campaign, int chapterIndex)
+        {
+            progress.SetIntroCompleted(true);
+            CompleteThroughChapter(progress, campaign, chapterIndex);
+            CampaignChapterDefinition chapter = campaign.Chapters[chapterIndex];
+            CompleteChapter(progress, chapter);
+            progress.QueuePendingRestoration(chapter.ChapterId);
         }
 
         private static void CompleteThroughChapter(CampaignProgressService progress,

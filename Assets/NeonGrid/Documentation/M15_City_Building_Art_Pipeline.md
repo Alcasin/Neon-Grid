@@ -480,9 +480,8 @@ documentation-only, and excluded from production dependencies.
 
 The existing prototype uses the accepted programmer Control Center silhouette in
 Prototype mode and one reused four-Image art view in Final mode. Invalid or missing
-Control Center final art preserves fallback. Production remains the E1C rollout:
-Power Station and Central Grid final, with Substation, Control Center and Automation
-Plant still unbound programmer-art chapters.
+Control Center final art preserves fallback. Its later production association uses the
+same optional stable-ID binding architecture; no second presentation path was added.
 
 ## Automation Plant isolated final-art preparation
 
@@ -502,6 +501,80 @@ documentation-only, and excluded from production dependencies.
 
 The isolated prototype retains the programmer Automation Plant silhouette in Prototype
 mode and reuses one four-Image art view in Final mode. Missing, invalid or mismatched art
-safely retains fallback. Production remains the E1C rollout: only Power Station and
-Central Grid use final art; Substation, Control Center and Automation Plant remain
-programmer-art chapters in the production campaign.
+safely retains fallback. Its later production association reuses that exact validated
+definition and the existing campaign binding system.
+
+## M15-E2D full five-building production rollout
+
+The production `neon_grid_main` campaign now owns exactly five stable-ID associations,
+in campaign order:
+
+1. `power_station` → `PowerStation_Final.asset`
+2. `substation` → `Substation_Final.asset`
+3. `control_center` → `ControlCenter_Final.asset`
+4. `automation_plant` → `AutomationPlant_Final.asset`
+5. `central_grid` → `CentralGrid_Final.asset`
+
+`MainCampaignBuilder` loads and validates every accepted definition against its exact
+authored chapter ID before replacing the association list. A missing, invalid, or
+ID-mismatched definition causes the deterministic builder to stop instead of silently
+authoring bad production data. Repeated builds reproduce the same five-entry asset
+without duplicates or order-dependent behavior and preserve unrelated campaign data.
+
+Runtime safety remains optional and local. `CampaignRuntimeView` asks the campaign for
+art by the stable chapter ID, while `CityBuildingArtView` uses a definition only when it
+is configured and its ID matches the node. Missing bindings leave the programmer
+silhouette intact; invalid or mismatched definitions likewise retain that visible
+fallback. Duplicate, unknown, and null association records remain campaign-validation
+errors under the existing E1C policy. Valid production has no fallback chapter.
+
+Building state remains derived rather than saved:
+
+`campaign progress → CampaignChapterState/completed count → CityMapPresentationModel → CityBuildingArtView`
+
+Unavailable chapters are Locked. Available chapters use Stage 1 for 0–3 completed
+levels, Stage 2 for 4–6, Stage 3 for 7–9, and Restored at 10. Stars affect labels only.
+No art IDs, sprite names, opacities, active states, or final-art flags were added to the
+save schema. Loading and replaying completed levels therefore re-derive Restored state
+without creating another restoration event.
+
+The generic M13/M14 restoration sequence remains authoritative for all five buildings:
+Power Station restores and reveals Substation; Substation reveals Control Center;
+Control Center reveals Automation Plant; Automation Plant reveals Central Grid; Central
+Grid performs the final network presentation and hands off directly to Ending without a
+restoration-status card. Timing, easing, narrative copy, map paths, node positions, hit
+targets, and the Central Grid hierarchy are unchanged. Each art view retains four
+registered Images and restoration emphasis returns to its authored/themed transform.
+
+Narrative QA now exposes deterministic Stage 1/2/3/Restored states for Power Station,
+Substation, Control Center, and Automation Plant; Stage 1/2/3 for Central Grid; every
+intermediate restoration-pending state; Final Restoration Pending; Ending Pending; and
+Post-Ending Complete. Existing automatic backup and explicit restore protection remain.
+
+### Full production manual QA
+
+1. Open **Neon Grid > Narrative QA**, back up the current production save, and validate
+   the current narrative state.
+2. Prepare Fresh Map. Run `M12_NeonGrid_Main.unity`; confirm Power Station is Stage 1,
+   the other four are Locked, all five use final art, and no DEV controls are present.
+3. At 1080×1920, 1080×2340, and 720×1280, inspect every map label, progress/star line,
+   left/right containment, Control Center header clearance, and Central Grid label area.
+4. Prepare each chapter's Stage 1, Stage 2, Stage 3, and available Restored preset.
+   Confirm warm-first cumulative activation and exact node geometry. Use Ending Pending
+   or Post-Ending Complete to inspect final Central Grid Restored state.
+5. Prepare First, Substation, Control Center, Automation Plant, and Final Restoration
+   Pending in turn. Exercise PS→S, S→CC, CC→AP, AP→CG, and CG→Ending. Confirm no fallback
+   flash, duplicate hierarchy, alpha/scale drift, or changed narrative/timing; Central
+   Grid must show no restoration-status card.
+6. Exercise at least ten Map→Selector→Map cycles. Confirm five art views, twenty reused
+   layer Images, stable transforms/opacities, and no fallback silhouettes over final art.
+7. Replay one completed level from every chapter, return to the map, and confirm every
+   completed building remains Restored without a duplicate restoration event.
+8. Inspect Fresh, representative partial/restored chapter saves, Ending Pending, and
+   Post-Ending Complete after reload. Confirm visual state is derived from progress.
+9. Restore the Narrative QA backup after testing.
+
+Automated E2D coverage checks the five mappings, builder idempotence, validation,
+fallback safety, all progression states, restoration transitions, saves/replay,
+lifecycle stability, authoritative geometry, three portrait layouts, build exclusion of
+the prototype, and byte hashes for all 25 accepted runtime art/definition files.
