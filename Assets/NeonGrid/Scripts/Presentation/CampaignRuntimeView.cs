@@ -42,11 +42,14 @@ namespace NeonGrid.Presentation
         private CampaignUiThemeDefinition campaignUiTheme;
         private bool usesCityMap;
         private bool useCampaignBuildingArt;
+        private bool useCampaignEnvironmentArt;
+        private CityEnvironmentArtView cityEnvironmentView;
 
         public bool UsesCityMap => usesCityMap;
         public bool IsVisible => canvasObject != null && canvasObject.activeSelf;
         public bool IsMapInteractionEnabled => mapInteraction != null && mapInteraction.interactable &&
                                                mapInteraction.blocksRaycasts;
+        public CityEnvironmentArtView CityEnvironmentView => cityEnvironmentView;
         internal bool HasVisibleChapterBriefing => chapterBriefingTitle != null &&
                                                     chapterBriefingTitle.gameObject.activeSelf;
         internal Text ChapterBriefingTitle => chapterBriefingTitle;
@@ -56,11 +59,13 @@ namespace NeonGrid.Presentation
 
         public void Build(CampaignDefinition definition, CampaignProgressService progressService,
             Action<string> onOpenChapter, Action<string> onStartLevel, Action onBackToMap,
-            CampaignUiThemeDefinition theme = null, bool includeCampaignBuildingArt = true)
+            CampaignUiThemeDefinition theme = null, bool includeCampaignBuildingArt = true,
+            bool includeCampaignEnvironmentArt = true)
         {
             campaign = definition;
             campaignUiTheme = theme;
             useCampaignBuildingArt = includeCampaignBuildingArt;
+            useCampaignEnvironmentArt = includeCampaignEnvironmentArt;
             narrative = CampaignNarrativeCatalog.LoadForCampaign(definition.CampaignId);
             progress = progressService;
             openChapter = onOpenChapter;
@@ -144,6 +149,7 @@ namespace NeonGrid.Presentation
                 new Vector2(ProgrammerUiMetrics.CityCompositionWidth,
                     ProgrammerUiMetrics.CityCompositionHeight), Color.clear);
             CreateCityBackdrop(composition.transform);
+            TryCreateCityEnvironment(composition.GetComponent<RectTransform>());
 
             for (int index = 0; index + 1 < layout.Entries.Count; index++)
                 cityPaths.Add(CreateEnergyPath(composition.transform, layout, index));
@@ -211,6 +217,43 @@ namespace NeonGrid.Presentation
                 cityPaths[index].Present(CityMapPresentationModel.GetPathState(
                     progress.GetChapterState(campaign.Chapters[index].ChapterId),
                     progress.GetChapterState(campaign.Chapters[index + 1].ChapterId)));
+            cityEnvironmentView?.Present(campaign, progress);
+        }
+
+        private void TryCreateCityEnvironment(RectTransform composition)
+        {
+            CityEnvironmentArtDefinition environment = useCampaignEnvironmentArt
+                ? campaign.CityEnvironmentArt
+                : null;
+            if (!CanUseCityEnvironment(environment)) return;
+            cityEnvironmentView = gameObject.AddComponent<CityEnvironmentArtView>();
+            // City Ground is child 0. The environment stays below ambient compatible details,
+            // M13 paths, final buildings and all labels/UI.
+            cityEnvironmentView.Initialize(environment, composition, 1);
+            SetLegacyBackdropVisible(composition, false);
+        }
+
+        private bool CanUseCityEnvironment(CityEnvironmentArtDefinition environment)
+        {
+            if (environment == null || !environment.IsConfigured) return false;
+            var chapterIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (CampaignChapterDefinition chapter in campaign.Chapters)
+                if (chapter != null && !string.IsNullOrWhiteSpace(chapter.ChapterId))
+                    chapterIds.Add(chapter.ChapterId);
+            foreach (CityEnvironmentDistrictLayer district in environment.Districts)
+                if (!chapterIds.Contains(district.ChapterId)) return false;
+            return true;
+        }
+
+        internal static void SetLegacyBackdropVisible(Transform composition, bool visible)
+        {
+            foreach (Transform child in composition)
+                if ((child.name.StartsWith("City Block ", StringComparison.Ordinal) ||
+                     string.Equals(child.name, "Road Horizontal", StringComparison.Ordinal) ||
+                     string.Equals(child.name, "Road Vertical", StringComparison.Ordinal) ||
+                     string.Equals(child.name, "Road Diagonal", StringComparison.Ordinal)) &&
+                    child.TryGetComponent(out Image image))
+                    image.enabled = visible;
         }
 
         private static void CreateCityBackdrop(Transform parent)

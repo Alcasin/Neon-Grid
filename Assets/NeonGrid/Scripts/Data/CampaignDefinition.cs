@@ -11,6 +11,7 @@ namespace NeonGrid.Data
         [SerializeField] private string displayName = "Campaign";
         [SerializeField] private CircuitVisualThemeDefinition gameplayVisualTheme;
         [SerializeField] private CampaignUiThemeDefinition campaignUiTheme;
+        [SerializeField] private CityEnvironmentArtDefinition cityEnvironmentArt;
         [SerializeField] private List<CampaignChapterDefinition> chapters =
             new List<CampaignChapterDefinition>();
         [SerializeField] private List<CampaignCityBuildingArtBinding> cityBuildingArt =
@@ -20,6 +21,7 @@ namespace NeonGrid.Data
         public string DisplayName => displayName;
         public CircuitVisualThemeDefinition GameplayVisualTheme => gameplayVisualTheme;
         public CampaignUiThemeDefinition CampaignUiTheme => campaignUiTheme;
+        public CityEnvironmentArtDefinition CityEnvironmentArt => cityEnvironmentArt;
         public IReadOnlyList<CampaignChapterDefinition> Chapters => chapters;
         public IReadOnlyList<CampaignCityBuildingArtBinding> CityBuildingArt => cityBuildingArt;
 
@@ -53,6 +55,11 @@ namespace NeonGrid.Data
             cityBuildingArt = bindings == null
                 ? new List<CampaignCityBuildingArtBinding>()
                 : new List<CampaignCityBuildingArtBinding>(bindings);
+        }
+
+        public void SetCityEnvironmentArt(CityEnvironmentArtDefinition definition)
+        {
+            cityEnvironmentArt = definition;
         }
 #endif
     }

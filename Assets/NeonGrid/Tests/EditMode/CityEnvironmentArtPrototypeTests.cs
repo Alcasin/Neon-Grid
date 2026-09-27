@@ -266,11 +266,12 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionCampaignAndRuntimeRemainEnvironmentPrototypeFree()
+        public void ProductionCampaignUsesFinalEnvironmentAndRemainsPrototypeFree()
         {
             Assert.That(typeof(CampaignDefinition).GetFields(BindingFlags.Instance |
                 BindingFlags.Public | BindingFlags.NonPublic)
-                .Any(field => field.FieldType == typeof(CityEnvironmentArtDefinition)), Is.False);
+                .Count(field => field.FieldType == typeof(CityEnvironmentArtDefinition)),
+                Is.EqualTo(1));
             string[] dependencies = AssetDatabase.GetDependencies(CampaignPath, true);
             Assert.That(dependencies, Has.None.EqualTo(
                 M15CityEnvironmentArtPrototypeBuilder.DefinitionPath));
@@ -283,7 +284,10 @@ namespace NeonGrid.Tests
             map.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
                 () => { }, campaign.CampaignUiTheme);
             map.ShowMap();
-            Assert.That(root.GetComponentsInChildren<CityEnvironmentArtView>(true), Is.Empty);
+            Assert.That(root.GetComponentsInChildren<CityEnvironmentArtView>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(root.GetComponentsInChildren<CityEnvironmentArtPrototypeController>(true),
+                Is.Empty);
         }
 
         [Test]
@@ -324,7 +328,7 @@ namespace NeonGrid.Tests
             cleanup.Add(root);
             map = root.AddComponent<CampaignRuntimeView>();
             map.Build(campaign, progress, _ => { }, _ => { }, () => { },
-                campaign.CampaignUiTheme);
+                campaign.CampaignUiTheme, true, false);
             map.ShowMap();
             RectTransform composition = map.GetComponentsInChildren<RectTransform>(true)
                 .Single(rect => rect.name == "City Composition");

@@ -37,7 +37,9 @@ namespace NeonGrid.Campaign
         UnknownCityBuildingArtChapterId,
         MissingCityBuildingArtDefinition,
         MismatchedCityBuildingArtDefinition,
-        InvalidCityBuildingArtDefinition
+        InvalidCityBuildingArtDefinition,
+        InvalidCityEnvironmentArtDefinition,
+        MismatchedCityEnvironmentArtDefinition
     }
 
     public sealed class CampaignValidationIssue
@@ -174,8 +176,32 @@ namespace NeonGrid.Campaign
             }
 
             ValidateCityBuildingArt(campaign, chapterIds, report);
+            ValidateCityEnvironmentArt(campaign, chapterIds, report);
 
             return report;
+        }
+
+        private static void ValidateCityEnvironmentArt(CampaignDefinition campaign,
+            HashSet<string> chapterIds, CampaignValidationReport report)
+        {
+            CityEnvironmentArtDefinition environment = campaign.CityEnvironmentArt;
+            if (environment == null) return;
+            if (!environment.IsConfigured)
+            {
+                report.Add(CampaignValidationSeverity.Warning,
+                    CampaignValidationCode.InvalidCityEnvironmentArtDefinition,
+                    "City environment art is not configured; the legacy map backdrop will be used.");
+                return;
+            }
+            foreach (CityEnvironmentDistrictLayer district in environment.Districts)
+                if (!chapterIds.Contains(district.ChapterId))
+                {
+                    report.Add(CampaignValidationSeverity.Warning,
+                        CampaignValidationCode.MismatchedCityEnvironmentArtDefinition,
+                        $"City environment district '{district.ChapterId}' does not match a " +
+                        "campaign chapter; the legacy map backdrop will be used.");
+                    return;
+                }
         }
 
         private static void ValidateCityBuildingArt(CampaignDefinition campaign,

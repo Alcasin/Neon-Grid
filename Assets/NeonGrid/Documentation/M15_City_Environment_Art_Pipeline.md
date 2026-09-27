@@ -7,8 +7,9 @@ Map presentation. Dark navy and graphite city blocks, roads, rooftops and utilit
 readable structure. Sparse warm service lights and controlled cyan utility accents communicate
 restoration without competing with chapter buildings, M13 energy routes, labels or campaign UI.
 
-M15-E3A is an isolated pipeline and composition prototype. It is not connected to the production
-campaign, production runtime map or build settings.
+The E3A/E3B isolated prototype remains available for deterministic art and state QA. M15-E3C binds
+the accepted final definition to the production campaign through authored campaign data; the
+prototype scene remains excluded from build settings.
 
 ## Authored layer contract
 
@@ -55,8 +56,8 @@ The required conceptual order is:
 6. chapter labels, progress and stars
 7. campaign UI chrome
 
-The prototype inserts its art immediately after City Ground in the existing 1020 x 1500 City
-Composition. Chapter positions, node geometry and the composition offset remain authoritative.
+Both prototype and production insert art immediately after City Ground in the existing 1020 x 1500
+City Composition. Chapter positions, node geometry and the composition offset remain authoritative.
 
 ## Safe areas
 
@@ -88,5 +89,46 @@ keeps the source dimensions, alpha silhouette, center pivot, and layer registrat
 detected baked warm emphasis in the Base; overlays restore source pixels through stable-ID elliptical
 district masks, with dedicated Control Center upper and Central Grid lower safe-area offsets.
 
-The preparation tool binds the final definition only to the isolated prototype scene. Production
-campaign binding and restoration animation remain separate future work requiring their own review.
+The preparation tool refreshes the isolated prototype binding. It does not author production data.
+
+## E3C production binding
+
+`CampaignDefinition.CityEnvironmentArt` is the single optional production association. The main
+campaign builder loads and validates `CityEnvironment_Final.asset`, rejects a missing or invalid
+definition before authoring, and writes that reference alongside the existing five building-art
+bindings. Repeated builder runs are byte-idempotent. Vertical-slice campaigns keep a null reference.
+
+`CampaignRuntimeView` creates exactly one `CityEnvironmentArtView` when the authored definition is
+configured and every district stable ID belongs to the campaign. When the association is missing,
+invalid or mismatched, no environment view is created and the legacy programmer-art backdrop stays
+available. This optional presentation failure is non-fatal.
+
+With valid final art, only the redundant direct children `City Block N`, `Road Horizontal`,
+`Road Vertical`, and `Road Diagonal` are disabled at runtime. They are not deleted or reordered.
+`Energy Path N`, chapter nodes, hit targets, final building art and labels remain enabled above the
+environment. The isolated prototype uses the same exact suppression rule and explicitly opts out of
+the production association to avoid duplicate layers.
+
+Production state is derived whenever the authoritative map presentation refreshes:
+
+- partial chapter progress never enables a district;
+- `CampaignChapterState.Restored` enables the matching stable-ID overlay;
+- stars do not influence environment state;
+- all five restored chapters enable `FinalAccent`;
+- replaying completed levels cannot duplicate restoration events or change the derived state.
+
+No environment data is added to the save schema. Existing save/load progress reconstructs chapter
+state, which reconstructs the visible overlays. The M13 restoration sequence retains timing
+ownership; E3C adds no fades, pulses, coroutines or per-frame polling.
+
+Runtime cost is capped at seven reused non-raycast UI Images under the existing campaign Canvas.
+There is no runtime texture generation, unique material, extra Canvas, decorative `Update`, or
+per-map hierarchy creation.
+
+## Production QA
+
+Use the existing Narrative QA presets with backup/restore protection to inspect Fresh Map, each
+chapter Restored state, every pending restoration, Ending Pending and Post-Ending Complete. At each
+state verify district count, M13 paths, building/label priority and the absence of legacy block/road
+occlusion. Repeat Map -> Selector -> Map at least ten times and check 1080x1920, 1080x2340 and
+720x1280. Subjective Game View acceptance remains manual.

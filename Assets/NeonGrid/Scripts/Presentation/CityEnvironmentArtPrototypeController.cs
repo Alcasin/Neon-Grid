@@ -40,7 +40,7 @@ namespace NeonGrid.Presentation
             mapRoot.transform.SetParent(transform, false);
             MapView = mapRoot.AddComponent<CampaignRuntimeView>();
             MapView.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
-                () => { }, campaign.CampaignUiTheme);
+                () => { }, campaign.CampaignUiTheme, true, false);
             MapView.ShowMap();
 
             RectTransform composition = MapView.GetComponentsInChildren<RectTransform>(true)
@@ -49,23 +49,9 @@ namespace NeonGrid.Presentation
             // Child 0 is City Ground. Inserting at 1 keeps environment behind ambient map
             // details, M13 paths, final buildings and all labels/UI.
             EnvironmentView.Initialize(environment, composition, 1);
-            DisableRedundantLegacyBackdrop(composition);
+            CampaignRuntimeView.SetLegacyBackdropVisible(composition, false);
             BuildControls();
             PreviewState(0);
-        }
-
-        private static void DisableRedundantLegacyBackdrop(RectTransform composition)
-        {
-            // The final environment already contains the city fabric and authored roads. Keep
-            // the hierarchy/order intact and suppress only the redundant broad backdrop shapes;
-            // chapter-to-chapter Energy Path objects remain authoritative and untouched.
-            foreach (Transform child in composition)
-                if ((child.name.StartsWith("City Block ", StringComparison.Ordinal) ||
-                     string.Equals(child.name, "Road Horizontal", StringComparison.Ordinal) ||
-                     string.Equals(child.name, "Road Vertical", StringComparison.Ordinal) ||
-                     string.Equals(child.name, "Road Diagonal", StringComparison.Ordinal)) &&
-                    child.TryGetComponent(out Image block))
-                    block.enabled = false;
         }
 
         public void PreviewState(int restoredDistrictCount)

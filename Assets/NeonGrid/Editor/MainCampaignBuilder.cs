@@ -31,6 +31,8 @@ namespace NeonGrid.Editor
             "Assets/NeonGrid/Art/CityBuildings/AutomationPlant/AutomationPlant_Final.asset";
         internal const string CentralGridArtPath =
             "Assets/NeonGrid/Art/CityBuildings/CentralGrid/CentralGrid_Final.asset";
+        internal const string CityEnvironmentArtPath =
+            "Assets/NeonGrid/Art/CityEnvironment/CityEnvironment_Final.asset";
 
         private static readonly string[] SourceCampaignPaths =
         {
@@ -103,6 +105,11 @@ namespace NeonGrid.Editor
                 new CampaignCityBuildingArtBinding("automation_plant", automationPlantArt),
                 new CampaignCityBuildingArtBinding("central_grid", centralGridArt)
             });
+            CityEnvironmentArtDefinition environment =
+                AssetDatabase.LoadAssetAtPath<CityEnvironmentArtDefinition>(
+                    CityEnvironmentArtPath);
+            RequireFinalEnvironment(environment);
+            campaign.SetCityEnvironmentArt(environment);
             CampaignValidationReport validation = new CampaignValidator().Validate(campaign);
             if (!validation.IsValid)
                 throw new InvalidOperationException("Main production campaign is invalid.");
@@ -128,6 +135,13 @@ namespace NeonGrid.Editor
                 throw new InvalidOperationException($"Invalid final city building art for " +
                     $"'{chapterId}': {string.Join("; ", issues)}");
             return definition;
+        }
+
+        internal static void RequireFinalEnvironment(CityEnvironmentArtDefinition definition)
+        {
+            if (definition == null || !definition.IsConfigured)
+                throw new InvalidOperationException(
+                    $"Missing or invalid final city environment art: {CityEnvironmentArtPath}");
         }
 
         private static CampaignChapterDefinition CloneChapter(CampaignChapterDefinition source)

@@ -338,15 +338,16 @@ namespace NeonGrid.Tests
                 .GetComponentsInChildren<RectTransform>(true)
                 .Single(rect => rect.name == "City Composition");
             Assert.That(productionComposition.Find("Road Horizontal").GetComponent<Image>().enabled,
-                Is.True);
+                Is.False);
             Assert.That(productionComposition.Find("Road Vertical").GetComponent<Image>().enabled,
-                Is.True);
+                Is.False);
             Assert.That(productionComposition.Find("Road Diagonal").GetComponent<Image>().enabled,
-                Is.True);
+                Is.False);
             Assert.That(productionComposition.Cast<Transform>()
                 .Where(child => child.name.StartsWith("City Block ", StringComparison.Ordinal))
                 .Select(child => child.GetComponent<Image>()),
-                Has.All.Matches<Image>(image => image.enabled));
+                Has.All.Matches<Image>(image => !image.enabled));
+            Assert.That(production.GetComponents<CityEnvironmentArtView>(), Has.Length.EqualTo(1));
         }
 
         [Test]
@@ -392,21 +393,24 @@ namespace NeonGrid.Tests
         }
 
         [Test]
-        public void ProductionCampaignAndRuntimeHaveNoFinalEnvironmentBinding()
+        public void ProductionCampaignAndRuntimeUseAcceptedFinalEnvironmentBinding()
         {
             string[] campaignDependencies = AssetDatabase.GetDependencies(CampaignPath, true);
-            Assert.That(campaignDependencies, Has.None.EqualTo(
+            Assert.That(campaignDependencies, Does.Contain(
                 M15CityEnvironmentFinalArtPreparation.DefinitionPath));
             Assert.That(typeof(CampaignDefinition).GetFields(BindingFlags.Instance |
                 BindingFlags.Public | BindingFlags.NonPublic)
-                .Any(field => field.FieldType == typeof(CityEnvironmentArtDefinition)), Is.False);
+                .Count(field => field.FieldType == typeof(CityEnvironmentArtDefinition)),
+                Is.EqualTo(1));
             GameObject root = new GameObject("E3B Production Isolation");
             cleanup.Add(root);
             CampaignRuntimeView map = root.AddComponent<CampaignRuntimeView>();
             map.Build(campaign, new CampaignProgressService(campaign), _ => { }, _ => { },
                 () => { }, campaign.CampaignUiTheme);
             map.ShowMap();
-            Assert.That(root.GetComponentsInChildren<CityEnvironmentArtView>(true), Is.Empty);
+            Assert.That(root.GetComponentsInChildren<CityEnvironmentArtView>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(map.CityEnvironmentView.Definition, Is.SameAs(campaign.CityEnvironmentArt));
         }
 
         [Test]
@@ -447,7 +451,7 @@ namespace NeonGrid.Tests
             cleanup.Add(root);
             map = root.AddComponent<CampaignRuntimeView>();
             map.Build(campaign, progress, _ => { }, _ => { }, () => { },
-                campaign.CampaignUiTheme);
+                campaign.CampaignUiTheme, true, false);
             map.ShowMap();
             RectTransform composition = map.GetComponentsInChildren<RectTransform>(true)
                 .Single(rect => rect.name == "City Composition");
