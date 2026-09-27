@@ -8,11 +8,13 @@ namespace NeonGrid.Data
     {
         [SerializeField] private CircuitVisualThemeDefinition visualTheme;
         [SerializeField] private CircuitVisualThemeDefinition productionVisualTheme;
+        [SerializeField] private CircuitJuiceDefinition circuitJuice;
         [SerializeField] private LevelDefinition simpleLevel;
         [SerializeField] private LevelDefinition denseLevel;
 
         public CircuitVisualThemeDefinition VisualTheme => visualTheme;
         public CircuitVisualThemeDefinition ProductionVisualTheme => productionVisualTheme;
+        public CircuitJuiceDefinition CircuitJuice => circuitJuice;
         public LevelDefinition SimpleLevel => simpleLevel;
         public LevelDefinition DenseLevel => denseLevel;
         public bool IsConfigured => visualTheme != null && visualTheme.IsConfigured &&
@@ -29,6 +31,11 @@ namespace NeonGrid.Data
             productionVisualTheme = productionTheme;
             simpleLevel = simple;
             denseLevel = dense;
+        }
+
+        public void SetCircuitJuice(CircuitJuiceDefinition value)
+        {
+            circuitJuice = value;
         }
 #endif
     }

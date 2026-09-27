@@ -14,6 +14,7 @@ namespace NeonGrid.Presentation
         private TutorialRuntime tutorial;
         private Camera gameplayCamera;
         private float fittedCameraAspect = -1f;
+        private CircuitJuiceTransition pendingTransition = CircuitJuiceTransition.Synchronize;
 
         public GameplaySession Session => session;
         public TutorialRuntime Tutorial => tutorial;
@@ -34,6 +35,13 @@ namespace NeonGrid.Presentation
             Initialize(new GameplaySession(levelDefinition), null, null, null, visualTheme);
         }
 
+        public void Initialize(LevelDefinition levelDefinition,
+            CircuitVisualThemeDefinition visualTheme, CircuitJuiceDefinition juiceDefinition)
+        {
+            Initialize(new GameplaySession(levelDefinition), null, null, null, visualTheme,
+                juiceDefinition);
+        }
+
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions)
         {
             Initialize(gameplaySession, resultActions, null);
@@ -47,12 +55,13 @@ namespace NeonGrid.Presentation
 
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions,
             LevelTutorialDefinition tutorialDefinition, int? levelOrdinal,
-            CircuitVisualThemeDefinition visualTheme)
+            CircuitVisualThemeDefinition visualTheme,
+            CircuitJuiceDefinition juiceDefinition = null)
         {
             session = gameplaySession ?? throw new System.ArgumentNullException(nameof(gameplaySession));
             tutorial = new TutorialRuntime(tutorialDefinition);
             boardView = gameObject.AddComponent<BoardView>();
-            boardView.Build(session.Board, OnTileTapped, visualTheme);
+            boardView.Build(session.Board, OnTileTapped, visualTheme, juiceDefinition);
             boardView.SetCompleted(session.IsCompleted);
 
             hudView = gameObject.AddComponent<GameplayHudView>();
@@ -94,11 +103,27 @@ namespace NeonGrid.Presentation
 
         public bool PerformPlayerAction(GridPosition position)
         {
-            if (session == null || !session.CanInteract ||
-                !session.Board.TryGetPlayerAction(position, out PuzzleAction action))
+            if (session == null || !session.CanInteract)
                 return false;
 
-            bool applied = session.PerformAction(action);
+            if (!session.Board.TryGetPlayerAction(position, out PuzzleAction action))
+            {
+                boardView.PresentRejected(position);
+                return false;
+            }
+
+            boardView.PresentPressed(position);
+            pendingTransition = CircuitJuiceTransition.PlayerAction(action);
+            bool applied;
+            try
+            {
+                applied = session.PerformAction(action);
+            }
+            finally
+            {
+                pendingTransition = CircuitJuiceTransition.Synchronize;
+            }
+            if (!applied) boardView.PresentRejected(position);
             if (applied && tutorial.ObserveSuccessfulAction(action))
                 ApplyTutorialPresentation();
             return applied;
@@ -106,7 +131,7 @@ namespace NeonGrid.Presentation
 
         private void OnBoardChanged()
         {
-            boardView.Refresh(session.Board);
+            boardView.Refresh(session.Board, pendingTransition);
             boardView.SetCompleted(session.IsCompleted);
             ApplyHintHighlight();
             ApplyTutorialPresentation();
@@ -115,6 +140,7 @@ namespace NeonGrid.Presentation
 
         private void OnLevelCompleted(SessionCompletionResult result)
         {
+            boardView.PresentCompletion();
             boardView.SetCompleted(true);
             boardView.HighlightHint(null);
             boardView.HighlightTutorial(null);
@@ -129,14 +155,31 @@ namespace NeonGrid.Presentation
 
         public bool Undo()
         {
-            return session != null && session.Undo();
+            if (session == null) return false;
+            pendingTransition = CircuitJuiceTransition.Undo;
+            try
+            {
+                return session.Undo();
+            }
+            finally
+            {
+                pendingTransition = CircuitJuiceTransition.Synchronize;
+            }
         }
 
         public void Restart()
         {
             if (session == null) return;
             tutorial.Restart();
-            session.Restart();
+            pendingTransition = CircuitJuiceTransition.Restart;
+            try
+            {
+                session.Restart();
+            }
+            finally
+            {
+                pendingTransition = CircuitJuiceTransition.Synchronize;
+            }
             ApplyTutorialPresentation();
         }
 

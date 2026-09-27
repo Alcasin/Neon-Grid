@@ -46,11 +46,12 @@ namespace NeonGrid.Presentation
             BuildStableHousing();
         }
 
-        public void Refresh(CircuitTileState state)
+        public void Refresh(CircuitTileState state, bool snapRotation = true)
         {
             if (!isBuilt) BuildCircuit(state);
             CurrentModel = CircuitTileVisualResolver.Resolve(state, theme, highlights);
-            rotatingContent.localRotation = Quaternion.Euler(0f, 0f, -90f * state.Rotation);
+            if (snapRotation)
+                SetVisualRotationDegrees(-90f * state.Rotation, true);
 
             foreach (KeyValuePair<CardinalDirection, PortLayers> pair in ports)
             {
@@ -79,6 +80,14 @@ namespace NeonGrid.Presentation
                 switchClosedGeometry.SetActive(state.IsSwitchOn);
             UpdateLabel(state);
             ApplyOverlayVisibility();
+        }
+
+        public void SetVisualRotationDegrees(float degrees, bool canonical)
+        {
+            if (rotatingContent == null) return;
+            rotatingContent.localRotation = canonical
+                ? Quaternion.Euler(0f, 0f, degrees)
+                : Quaternion.AngleAxis(degrees, Vector3.forward);
         }
 
         public void SetHighlights(TileHighlightReason reasons)

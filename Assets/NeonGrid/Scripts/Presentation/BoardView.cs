@@ -17,6 +17,8 @@ namespace NeonGrid.Presentation
         public bool UsesVisualTheme => VisualTheme != null;
         public bool UsesProductionSkin => VisualTheme != null &&
                                           VisualTheme.UsesProductionTreatment;
+        public CircuitJuiceCoordinator JuiceCoordinator { get; private set; }
+        public bool UsesCircuitJuice => JuiceCoordinator != null;
 
         public void Build(BoardState board, Action<GridPosition> onTileTapped)
         {
@@ -26,7 +28,18 @@ namespace NeonGrid.Presentation
         public void Build(BoardState board, Action<GridPosition> onTileTapped,
             CircuitVisualThemeDefinition visualTheme)
         {
+            Build(board, onTileTapped, visualTheme, null);
+        }
+
+        public void Build(BoardState board, Action<GridPosition> onTileTapped,
+            CircuitVisualThemeDefinition visualTheme, CircuitJuiceDefinition juiceDefinition)
+        {
             VisualTheme = visualTheme != null && visualTheme.IsConfigured ? visualTheme : null;
+            if (VisualTheme != null && juiceDefinition != null && juiceDefinition.IsConfigured)
+            {
+                JuiceCoordinator = gameObject.AddComponent<CircuitJuiceCoordinator>();
+                JuiceCoordinator.Initialize(juiceDefinition);
+            }
             squareSprite = CreateSquareSprite();
             if (UsesProductionSkin)
                 _ = new TechnicalNeonBoardRenderer(transform, squareSprite, VisualTheme,
@@ -39,7 +52,7 @@ namespace NeonGrid.Presentation
                 tileObject.transform.localPosition = new Vector3(tile.Position.x, tile.Position.y, 0f);
 
                 var view = tileObject.AddComponent<CircuitTileView>();
-                view.Build(squareSprite, VisualTheme);
+                view.Build(squareSprite, VisualTheme, juiceDefinition, JuiceCoordinator);
                 tileObject.AddComponent<BoxCollider2D>().size = Vector2.one * 0.9f;
                 tileObject.AddComponent<CircuitTileInput>().Initialize(tile.Position, onTileTapped);
                 tileViews.Add(tile.Position, view);
@@ -48,19 +61,53 @@ namespace NeonGrid.Presentation
             pointerInput = gameObject.AddComponent<BoardPointerInput>();
             pointerInput.Initialize(Camera.main);
             transform.position = new Vector3(-(board.Width - 1) * 0.5f, -(board.Height - 1) * 0.5f, 0f);
-            Refresh(board);
+            Refresh(board, CircuitJuiceTransition.Synchronize);
         }
 
         public void Refresh(BoardState board)
         {
+            Refresh(board, CircuitJuiceTransition.Synchronize);
+        }
+
+        public void Refresh(BoardState board, CircuitJuiceTransition transition)
+        {
+            if (transition.Kind == CircuitJuiceRefreshKind.Restart)
+                JuiceCoordinator?.CancelAll();
             foreach (CircuitTileState tile in board.AllTiles())
-                tileViews[tile.Position].Refresh(tile, squareSprite);
+                tileViews[tile.Position].Refresh(tile, squareSprite, transition);
+            if (transition.Kind == CircuitJuiceRefreshKind.PlayerAction)
+                foreach (CircuitTileView view in tileViews.Values)
+                    view.PresentSourcePulse();
         }
 
         public void HighlightHint(GridPosition? position)
         {
+            bool newlyTargeted = position.HasValue &&
+                                 (!hintPosition.HasValue ||
+                                  !hintPosition.Value.Equals(position.Value));
             hintPosition = position;
             ApplyHighlights();
+            if (newlyTargeted && tileViews.TryGetValue(position.Value,
+                    out CircuitTileView view))
+                view.PresentHintTargeted();
+        }
+
+        public void PresentPressed(GridPosition position)
+        {
+            if (tileViews.TryGetValue(position, out CircuitTileView view))
+                view.PresentPressed();
+        }
+
+        public void PresentRejected(GridPosition position)
+        {
+            if (tileViews.TryGetValue(position, out CircuitTileView view))
+                view.PresentRejected();
+        }
+
+        public void PresentCompletion()
+        {
+            foreach (CircuitTileView view in tileViews.Values)
+                view.PresentCompletion();
         }
 
         public void HighlightTutorial(GridPosition? position)

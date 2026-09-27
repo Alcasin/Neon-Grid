@@ -1,5 +1,6 @@
 using System;
 using NeonGrid.Data;
+using NeonGrid.Session;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -27,6 +28,8 @@ namespace NeonGrid.Presentation
         public CircuitVisualThemeDefinition ActiveTheme => useProductionTheme
             ? definition?.ProductionVisualTheme
             : definition?.VisualTheme;
+        public bool UsesCircuitJuice => definition?.CircuitJuice != null &&
+                                        definition.CircuitJuice.IsConfigured;
 
         private void Awake()
         {
@@ -61,10 +64,10 @@ namespace NeonGrid.Presentation
             boardRoot = new GameObject($"Technical Neon Board - {level.name}");
             boardRoot.transform.SetParent(transform, false);
             CurrentBoardController = boardRoot.AddComponent<BoardController>();
-            CurrentBoardController.Initialize(level, ActiveTheme);
+            CurrentBoardController.Initialize(level, ActiveTheme, definition.CircuitJuice);
             CurrentBoardController.SetCompletionPresentationHeld(holdCompletionPresentation);
             if (currentLevelLabel != null)
-                currentLevelLabel.text = $"M15 VISUAL QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
+                currentLevelLabel.text = $"M16 JUICE QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
         }
 
         private void ConfigureCamera()
@@ -127,6 +130,18 @@ namespace NeonGrid.Presentation
                 ? b2Button.transform.Find("Label").GetComponent<Text>()
                 : b1Button.transform.Find("Label").GetComponent<Text>();
             RefreshThemeControl();
+            CreateButton(canvasObject.transform, "Prepare Hint", "HINT READY", font,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -540f), ActiveTheme.Board, ActiveTheme.Hint,
+                PrepareHintForQa, new Vector2(300f, 68f));
+        }
+
+        public void PrepareHintForQa()
+        {
+            GameplaySession session = CurrentBoardController?.Session;
+            if (session == null || session.IsCompleted) return;
+            float remaining = GameplaySession.HintUnlockSeconds - session.ElapsedSeconds;
+            if (remaining > 0f) session.AdvanceTime(remaining);
         }
 
         private void EnsureEventSystem()

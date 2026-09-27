@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d37c934b5664bbd853ad835e55c6771, type: 3}
+  m_Name: M16_CircuitJuicePrototype
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CircuitJuiceDefinition
+  motionScale: 1
+  pressFeedback: 1
+  rotationFeedback: 1
+  powerFeedback: 1
+  componentFeedback: 1
+  rejectionFeedback: 1
+  hintFeedback: 1
+  pressDuration: 0.055
+  pressSettleDuration: 0.08
+  rotationDuration: 0.13
+  powerActivationDuration: 0.15
+  powerDeactivationDuration: 0.1
+  objectiveActivationDuration: 0.19
+  rejectionDuration: 0.09
+  hintEmphasisDuration: 0.18
+  pressScale: 0.97
+  powerActivationScale: 1.025
+  powerDeactivationScale: 0.985
+  sourcePulseScale: 1.03
+  objectivePulseScale: 1.045
+  componentPulseScale: 1.025
+  hintPulseScale: 1.02
+  rejectionNudge: 0.012

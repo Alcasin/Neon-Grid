@@ -30,6 +30,9 @@ namespace NeonGrid.Presentation
         private TileHighlightReason highlightReasons;
         private CircuitVisualThemeDefinition visualTheme;
         private TechnicalNeonTileRenderer themedRenderer;
+        private CircuitTileJuiceView juiceView;
+        private PresentationSnapshot presentationSnapshot;
+        private bool hasPresentationSnapshot;
 
         public Color CurrentCircuitColor => themedRenderer != null
             ? themedRenderer.CurrentCircuitColor
@@ -50,6 +53,10 @@ namespace NeonGrid.Presentation
         public bool IsUnderlyingPowered => themedRenderer != null &&
                                            themedRenderer.CurrentModel.IsPowered;
         public float RotatingContentDegrees => themedRenderer?.RotatingContentDegrees ?? 0f;
+        public CircuitTileJuiceView JuiceView => juiceView;
+        public TileType CurrentTileType => hasPresentationSnapshot
+            ? presentationSnapshot.TileType
+            : TileType.Empty;
 
         public void Build(Sprite squareSprite)
         {
@@ -58,11 +65,28 @@ namespace NeonGrid.Presentation
 
         public void Build(Sprite squareSprite, CircuitVisualThemeDefinition theme)
         {
+            Build(squareSprite, theme, null, null);
+        }
+
+        public void Build(Sprite squareSprite, CircuitVisualThemeDefinition theme,
+            CircuitJuiceDefinition juiceDefinition, CircuitJuiceCoordinator juiceCoordinator)
+        {
             visualTheme = theme;
             if (visualTheme != null && visualTheme.IsConfigured)
             {
-                themedRenderer = new TechnicalNeonTileRenderer(transform, squareSprite,
+                Transform visualRoot = transform;
+                bool useJuice = juiceDefinition != null && juiceDefinition.IsConfigured &&
+                                juiceCoordinator != null;
+                if (useJuice)
+                {
+                    var juiceObject = new GameObject("Juice Visual Root");
+                    juiceObject.transform.SetParent(transform, false);
+                    visualRoot = juiceObject.transform;
+                }
+                themedRenderer = new TechnicalNeonTileRenderer(visualRoot, squareSprite,
                     visualTheme);
+                if (useJuice)
+                    juiceView = juiceCoordinator.Register(visualRoot, themedRenderer);
                 return;
             }
 
@@ -82,9 +106,23 @@ namespace NeonGrid.Presentation
 
         public void Refresh(CircuitTileState state, Sprite squareSprite)
         {
+            Refresh(state, squareSprite, CircuitJuiceTransition.Synchronize);
+        }
+
+        public void Refresh(CircuitTileState state, Sprite squareSprite,
+            CircuitJuiceTransition transition)
+        {
             if (themedRenderer != null)
             {
-                themedRenderer.Refresh(state);
+                bool rotationChanged = hasPresentationSnapshot &&
+                                       presentationSnapshot.Rotation != state.Rotation;
+                bool animateRotation = juiceView != null && rotationChanged &&
+                                       transition.Kind != CircuitJuiceRefreshKind.Synchronize &&
+                                       transition.Kind != CircuitJuiceRefreshKind.Restart;
+                themedRenderer.Refresh(state, !animateRotation);
+                PresentJuiceTransition(state, transition, rotationChanged);
+                presentationSnapshot = PresentationSnapshot.Capture(state);
+                hasPresentationSnapshot = true;
                 return;
             }
 
@@ -121,6 +159,99 @@ namespace NeonGrid.Presentation
                 center.transform.localScale = new Vector3(0.55f, 0.38f, 1f);
             else
                 center.transform.localScale = new Vector3(0.30f, 0.30f, 1f);
+
+            presentationSnapshot = PresentationSnapshot.Capture(state);
+            hasPresentationSnapshot = true;
+        }
+
+        public void PresentPressed()
+        {
+            juiceView?.PresentPress();
+        }
+
+        public void PresentRejected()
+        {
+            if (IsVisualLocked) juiceView?.PresentRejected();
+        }
+
+        public void PresentSourcePulse()
+        {
+            if (juiceView == null || CurrentTileType != TileType.PowerSource ||
+                !juiceView.Definition.ComponentFeedback) return;
+            juiceView.PresentPulse(CircuitJuiceEventType.SourcePulse,
+                juiceView.Definition.PowerActivationDuration,
+                juiceView.Definition.SourcePulseScale);
+        }
+
+        public void PresentHintTargeted()
+        {
+            if (juiceView == null || !juiceView.Definition.HintFeedback) return;
+            juiceView.PresentPulse(CircuitJuiceEventType.HintTargeted,
+                juiceView.Definition.HintEmphasisDuration,
+                juiceView.Definition.HintPulseScale);
+        }
+
+        public void PresentCompletion()
+        {
+            juiceView?.MarkCompletion();
+        }
+
+        private void PresentJuiceTransition(CircuitTileState state,
+            CircuitJuiceTransition transition, bool rotationChanged)
+        {
+            if (juiceView == null)
+                return;
+            if (!hasPresentationSnapshot)
+            {
+                juiceView.SetInitialRotation(state.Rotation);
+                return;
+            }
+            if (transition.Kind == CircuitJuiceRefreshKind.Restart)
+            {
+                juiceView.CancelAndSnap(state.Rotation);
+                return;
+            }
+
+            if (rotationChanged)
+            {
+                bool clockwise = transition.Kind == CircuitJuiceRefreshKind.PlayerAction &&
+                                 transition.Action.HasValue &&
+                                 transition.Action.Value.ActionType ==
+                                 PuzzleActionType.RotateClockwise;
+                juiceView.RetargetRotation(state.Rotation, clockwise);
+            }
+
+            CircuitJuiceDefinition definition = juiceView.Definition;
+            if (definition.PowerFeedback && presentationSnapshot.IsPowered != state.IsPowered)
+                juiceView.PresentPulse(state.IsPowered
+                        ? CircuitJuiceEventType.PowerActivated
+                        : CircuitJuiceEventType.PowerDeactivated,
+                    state.IsPowered ? definition.PowerActivationDuration :
+                    definition.PowerDeactivationDuration,
+                    state.IsPowered ? definition.PowerActivationScale :
+                    definition.PowerDeactivationScale);
+
+            if (!definition.ComponentFeedback) return;
+            if (state.TileType == TileType.OutputLamp &&
+                !presentationSnapshot.IsPowered && state.IsPowered)
+                juiceView.PresentPulse(CircuitJuiceEventType.ObjectiveActivated,
+                    definition.ObjectiveActivationDuration, definition.ObjectivePulseScale);
+            else if (state.TileType == TileType.Switch &&
+                     presentationSnapshot.IsSwitchOn != state.IsSwitchOn)
+                juiceView.PresentPulse(CircuitJuiceEventType.SwitchChanged,
+                    definition.PowerActivationDuration, definition.ComponentPulseScale);
+            else if (state.TileType == TileType.AndGate || state.TileType == TileType.OrGate)
+            {
+                bool active = state.ActiveOutputSides != CardinalDirection.None;
+                if (presentationSnapshot.HasActiveOutput != active)
+                    juiceView.PresentPulse(active
+                            ? CircuitJuiceEventType.GateActivated
+                            : CircuitJuiceEventType.GateDeactivated,
+                        active ? definition.PowerActivationDuration :
+                        definition.PowerDeactivationDuration,
+                        active ? definition.ComponentPulseScale :
+                        definition.PowerDeactivationScale);
+            }
         }
 
         public void SetHintHighlighted(bool highlighted)
@@ -223,6 +354,32 @@ namespace NeonGrid.Presentation
                    tileType == TileType.TJunction || tileType == TileType.CrossJunction ||
                    tileType == TileType.Diode || tileType == TileType.AndGate ||
                    tileType == TileType.OrGate;
+        }
+
+        private readonly struct PresentationSnapshot
+        {
+            public TileType TileType { get; }
+            public int Rotation { get; }
+            public bool IsPowered { get; }
+            public bool IsSwitchOn { get; }
+            public bool HasActiveOutput { get; }
+
+            private PresentationSnapshot(TileType tileType, int rotation, bool isPowered,
+                bool isSwitchOn, bool hasActiveOutput)
+            {
+                TileType = tileType;
+                Rotation = rotation;
+                IsPowered = isPowered;
+                IsSwitchOn = isSwitchOn;
+                HasActiveOutput = hasActiveOutput;
+            }
+
+            public static PresentationSnapshot Capture(CircuitTileState state)
+            {
+                return new PresentationSnapshot(state.TileType, state.Rotation,
+                    state.IsPowered, state.IsSwitchOn,
+                    state.ActiveOutputSides != CardinalDirection.None);
+            }
         }
 
         private Color GetCircuitColor(CircuitTileState state)
