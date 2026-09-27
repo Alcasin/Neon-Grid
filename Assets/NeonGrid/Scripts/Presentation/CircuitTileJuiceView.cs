@@ -14,22 +14,29 @@ namespace NeonGrid.Presentation
         private float pulseElapsed = -1f;
         private float pulseDuration;
         private float pulseScale = 1f;
+        private CircuitJuiceEventType pulseEventType;
         private float rejectionElapsed = -1f;
         private float rotationElapsed = -1f;
         private float rotationFrom;
         private float rotationTarget;
         private float canonicalRotation;
+        private float powerElapsed = -1f;
+        private float completionElapsed = -1f;
+        private bool powerWaiting;
 
         internal bool IsQueued { get; set; }
         public CircuitJuiceEventType LastEvent { get; private set; }
         public CircuitJuiceDefinition Definition => definition;
         public bool IsAnimating => pressElapsed >= 0f || pulseElapsed >= 0f ||
-                                   rejectionElapsed >= 0f || rotationElapsed >= 0f;
+                                   rejectionElapsed >= 0f || rotationElapsed >= 0f ||
+                                   powerElapsed >= 0f || completionElapsed >= 0f;
         public Transform VisualRoot => visualRoot;
         public Vector3 CurrentScale => visualRoot != null ? visualRoot.localScale : Vector3.one;
         public Vector3 CurrentOffset => visualRoot != null ? visualRoot.localPosition : Vector3.zero;
         public float CurrentRotationDegrees { get; private set; }
         public float CanonicalRotationDegrees => canonicalRotation;
+        public float PowerPresentationAmount => tileRenderer?.CurrentPowerPresentation ?? 1f;
+        public float SuccessPresentationAmount => tileRenderer?.CurrentSuccessPresentation ?? 0f;
 
         internal void Initialize(CircuitJuiceDefinition value,
             CircuitJuiceCoordinator owner, Transform root,
@@ -79,6 +86,7 @@ namespace NeonGrid.Presentation
         public void PresentPulse(CircuitJuiceEventType eventType, float duration, float scale)
         {
             LastEvent = eventType;
+            pulseEventType = eventType;
             if (duration <= 0f || Mathf.Approximately(scale, 1f))
             {
                 RestoreTransformIfIdle();
@@ -117,6 +125,65 @@ namespace NeonGrid.Presentation
             LastEvent = CircuitJuiceEventType.CompletionTriggered;
         }
 
+        internal void PreparePowerActivation(CircuitJuiceEventType eventType)
+        {
+            LastEvent = eventType;
+            powerElapsed = -1f;
+            powerWaiting = true;
+            tileRenderer?.SetPowerPresentation(0f, 1f, 0f,
+                definition.CompletionSuccessColor);
+        }
+
+        internal void BeginPowerActivation(CircuitJuiceEventType eventType)
+        {
+            LastEvent = eventType;
+            powerWaiting = false;
+            if (!definition.PropagationFeedback ||
+                definition.PropagationActivationDuration <= 0f)
+            {
+                powerElapsed = -1f;
+                ApplyPowerPresentation(1f, 1f, 0f);
+                return;
+            }
+            powerElapsed = 0f;
+            coordinator.Activate(this);
+        }
+
+        internal void PresentPowerDeactivation()
+        {
+            CircuitJuiceEventType eventType = LastEvent ==
+                                               CircuitJuiceEventType.GateDeactivated
+                ? CircuitJuiceEventType.GateDeactivated
+                : CircuitJuiceEventType.PowerDeactivated;
+            ApplyPowerPresentation(1f, 1f, 0f);
+            PresentPulse(eventType,
+                definition.PropagationDeactivationDuration,
+                definition.PowerDeactivationScale);
+        }
+
+        internal void BeginCompletionPulse()
+        {
+            LastEvent = CircuitJuiceEventType.CompletionTriggered;
+            if (!definition.CompletionFeedback || definition.CompletionPulseDuration <= 0f)
+            {
+                completionElapsed = -1f;
+                ApplyPowerPresentation(1f, 1f, 0f);
+                return;
+            }
+            completionElapsed = 0f;
+            coordinator.Activate(this);
+        }
+
+        internal void CancelScheduledChannels()
+        {
+            if (pulseEventType == CircuitJuiceEventType.SourcePulse)
+                pulseElapsed = -1f;
+            powerElapsed = -1f;
+            completionElapsed = -1f;
+            powerWaiting = false;
+            ApplyPowerPresentation(1f, 1f, 0f);
+        }
+
         internal bool Advance(float deltaSeconds)
         {
             float scale = 1f;
@@ -144,6 +211,38 @@ namespace NeonGrid.Presentation
                 else
                     pulseElapsed = -1f;
             }
+
+            float powerAmount = powerWaiting ? 0f : 1f;
+            float propagationHalo = 1f;
+            if (powerElapsed >= 0f)
+            {
+                powerElapsed += deltaSeconds;
+                float duration = definition.PropagationActivationDuration;
+                float progress = duration <= 0f ? 1f :
+                    Mathf.Clamp01(powerElapsed / duration);
+                powerAmount = Mathf.SmoothStep(0f, 1f, progress);
+                propagationHalo = Mathf.Lerp(definition.PropagationHaloEmphasis, 1f,
+                    progress);
+                if (progress >= 1f) powerElapsed = -1f;
+            }
+
+            float success = 0f;
+            float completionHalo = 1f;
+            if (completionElapsed >= 0f)
+            {
+                completionElapsed += deltaSeconds;
+                float duration = definition.CompletionPulseDuration;
+                float progress = duration <= 0f ? 1f :
+                    Mathf.Clamp01(completionElapsed / duration);
+                float pulse = Mathf.Sin(progress * Mathf.PI);
+                success = pulse;
+                completionHalo = Mathf.Lerp(1f, definition.CompletionHaloEmphasis, pulse);
+                scale *= Mathf.Lerp(1f, definition.CompletionPulseScale, pulse);
+                if (progress >= 1f) completionElapsed = -1f;
+            }
+
+            ApplyPowerPresentation(powerAmount,
+                Mathf.Max(propagationHalo, completionHalo), success);
 
             visualRoot.localScale = new Vector3(scale, scale, 1f);
 
@@ -200,12 +299,16 @@ namespace NeonGrid.Presentation
             pulseElapsed = -1f;
             rejectionElapsed = -1f;
             rotationElapsed = -1f;
+            powerElapsed = -1f;
+            completionElapsed = -1f;
+            powerWaiting = false;
             if (visualRoot != null)
             {
                 visualRoot.localScale = Vector3.one;
                 visualRoot.localPosition = Vector3.zero;
             }
             if (tileRenderer != null) SetRotation(canonicalRotation, true);
+            ApplyPowerPresentation(1f, 1f, 0f);
         }
 
         private void RestoreTransformIfIdle()
@@ -219,6 +322,12 @@ namespace NeonGrid.Presentation
         {
             CurrentRotationDegrees = degrees;
             tileRenderer?.SetVisualRotationDegrees(degrees, canonical);
+        }
+
+        private void ApplyPowerPresentation(float amount, float halo, float success)
+        {
+            tileRenderer?.SetPowerPresentation(amount, halo, success,
+                definition.CompletionSuccessColor);
         }
     }
 }

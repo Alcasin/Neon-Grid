@@ -9,6 +9,7 @@ namespace NeonGrid.Presentation
     public sealed class BoardView : MonoBehaviour
     {
         private readonly Dictionary<GridPosition, CircuitTileView> tileViews = new Dictionary<GridPosition, CircuitTileView>();
+        private readonly HashSet<GridPosition> poweredPositions = new HashSet<GridPosition>();
         private Sprite squareSprite;
         private BoardPointerInput pointerInput;
         private GridPosition? hintPosition;
@@ -73,9 +74,28 @@ namespace NeonGrid.Presentation
         {
             if (transition.Kind == CircuitJuiceRefreshKind.Restart)
                 JuiceCoordinator?.CancelAll();
+            var newlyPowered = new HashSet<GridPosition>();
+            var newlyUnpowered = new HashSet<GridPosition>(poweredPositions);
             foreach (CircuitTileState tile in board.AllTiles())
+            {
+                if (tile.IsPowered)
+                {
+                    if (!poweredPositions.Contains(tile.Position))
+                        newlyPowered.Add(tile.Position);
+                    newlyUnpowered.Remove(tile.Position);
+                }
                 tileViews[tile.Position].Refresh(tile, squareSprite, transition);
-            if (transition.Kind == CircuitJuiceRefreshKind.PlayerAction)
+            }
+            poweredPositions.Clear();
+            foreach (CircuitTileState tile in board.AllTiles())
+                if (tile.IsPowered) poweredPositions.Add(tile.Position);
+
+            bool scheduleTransition = transition.Kind == CircuitJuiceRefreshKind.PlayerAction ||
+                                      transition.Kind == CircuitJuiceRefreshKind.Undo;
+            if (JuiceCoordinator != null && scheduleTransition)
+                JuiceCoordinator.SchedulePowerPresentation(board, newlyPowered,
+                    newlyUnpowered, tileViews);
+            else if (transition.Kind == CircuitJuiceRefreshKind.PlayerAction)
                 foreach (CircuitTileView view in tileViews.Values)
                     view.PresentSourcePulse();
         }
@@ -106,6 +126,11 @@ namespace NeonGrid.Presentation
 
         public void PresentCompletion()
         {
+            if (JuiceCoordinator != null)
+            {
+                JuiceCoordinator.RequestCompletion();
+                return;
+            }
             foreach (CircuitTileView view in tileViews.Values)
                 view.PresentCompletion();
         }

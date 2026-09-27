@@ -57,6 +57,8 @@ namespace NeonGrid.Presentation
         public TileType CurrentTileType => hasPresentationSnapshot
             ? presentationSnapshot.TileType
             : TileType.Empty;
+        public bool HasActiveOutput => hasPresentationSnapshot &&
+                                       presentationSnapshot.HasActiveOutput;
 
         public void Build(Sprite squareSprite)
         {
@@ -222,7 +224,8 @@ namespace NeonGrid.Presentation
             }
 
             CircuitJuiceDefinition definition = juiceView.Definition;
-            if (definition.PowerFeedback && presentationSnapshot.IsPowered != state.IsPowered)
+            if (definition.PowerFeedback && !definition.PropagationFeedback &&
+                presentationSnapshot.IsPowered != state.IsPowered)
                 juiceView.PresentPulse(state.IsPowered
                         ? CircuitJuiceEventType.PowerActivated
                         : CircuitJuiceEventType.PowerDeactivated,
@@ -233,6 +236,7 @@ namespace NeonGrid.Presentation
 
             if (!definition.ComponentFeedback) return;
             if (state.TileType == TileType.OutputLamp &&
+                !definition.PropagationFeedback &&
                 !presentationSnapshot.IsPowered && state.IsPowered)
                 juiceView.PresentPulse(CircuitJuiceEventType.ObjectiveActivated,
                     definition.ObjectiveActivationDuration, definition.ObjectivePulseScale);

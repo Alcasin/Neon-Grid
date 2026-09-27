@@ -26,6 +26,9 @@ namespace NeonGrid.Presentation
         private TextMesh label;
         private bool isBuilt;
         private TileHighlightReason highlights;
+        private TileType currentTileType;
+        private int currentRotation;
+        private bool currentPowered;
         private bool UsesProductionTreatment => theme.UsesProductionTreatment;
 
         public CircuitTileVisualModel CurrentModel { get; private set; }
@@ -36,6 +39,8 @@ namespace NeonGrid.Presentation
         public float RotatingContentDegrees => rotatingContent != null
             ? rotatingContent.localEulerAngles.z
             : 0f;
+        public float CurrentPowerPresentation { get; private set; } = 1f;
+        public float CurrentSuccessPresentation { get; private set; }
 
         public TechnicalNeonTileRenderer(Transform root, Sprite squareSprite,
             CircuitVisualThemeDefinition theme)
@@ -50,15 +55,11 @@ namespace NeonGrid.Presentation
         {
             if (!isBuilt) BuildCircuit(state);
             CurrentModel = CircuitTileVisualResolver.Resolve(state, theme, highlights);
+            currentTileType = state.TileType;
+            currentRotation = state.Rotation;
+            currentPowered = state.IsPowered;
             if (snapRotation)
                 SetVisualRotationDegrees(-90f * state.Rotation, true);
-
-            foreach (KeyValuePair<CardinalDirection, PortLayers> pair in ports)
-            {
-                CardinalDirection worldDirection = pair.Key.RotateClockwise(state.Rotation);
-                bool energized = CurrentModel.IsSideEnergized(worldDirection);
-                pair.Value.SetEnergized(energized, theme);
-            }
 
             circuitCenter.color = state.TileType == TileType.PowerSource ||
                                   state.TileType == TileType.OutputLamp ||
@@ -80,6 +81,51 @@ namespace NeonGrid.Presentation
                 switchClosedGeometry.SetActive(state.IsSwitchOn);
             UpdateLabel(state);
             ApplyOverlayVisibility();
+            SetPowerPresentation(1f, 1f, 0f, theme.Success);
+        }
+
+        public void SetPowerPresentation(float amount, float haloEmphasis,
+            float successAmount, Color successColor)
+        {
+            CurrentPowerPresentation = Mathf.Clamp01(amount);
+            CurrentSuccessPresentation = Mathf.Clamp01(successAmount);
+            float halo = Mathf.Max(1f, haloEmphasis);
+            foreach (KeyValuePair<CardinalDirection, PortLayers> pair in ports)
+            {
+                CardinalDirection worldDirection = pair.Key.RotateClockwise(currentRotation);
+                bool energized = CurrentModel.IsSideEnergized(worldDirection);
+                pair.Value.SetPresentation(energized, theme, CurrentPowerPresentation,
+                    halo, CurrentSuccessPresentation, successColor);
+            }
+
+            bool functional = currentTileType == TileType.PowerSource ||
+                              currentTileType == TileType.OutputLamp ||
+                              currentTileType == TileType.Diode ||
+                              currentTileType == TileType.AndGate ||
+                              currentTileType == TileType.OrGate;
+            if (circuitCenter != null)
+                circuitCenter.color = functional
+                    ? CurrentModel.FunctionalColor
+                    : currentPowered
+                        ? Color.Lerp(theme.InactiveConductor, theme.PoweredEnergy,
+                            CurrentPowerPresentation)
+                        : theme.InactiveConductor;
+            foreach (SpriteRenderer hot in hotCenterParts)
+            {
+                bool visible = currentPowered && currentTileType != TileType.OutputLamp &&
+                               CurrentPowerPresentation > 0f;
+                hot.gameObject.SetActive(visible);
+                if (visible)
+                {
+                    Color color = Color.Lerp(theme.PoweredHotCore, successColor,
+                        CurrentSuccessPresentation);
+                    color.a *= CurrentPowerPresentation;
+                    hot.color = color;
+                }
+            }
+            if (currentTileType == TileType.OutputLamp)
+                UpdateLedObjective(currentPowered, CurrentPowerPresentation, halo,
+                    CurrentSuccessPresentation, successColor);
         }
 
         public void SetVisualRotationDegrees(float degrees, bool canonical)
@@ -387,9 +433,22 @@ namespace NeonGrid.Presentation
 
         private void UpdateLedObjective(bool isPowered)
         {
-            if (ledGlow != null) ledGlow.gameObject.SetActive(isPowered);
+            UpdateLedObjective(isPowered, 1f, 1f, 0f, theme.Success);
+        }
+
+        private void UpdateLedObjective(bool isPowered, float amount, float haloEmphasis,
+            float successAmount, Color successColor)
+        {
+            if (ledGlow != null)
+            {
+                ledGlow.gameObject.SetActive(isPowered && amount > 0f);
+                Color glow = Color.Lerp(theme.LedObjective, successColor, successAmount);
+                glow.a = Mathf.Clamp01(0.16f * amount * haloEmphasis);
+                ledGlow.color = glow;
+            }
             Color emitterColor = isPowered
-                ? theme.PoweredHotCore
+                ? Color.Lerp(WithAlpha(theme.LedObjective, 0.52f),
+                    Color.Lerp(theme.PoweredHotCore, successColor, successAmount), amount)
                 : WithAlpha(theme.LedObjective, 0.52f);
             foreach (SpriteRenderer emitter in ledEmitters)
                 emitter.color = emitterColor;
@@ -563,12 +622,26 @@ namespace NeonGrid.Presentation
                 this.hotCore = hotCore;
             }
 
-            public void SetEnergized(bool energized, CircuitVisualThemeDefinition theme)
+            public void SetPresentation(bool energized, CircuitVisualThemeDefinition theme,
+                float amount, float haloEmphasis, float successAmount, Color successColor)
             {
                 baseLayer.color = theme.InactiveConductor;
-                glow.gameObject.SetActive(energized);
-                energy.gameObject.SetActive(energized);
-                hotCore.gameObject.SetActive(energized);
+                bool visible = energized && amount > 0f;
+                glow.gameObject.SetActive(visible);
+                energy.gameObject.SetActive(visible);
+                hotCore.gameObject.SetActive(visible);
+                if (!visible) return;
+                Color glowColor = Color.Lerp(theme.PoweredEnergy, successColor, successAmount);
+                glowColor.a = Mathf.Clamp01(0.18f * amount * haloEmphasis);
+                glow.color = glowColor;
+                Color energyColor = Color.Lerp(theme.PoweredEnergy, successColor,
+                    successAmount * 0.35f);
+                energyColor.a *= amount;
+                energy.color = energyColor;
+                Color hotColor = Color.Lerp(theme.PoweredHotCore, successColor,
+                    successAmount * 0.25f);
+                hotColor.a *= amount;
+                hotCore.color = hotColor;
             }
         }
     }

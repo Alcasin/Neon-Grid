@@ -19,6 +19,8 @@ MonoBehaviour:
   componentFeedback: 1
   rejectionFeedback: 1
   hintFeedback: 1
+  propagationFeedback: 1
+  completionFeedback: 1
   pressDuration: 0.055
   pressSettleDuration: 0.08
   rotationDuration: 0.13
@@ -27,6 +29,12 @@ MonoBehaviour:
   objectiveActivationDuration: 0.19
   rejectionDuration: 0.09
   hintEmphasisDuration: 0.18
+  propagationDepthDelay: 0.035
+  maximumPropagationDelay: 0.42
+  propagationActivationDuration: 0.14
+  propagationDeactivationDuration: 0.085
+  completionSettleDelay: 0.025
+  completionPulseDuration: 0.18
   pressScale: 0.97
   powerActivationScale: 1.025
   powerDeactivationScale: 0.985
@@ -35,3 +43,7 @@ MonoBehaviour:
   componentPulseScale: 1.025
   hintPulseScale: 1.02
   rejectionNudge: 0.012
+  propagationHaloEmphasis: 1.35
+  completionPulseScale: 1.018
+  completionHaloEmphasis: 1.65
+  completionSuccessColor: {r: 0.133333, g: 0.87451, b: 0.647059, a: 1}
