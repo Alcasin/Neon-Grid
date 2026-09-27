@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 682997d50e93f074aba562c89a8307d5, type: 3}
+  m_Name: CityEnvironmentPrototype
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.CityEnvironmentArtDefinition
+  baseCity: {fileID: 21300000, guid: fdc95217f87b301489725b552e250c31, type: 3}
+  districts:
+  - chapterId: power_station
+    overlay: {fileID: 21300000, guid: 204ba45ce3681804a9d65e307ba06dfe, type: 3}
+  - chapterId: substation
+    overlay: {fileID: 21300000, guid: 2dd615fa67a3b074da299bb827a30111, type: 3}
+  - chapterId: control_center
+    overlay: {fileID: 21300000, guid: d6b66d1efa9b6714bb97a07cbfb1b4e4, type: 3}
+  - chapterId: automation_plant
+    overlay: {fileID: 21300000, guid: 226544144184b7d4193121ba2f928202, type: 3}
+  - chapterId: central_grid
+    overlay: {fileID: 21300000, guid: df92fc4b876c1e14c968534d5af805b8, type: 3}
+  finalAccent: {fileID: 21300000, guid: 2eb25d95cf7eda945811e94a97a5074b, type: 3}
+  footprintFraction: {x: 1, y: 1}
+  localOffset: {x: 0, y: 0}
