@@ -39,7 +39,7 @@ namespace NeonGrid.Editor
             ConfigureTextureImports();
 
             CityEnvironmentArtDefinition definition = BuildDefinition();
-            BuildScene(definition);
+            BuildSceneForDefinition(definition);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
@@ -199,8 +199,14 @@ namespace NeonGrid.Editor
             return definition;
         }
 
-        private static void BuildScene(CityEnvironmentArtDefinition definition)
+        public static void BuildSceneForDefinition(CityEnvironmentArtDefinition definition)
         {
+            if (definition == null || !definition.IsConfigured)
+            {
+                throw new ArgumentException("A configured city environment definition is required.",
+                    nameof(definition));
+            }
+
             CampaignDefinition campaign = Resources.Load<CampaignDefinition>(CampaignResourcePath);
             if (campaign == null)
             {

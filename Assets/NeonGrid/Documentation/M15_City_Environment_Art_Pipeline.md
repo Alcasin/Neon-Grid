@@ -79,7 +79,14 @@ Use **Neon Grid > M15 > Build City Environment Art Prototype** to deterministica
 simple validation sprites, definition and isolated `M15_CityEnvironmentArtPrototype` scene. The
 scene offers environment OFF/ON and 0-through-5 restored-state controls without writing progress.
 
-For final-art replacement, author every layer on the same registered canvas, import with the contract
-above, replace sprite references in a reviewed environment definition, validate all restoration states
-and portrait resolutions in the isolated scene, and obtain manual acceptance before any separate
-production rollout. Production campaign binding and restoration animation remain future work.
+## E3B final-art preparation
+
+`CityEnvironment_Source.png` is the byte-preserved approved source. Use **Neon Grid > M15 > Prepare
+Final City Environment Art** to deterministically derive the inactive Base, five localized warm-light
+district contributions, the restrained final accent, and `CityEnvironment_Final.asset`. Preparation
+keeps the source dimensions, alpha silhouette, center pivot, and layer registration. It cools only
+detected baked warm emphasis in the Base; overlays restore source pixels through stable-ID elliptical
+district masks, with dedicated Control Center upper and Central Grid lower safe-area offsets.
+
+The preparation tool binds the final definition only to the isolated prototype scene. Production
+campaign binding and restoration animation remain separate future work requiring their own review.
