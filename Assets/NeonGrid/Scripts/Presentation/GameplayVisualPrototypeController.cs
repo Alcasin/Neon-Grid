@@ -30,6 +30,8 @@ namespace NeonGrid.Presentation
             : definition?.VisualTheme;
         public bool UsesCircuitJuice => definition?.CircuitJuice != null &&
                                         definition.CircuitJuice.IsConfigured;
+        public bool UsesPrototypeAudio => definition?.AudioDefinition != null &&
+                                          definition.AudioDefinition.IsConfigured;
 
         private void Awake()
         {
@@ -64,7 +66,8 @@ namespace NeonGrid.Presentation
             boardRoot = new GameObject($"Technical Neon Board - {level.name}");
             boardRoot.transform.SetParent(transform, false);
             CurrentBoardController = boardRoot.AddComponent<BoardController>();
-            CurrentBoardController.Initialize(level, ActiveTheme, definition.CircuitJuice);
+            CurrentBoardController.Initialize(level, ActiveTheme, definition.CircuitJuice,
+                definition.AudioDefinition);
             CurrentBoardController.SetCompletionPresentationHeld(holdCompletionPresentation);
             if (currentLevelLabel != null)
                 currentLevelLabel.text = $"M16 JUICE QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
@@ -84,6 +87,24 @@ namespace NeonGrid.Presentation
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = ActiveTheme.Background;
             camera.targetDisplay = 0;
+            if (UsesPrototypeAudio) EnsurePrototypeAudioListener(camera);
+        }
+
+        internal static AudioListener EnsurePrototypeAudioListener(Camera camera)
+        {
+            if (camera == null) throw new ArgumentNullException(nameof(camera));
+            AudioListener[] listeners = FindObjectsByType<AudioListener>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (AudioListener listener in listeners)
+                if (listener != null && listener.enabled &&
+                    listener.gameObject.activeInHierarchy)
+                    return listener;
+
+            AudioListener cameraListener = camera.GetComponent<AudioListener>();
+            if (cameraListener == null)
+                cameraListener = camera.gameObject.AddComponent<AudioListener>();
+            cameraListener.enabled = true;
+            return cameraListener;
         }
 
         private void BuildLevelSelector()

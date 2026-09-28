@@ -19,6 +19,7 @@ namespace NeonGrid.Presentation
         public GameplaySession Session => session;
         public TutorialRuntime Tutorial => tutorial;
         public BoardView BoardView => boardView;
+        public NeonGridAudioService AudioService { get; private set; }
         public bool IsCompletionPresentationHeld => hudView != null &&
                                                      hudView.IsCompletionPresentationHeld;
         public bool IsCompletionPanelVisible => hudView != null &&
@@ -42,6 +43,14 @@ namespace NeonGrid.Presentation
                 juiceDefinition);
         }
 
+        public void Initialize(LevelDefinition levelDefinition,
+            CircuitVisualThemeDefinition visualTheme, CircuitJuiceDefinition juiceDefinition,
+            NeonGridAudioDefinition audioDefinition)
+        {
+            Initialize(new GameplaySession(levelDefinition), null, null, null, visualTheme,
+                juiceDefinition, audioDefinition);
+        }
+
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions)
         {
             Initialize(gameplaySession, resultActions, null);
@@ -56,13 +65,20 @@ namespace NeonGrid.Presentation
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions,
             LevelTutorialDefinition tutorialDefinition, int? levelOrdinal,
             CircuitVisualThemeDefinition visualTheme,
-            CircuitJuiceDefinition juiceDefinition = null)
+            CircuitJuiceDefinition juiceDefinition = null,
+            NeonGridAudioDefinition audioDefinition = null)
         {
             session = gameplaySession ?? throw new System.ArgumentNullException(nameof(gameplaySession));
             tutorial = new TutorialRuntime(tutorialDefinition);
             boardView = gameObject.AddComponent<BoardView>();
             boardView.Build(session.Board, OnTileTapped, visualTheme, juiceDefinition);
             boardView.SetCompleted(session.IsCompleted);
+            if (audioDefinition != null && audioDefinition.IsConfigured &&
+                boardView.JuiceCoordinator != null)
+            {
+                AudioService = gameObject.AddComponent<NeonGridAudioService>();
+                AudioService.Initialize(audioDefinition, boardView.JuiceCoordinator);
+            }
 
             hudView = gameObject.AddComponent<GameplayHudView>();
             hudView.Build(() => Undo(), Restart, () => RequestHint(), resultActions,
@@ -170,6 +186,7 @@ namespace NeonGrid.Presentation
         public void Restart()
         {
             if (session == null) return;
+            AudioService?.StopAll();
             tutorial.Restart();
             pendingTransition = CircuitJuiceTransition.Restart;
             try
@@ -179,8 +196,14 @@ namespace NeonGrid.Presentation
             finally
             {
                 pendingTransition = CircuitJuiceTransition.Synchronize;
+                AudioService?.StopAll();
             }
             ApplyTutorialPresentation();
+        }
+
+        public void PlayUiButton()
+        {
+            AudioService?.TryPlay(NeonGridAudioEvent.UIButtonPressed);
         }
 
         public HintResult RequestHint()

@@ -73,6 +73,7 @@ namespace NeonGrid.Presentation
         public void PresentRejected()
         {
             LastEvent = CircuitJuiceEventType.InteractionRejected;
+            coordinator.PublishPresentationEvent(CircuitJuiceEventType.InteractionRejected);
             if (!definition.RejectionFeedback || definition.RejectionDuration <= 0f ||
                 definition.RejectionNudge <= 0f)
             {
@@ -102,6 +103,7 @@ namespace NeonGrid.Presentation
         {
             canonicalRotation = -90f * rotation;
             LastEvent = CircuitJuiceEventType.RotationAccepted;
+            coordinator.PublishPresentationEvent(CircuitJuiceEventType.RotationAccepted);
             if (!definition.RotationFeedback || definition.RotationDuration <= 0f)
             {
                 rotationElapsed = -1f;
@@ -123,6 +125,11 @@ namespace NeonGrid.Presentation
         public void MarkCompletion()
         {
             LastEvent = CircuitJuiceEventType.CompletionTriggered;
+        }
+
+        internal void PublishSemanticEvent(CircuitJuiceEventType eventType)
+        {
+            coordinator.PublishPresentationEvent(eventType);
         }
 
         internal void PreparePowerActivation(CircuitJuiceEventType eventType)

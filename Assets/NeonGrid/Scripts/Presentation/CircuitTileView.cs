@@ -180,6 +180,7 @@ namespace NeonGrid.Presentation
         {
             if (juiceView == null || CurrentTileType != TileType.PowerSource ||
                 !juiceView.Definition.ComponentFeedback) return;
+            BoardJuiceEvent(CircuitJuiceEventType.SourcePulse);
             juiceView.PresentPulse(CircuitJuiceEventType.SourcePulse,
                 juiceView.Definition.PowerActivationDuration,
                 juiceView.Definition.SourcePulseScale);
@@ -188,6 +189,7 @@ namespace NeonGrid.Presentation
         public void PresentHintTargeted()
         {
             if (juiceView == null || !juiceView.Definition.HintFeedback) return;
+            BoardJuiceEvent(CircuitJuiceEventType.HintTargeted);
             juiceView.PresentPulse(CircuitJuiceEventType.HintTargeted,
                 juiceView.Definition.HintEmphasisDuration,
                 juiceView.Definition.HintPulseScale);
@@ -242,12 +244,19 @@ namespace NeonGrid.Presentation
                     definition.ObjectiveActivationDuration, definition.ObjectivePulseScale);
             else if (state.TileType == TileType.Switch &&
                      presentationSnapshot.IsSwitchOn != state.IsSwitchOn)
+            {
+                BoardJuiceEvent(CircuitJuiceEventType.SwitchChanged);
                 juiceView.PresentPulse(CircuitJuiceEventType.SwitchChanged,
                     definition.PowerActivationDuration, definition.ComponentPulseScale);
+            }
             else if (state.TileType == TileType.AndGate || state.TileType == TileType.OrGate)
             {
                 bool active = state.ActiveOutputSides != CardinalDirection.None;
                 if (presentationSnapshot.HasActiveOutput != active)
+                {
+                    BoardJuiceEvent(active
+                        ? CircuitJuiceEventType.GateActivated
+                        : CircuitJuiceEventType.GateDeactivated);
                     juiceView.PresentPulse(active
                             ? CircuitJuiceEventType.GateActivated
                             : CircuitJuiceEventType.GateDeactivated,
@@ -255,7 +264,13 @@ namespace NeonGrid.Presentation
                         definition.PowerDeactivationDuration,
                         active ? definition.ComponentPulseScale :
                         definition.PowerDeactivationScale);
+                }
             }
+        }
+
+        private void BoardJuiceEvent(CircuitJuiceEventType eventType)
+        {
+            juiceView?.PublishSemanticEvent(eventType);
         }
 
         public void SetHintHighlighted(bool highlighted)

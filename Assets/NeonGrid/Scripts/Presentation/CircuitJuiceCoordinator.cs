@@ -29,6 +29,7 @@ namespace NeonGrid.Presentation
         public bool CompletionPulseStarted { get; private set; }
         public PropagationPresentationPlan LastPropagationPlan { get; private set; }
         public float MaximumScheduledDelay { get; private set; }
+        public event Action<CircuitJuiceEventType> PresentationEvent;
 
         public void Initialize(CircuitJuiceDefinition definition)
         {
@@ -51,6 +52,11 @@ namespace NeonGrid.Presentation
             if (view == null || view.IsQueued) return;
             view.IsQueued = true;
             active.Add(view);
+        }
+
+        internal void PublishPresentationEvent(CircuitJuiceEventType eventType)
+        {
+            PresentationEvent?.Invoke(eventType);
         }
 
         private void Update()
@@ -133,9 +139,12 @@ namespace NeonGrid.Presentation
             foreach (GridPosition position in newlyUnpowered)
                 if (tileViews.TryGetValue(position, out CircuitTileView tile))
                     tile.JuiceView?.PresentPowerDeactivation();
+            if (newlyUnpowered.Count > 0)
+                PublishPresentationEvent(CircuitJuiceEventType.PowerDeactivated);
 
             if (Definition.PropagationFeedback && LastPropagationPlan.TileCount > 0)
             {
+                PublishPresentationEvent(CircuitJuiceEventType.PowerActivated);
                 foreach (GridPosition source in LastPropagationPlan.Sources)
                     if (tileViews.TryGetValue(source, out CircuitTileView sourceView))
                         sourceView.PresentSourcePulse();
@@ -194,8 +203,14 @@ namespace NeonGrid.Presentation
             {
                 ScheduledStep scheduled = scheduledSteps[index];
                 if (scheduleElapsed + 0.000001f < scheduled.Step.DelaySeconds) continue;
+                bool objectiveActivated = false;
                 foreach (CircuitTileView tile in scheduled.Tiles)
+                {
                     tile.JuiceView?.BeginPowerActivation(EventForActivation(tile));
+                    objectiveActivated |= tile.CurrentTileType == TileType.OutputLamp;
+                }
+                if (objectiveActivated)
+                    PublishPresentationEvent(CircuitJuiceEventType.ObjectiveActivated);
                 scheduledSteps.RemoveAt(index);
             }
 
@@ -203,6 +218,7 @@ namespace NeonGrid.Presentation
                 return;
             completionScheduled = false;
             CompletionPulseStarted = true;
+            PublishPresentationEvent(CircuitJuiceEventType.CompletionTriggered);
             foreach (CircuitTileJuiceView target in completionTargets)
                 target.BeginCompletionPulse();
             completionTargets.Clear();

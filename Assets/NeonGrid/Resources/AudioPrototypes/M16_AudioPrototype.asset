@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e89cf9029dac427c808ee0ed1d2bf6bb, type: 3}
+  m_Name: M16_AudioPrototype
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.NeonGridAudioDefinition
+  masterSfxMultiplier: 1
+  sfxVolume: 1
+  ambienceVolume: 1
+  sourcePoolSize: 6
+  cues:
+  - eventType: 0
+    clip: {fileID: 8300000, guid: ca3c06d027ab99b41a3c1d6ddd122534, type: 3}
+    gain: 0.42
+    minimumPitch: 0.97
+    maximumPitch: 1.03
+    cooldownSeconds: 0.035
+    variationSeed: 2601
+  - eventType: 1
+    clip: {fileID: 8300000, guid: 7e223eb307b32ae47b9b496b1bbd2756, type: 3}
+    gain: 0.52
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.08
+    variationSeed: 2602
+  - eventType: 2
+    clip: {fileID: 8300000, guid: dfa60f9fa94c5f64485094d6b45decda, type: 3}
+    gain: 0.55
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.08
+    variationSeed: 2603
+  - eventType: 3
+    clip: {fileID: 8300000, guid: 1c3f74064a2ec1343b4b75b597549d7f, type: 3}
+    gain: 0.4
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.08
+    variationSeed: 2604
+  - eventType: 4
+    clip: {fileID: 8300000, guid: 5d49989607f53aa48bfa10e8a7eec632, type: 3}
+    gain: 0.28
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.12
+    variationSeed: 2611
+  - eventType: 5
+    clip: {fileID: 8300000, guid: ccc6d6c0fe335b74d8cbb626dff26e08, type: 3}
+    gain: 0.52
+    minimumPitch: 0.98
+    maximumPitch: 1.02
+    cooldownSeconds: 0.06
+    variationSeed: 2605
+  - eventType: 6
+    clip: {fileID: 8300000, guid: 6480ebd9ff1295343a418883d9a21dbe, type: 3}
+    gain: 0.43
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.1
+    variationSeed: 2606
+  - eventType: 7
+    clip: {fileID: 8300000, guid: 1c3f74064a2ec1343b4b75b597549d7f, type: 3}
+    gain: 0.32
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.1
+    variationSeed: 2612
+  - eventType: 8
+    clip: {fileID: 8300000, guid: d7e9688e2ca7e564e919b4a8eef02fc8, type: 3}
+    gain: 0.68
+    minimumPitch: 0.99
+    maximumPitch: 1.01
+    cooldownSeconds: 0.12
+    variationSeed: 2607
+  - eventType: 9
+    clip: {fileID: 8300000, guid: 20f250ee0c8688d41ba576d27f34beed, type: 3}
+    gain: 0.55
+    minimumPitch: 0.995
+    maximumPitch: 1.005
+    cooldownSeconds: 0.15
+    variationSeed: 2608
+  - eventType: 10
+    clip: {fileID: 8300000, guid: a0a846fa82d52aa4694f91b80a1ae077, type: 3}
+    gain: 0.38
+    minimumPitch: 0.985
+    maximumPitch: 1.015
+    cooldownSeconds: 0.035
+    variationSeed: 2609
+  - eventType: 11
+    clip: {fileID: 8300000, guid: ab863bff8c37f4c4fb8cc234adaed9b4, type: 3}
+    gain: 0.78
+    minimumPitch: 1
+    maximumPitch: 1
+    cooldownSeconds: 0.5
+    variationSeed: 2610
