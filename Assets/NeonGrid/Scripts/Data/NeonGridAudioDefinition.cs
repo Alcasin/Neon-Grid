@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace NeonGrid.Data
 {
+    public enum NeonGridAmbienceMode
+    {
+        None,
+        Gameplay,
+        City
+    }
+
     public enum NeonGridAudioEvent
     {
         TileRotateAccepted,
@@ -65,6 +72,11 @@ namespace NeonGrid.Data
         [SerializeField, Range(0f, 1f)] private float masterSfxMultiplier = 1f;
         [SerializeField, Range(0f, 1f)] private float sfxVolume = 1f;
         [SerializeField, Range(0f, 1f)] private float ambienceVolume = 1f;
+        [SerializeField, Range(0f, 1f)] private float ambienceGain = 0.18f;
+        [SerializeField, Range(0f, 1f)] private float gameplayAmbienceGain = 0.153f;
+        [SerializeField, Min(0f)] private float ambienceFadeDuration = 0.8f;
+        [SerializeField] private AudioClip gameplayAmbience;
+        [SerializeField] private AudioClip cityAmbience;
         [SerializeField, Range(4, 8)] private int sourcePoolSize = 6;
         [SerializeField] private List<NeonGridAudioCue> cues =
             new List<NeonGridAudioCue>();
@@ -72,8 +84,20 @@ namespace NeonGrid.Data
         public float MasterSfxMultiplier => masterSfxMultiplier;
         public float SfxVolume => sfxVolume;
         public float AmbienceVolume => ambienceVolume;
+        public float AmbienceGain => ambienceGain;
+        public float GameplayAmbienceGain => gameplayAmbienceGain;
+        public float CityAmbienceGain => ambienceGain;
+        public float AmbienceFadeDuration => ambienceFadeDuration;
+        public AudioClip GameplayAmbience => gameplayAmbience;
+        public AudioClip CityAmbience => cityAmbience;
         public int SourcePoolSize => sourcePoolSize;
         public IReadOnlyList<NeonGridAudioCue> Cues => cues;
+        public bool IsAmbienceConfigured => gameplayAmbience != null &&
+                                             cityAmbience != null &&
+                                             ambienceGain >= 0f && ambienceGain <= 1f &&
+                                             gameplayAmbienceGain >= 0f &&
+                                             gameplayAmbienceGain <= 1f &&
+                                             ambienceFadeDuration >= 0f;
         public bool IsConfigured
         {
             get
@@ -100,15 +124,40 @@ namespace NeonGrid.Data
             return false;
         }
 
+        public AudioClip GetAmbienceClip(NeonGridAmbienceMode mode)
+        {
+            switch (mode)
+            {
+                case NeonGridAmbienceMode.Gameplay: return gameplayAmbience;
+                case NeonGridAmbienceMode.City: return cityAmbience;
+                default: return null;
+            }
+        }
+
+        public float GetAmbienceGain(NeonGridAmbienceMode mode)
+        {
+            return mode == NeonGridAmbienceMode.Gameplay ? gameplayAmbienceGain :
+                ambienceGain;
+        }
+
 #if UNITY_EDITOR
         public void SetData(IEnumerable<NeonGridAudioCue> values, int poolSize = 6,
-            float masterMultiplier = 1f, float volume = 1f)
+            float masterMultiplier = 1f, float volume = 1f,
+            AudioClip gameplayAmbienceClip = null, AudioClip cityAmbienceClip = null,
+            float ambienceVolumeValue = 1f, float ambienceGainValue = 0.18f,
+            float ambienceFadeSeconds = 0.8f, float gameplayAmbienceGainValue = 0.153f)
         {
             cues = values == null ? new List<NeonGridAudioCue>() :
                 new List<NeonGridAudioCue>(values);
             sourcePoolSize = Mathf.Clamp(poolSize, 4, 8);
             masterSfxMultiplier = Mathf.Clamp01(masterMultiplier);
             sfxVolume = Mathf.Clamp01(volume);
+            gameplayAmbience = gameplayAmbienceClip;
+            cityAmbience = cityAmbienceClip;
+            ambienceVolume = Mathf.Clamp01(ambienceVolumeValue);
+            ambienceGain = Mathf.Clamp01(ambienceGainValue);
+            gameplayAmbienceGain = Mathf.Clamp01(gameplayAmbienceGainValue);
+            ambienceFadeDuration = Mathf.Max(0f, ambienceFadeSeconds);
         }
 #endif
     }

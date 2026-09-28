@@ -1,7 +1,7 @@
 {
   "name": "NeonGrid.Editor",
   "rootNamespace": "NeonGrid.Editor",
-  "references": ["NeonGrid.Runtime"],
+  "references": ["NeonGrid.Runtime", "UnityEditor.TestRunner", "UnityEngine.TestRunner"],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

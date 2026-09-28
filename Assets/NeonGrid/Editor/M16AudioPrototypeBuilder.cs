@@ -27,8 +27,11 @@ namespace NeonGrid.Editor
                 AssetDatabase.CreateAsset(definition, DefinitionPath);
             }
 
-            definition.SetData(CreateCues(), 6, 1f, 1f);
-            if (!definition.IsConfigured)
+            AudioClip gameplayAmbience = LoadAmbience("AMB_Gameplay_01.wav");
+            AudioClip cityAmbience = LoadAmbience("AMB_City_01.wav");
+            definition.SetData(CreateCues(), 6, 1f, 1f, gameplayAmbience, cityAmbience,
+                1f, .18f, .8f, .153f);
+            if (!definition.IsConfigured || !definition.IsAmbienceConfigured)
                 throw new InvalidDataException("M16 audio prototype definition is invalid.");
 
             GameplayVisualPrototypeDefinition prototype =
@@ -77,7 +80,7 @@ namespace NeonGrid.Editor
                     .10f, 2606),
                 Cue(NeonGridAudioEvent.GateDeactivated, powerOff, .32f, .99f, 1.01f,
                     .10f, 2612),
-                Cue(NeonGridAudioEvent.ObjectiveActivated, objective, .68f, .99f, 1.01f,
+                Cue(NeonGridAudioEvent.ObjectiveActivated, objective, .612f, .99f, 1.01f,
                     .12f, 2607),
                 Cue(NeonGridAudioEvent.HintActivated, hint, .55f, .995f, 1.005f,
                     .15f, 2608),
@@ -100,6 +103,15 @@ namespace NeonGrid.Editor
             string path = $"Assets/NeonGrid/Audio/SFX/{relativePath}";
             AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
             if (clip == null) throw new FileNotFoundException($"Generated SFX is missing: {path}");
+            return clip;
+        }
+
+        private static AudioClip LoadAmbience(string filename)
+        {
+            string path = $"Assets/NeonGrid/Audio/Ambience/{filename}";
+            AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            if (clip == null)
+                throw new FileNotFoundException($"Generated ambience is missing: {path}");
             return clip;
         }
 

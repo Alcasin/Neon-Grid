@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Deterministically generate Neon Grid's original local prototype SFX assets."""
+"""Deterministically generate Neon Grid's original local prototype audio assets."""
 
 import argparse
+import array
 import hashlib
 import json
 import math
@@ -14,7 +15,7 @@ from pathlib import Path
 GENERATOR_VERSION = "neon-grid-procedural-sfx-1.0"
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = Path(__file__).with_name("audio_manifest.json")
-DEFAULT_OUTPUT = ROOT / "Assets" / "NeonGrid" / "Audio" / "SFX"
+DEFAULT_OUTPUT = ROOT / "Assets" / "NeonGrid" / "Audio"
 
 
 def clamp(value):
@@ -41,6 +42,8 @@ def synthesize(sound):
     count = int(round(rate * duration))
     rng = random.Random(sound["seed"])
     recipe = sound["recipe"]
+    if recipe in ("gameplay_ambient_bed", "city_ambient_bed"):
+        return synthesize_ambience(sound)
     samples = []
     phase_a = phase_b = phase_c = 0.0
     low_noise = 0.0
@@ -140,14 +143,103 @@ def synthesize(sound):
     return [clamp(value * gain) for value in samples]
 
 
+def periodic_frequency(hz, duration):
+    """Nearest integer-cycle frequency, exactly periodic over the authored loop."""
+    return round(hz * duration) / duration
+
+
+def synthesize_ambience(sound):
+    rate = sound["sample_rate"]
+    duration = sound["duration"]
+    frame_count = int(round(rate * duration))
+    rng = random.Random(sound["seed"])
+    recipe = sound["recipe"]
+    channels = sound["channels"]
+    if channels != 2:
+        raise ValueError(f"Ambience must be stereo: {sound['id']}")
+
+    if recipe == "gameplay_ambient_bed":
+        body_frequencies = (82.0, 123.0, 167.0)
+        body_gains = (0.24, 0.12, 0.07)
+        air_range = (190.0, 720.0)
+        air_gain = 0.022
+        detail_range = (760.0, 1450.0)
+        detail_gain = 0.010
+        modulation_cycles = (3, 5)
+        side_width = 0.075
+    elif recipe == "city_ambient_bed":
+        body_frequencies = (58.0, 87.0, 132.0)
+        body_gains = (0.22, 0.13, 0.065)
+        air_range = (120.0, 520.0)
+        air_gain = 0.026
+        detail_range = (540.0, 1120.0)
+        detail_gain = 0.008
+        modulation_cycles = (2, 3)
+        side_width = 0.12
+    else:
+        raise ValueError(f"Unknown ambience recipe: {recipe}")
+
+    body = [(periodic_frequency(freq, duration), gain,
+             rng.uniform(0.0, 1.0))
+            for freq, gain in zip(body_frequencies, body_gains)]
+    air = []
+    for index in range(7):
+        hz = rng.uniform(*air_range)
+        air.append((periodic_frequency(hz, duration),
+                    air_gain / (1.0 + index * 0.22),
+                    rng.uniform(0.0, 1.0), rng.uniform(-0.035, 0.035)))
+    details = []
+    for index in range(4):
+        hz = rng.uniform(*detail_range)
+        details.append((periodic_frequency(hz, duration),
+                        detail_gain / (1.0 + index * 0.3),
+                        rng.uniform(0.0, 1.0), rng.uniform(-0.06, 0.06),
+                        4 + index * 2))
+
+    samples = array.array("f")
+    peak = 0.0
+    for index in range(frame_count):
+        x = index / frame_count
+        slow_a = 0.76 + 0.24 * sine(modulation_cycles[0] * x + 0.13)
+        slow_b = 0.82 + 0.18 * sine(modulation_cycles[1] * x + 0.37)
+        center = 0.0
+        for frequency, gain, phase in body:
+            center += gain * sine(frequency * duration * x + phase) * slow_a
+        left_air = right_air = 0.0
+        for frequency, gain, phase, offset in air:
+            base_phase = frequency * duration * x + phase
+            left_air += gain * sine(base_phase + offset)
+            right_air += gain * sine(base_phase - offset)
+        left_detail = right_detail = 0.0
+        for frequency, gain, phase, offset, cycles in details:
+            activity = 0.5 + 0.5 * sine(cycles * x + phase * 0.41)
+            activity *= activity
+            base_phase = frequency * duration * x + phase
+            left_detail += gain * activity * sine(base_phase + offset)
+            right_detail += gain * activity * sine(base_phase - offset)
+        left = center + left_air + left_detail + side_width * (left_air - right_air)
+        right = center + right_air + right_detail + side_width * (right_air - left_air)
+        samples.append(left)
+        samples.append(right)
+        peak = max(peak, abs(left), abs(right))
+
+    target = 10.0 ** (sound["normalization_dbfs"] / 20.0)
+    gain = min(1.0, target / (peak or 1.0))
+    for index in range(len(samples)):
+        samples[index] = clamp(samples[index] * gain)
+    return samples
+
+
 def write_wav(path, sound, samples):
     path.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(path), "wb") as output:
         output.setnchannels(sound["channels"])
         output.setsampwidth(2)
         output.setframerate(sound["sample_rate"])
-        frames = b"".join(struct.pack("<h", int(round(value * 32767.0))) for value in samples)
-        output.writeframes(frames)
+        pcm = array.array("h", (int(round(value * 32767.0)) for value in samples))
+        if struct.pack("=h", 1) != struct.pack("<h", 1):
+            pcm.byteswap()
+        output.writeframes(pcm.tobytes())
 
 
 def sha256(path):
@@ -167,12 +259,18 @@ def load_manifest(path):
     return data
 
 
-def generate(manifest, output_dir):
+def generate(manifest, output_dir, asset_kind=None):
     hashes = {}
     for sound in manifest["sounds"]:
-        if sound["channels"] != 1 or sound["sample_rate"] != 48000:
+        kind = sound.get("asset_kind", "sfx")
+        if asset_kind is not None and kind != asset_kind:
+            continue
+        if sound["channels"] not in (1, 2) or sound["sample_rate"] != 48000:
             raise ValueError(f"Unsupported format for {sound['id']}")
-        destination = output_dir / sound["category"] / sound["filename"]
+        if kind == "ambience":
+            destination = output_dir / "Ambience" / sound["filename"]
+        else:
+            destination = output_dir / "SFX" / sound["category"] / sound["filename"]
         write_wav(destination, sound, synthesize(sound))
         hashes[sound["id"]] = sha256(destination)
     return hashes
@@ -184,24 +282,26 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--write-hashes", action="store_true")
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--kind", choices=("sfx", "ambience"))
     args = parser.parse_args()
     manifest = load_manifest(args.manifest)
 
     if args.verify:
         with tempfile.TemporaryDirectory(prefix="neon_grid_sfx_") as temporary:
-            generated = generate(manifest, Path(temporary))
+            generated = generate(manifest, Path(temporary), args.kind)
         expected = {sound["id"]: sound.get("sha256", "") for sound in manifest["sounds"]}
         mismatches = [sound_id for sound_id, value in generated.items()
                       if value != expected.get(sound_id)]
         if mismatches:
             raise SystemExit("Hash mismatch: " + ", ".join(mismatches))
-        print(f"Verified {len(generated)} deterministic procedural SFX files.")
+        print(f"Verified {len(generated)} deterministic procedural audio files.")
         return
 
-    generated = generate(manifest, args.output_dir)
+    generated = generate(manifest, args.output_dir, args.kind)
     if args.write_hashes:
         for sound in manifest["sounds"]:
-            sound["sha256"] = generated[sound["id"]]
+            if sound["id"] in generated:
+                sound["sha256"] = generated[sound["id"]]
         args.manifest.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     for sound_id, digest in generated.items():
         print(f"{sound_id}: {digest}")

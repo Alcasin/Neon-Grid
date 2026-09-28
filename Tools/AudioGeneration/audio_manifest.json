@@ -220,6 +220,84 @@
         ]
       },
       "sha256": "ACEC17CFE0BEDD1D13E3EE26F8196D542916ED2C13868AE56BEF5D5A7E8D8DEB"
+    },
+    {
+      "id": "gameplay_ambience",
+      "filename": "AMB_Gameplay_01.wav",
+      "category": "ambience",
+      "asset_kind": "ambience",
+      "generator_version": "neon-grid-procedural-ambience-1.0",
+      "recipe": "gameplay_ambient_bed",
+      "seed": 3201,
+      "duration": 28.0,
+      "sample_rate": 48000,
+      "channels": 2,
+      "bit_depth": 16,
+      "normalization_dbfs": -15.0,
+      "loop_safe": true,
+      "origin": "procedural_local",
+      "external_samples": false,
+      "parameters": {
+        "body_hz": [
+          82,
+          123,
+          167
+        ],
+        "periodic_modulation_cycles": [
+          3,
+          5
+        ],
+        "shaped_air_hz": [
+          190,
+          720
+        ],
+        "detail_hz": [
+          760,
+          1450
+        ],
+        "stereo_side_width": 0.075,
+        "minimum_significant_hz": 50
+      },
+      "sha256": "491A2BBEDE962B2069C7EA03FA8D81E4D177DB13623A511FF878041719AC39ED"
+    },
+    {
+      "id": "city_ambience",
+      "filename": "AMB_City_01.wav",
+      "category": "ambience",
+      "asset_kind": "ambience",
+      "generator_version": "neon-grid-procedural-ambience-1.0",
+      "recipe": "city_ambient_bed",
+      "seed": 3202,
+      "duration": 30.0,
+      "sample_rate": 48000,
+      "channels": 2,
+      "bit_depth": 16,
+      "normalization_dbfs": -16.0,
+      "loop_safe": true,
+      "origin": "procedural_local",
+      "external_samples": false,
+      "parameters": {
+        "body_hz": [
+          58,
+          87,
+          132
+        ],
+        "periodic_modulation_cycles": [
+          2,
+          3
+        ],
+        "shaped_air_hz": [
+          120,
+          520
+        ],
+        "detail_hz": [
+          540,
+          1120
+        ],
+        "stereo_side_width": 0.12,
+        "minimum_significant_hz": 50
+      },
+      "sha256": "C9E309D8922F839C551A2D07110C54032F26A6B9C86CB93F2335D809B60951E0"
     }
   ]
 }

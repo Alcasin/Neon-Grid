@@ -27,35 +27,67 @@ namespace NeonGrid.Presentation
     public sealed class NeonGridAudioService : MonoBehaviour
     {
         private readonly List<AudioSource> voices = new List<AudioSource>();
+        private readonly List<AudioSource> ambienceVoices = new List<AudioSource>();
         private readonly Dictionary<NeonGridAudioEvent, float> lastPlaybackTimes =
             new Dictionary<NeonGridAudioEvent, float>();
         private readonly Dictionary<NeonGridAudioEvent, int> playCounts =
             new Dictionary<NeonGridAudioEvent, int>();
         private CircuitJuiceCoordinator coordinator;
         private int reuseCursor;
+        private readonly float[] ambienceStartVolumes = new float[2];
+        private readonly float[] ambienceTargetVolumes = new float[2];
+        private float ambienceFadeElapsed;
+        private bool ambienceTransitioning;
+        private int activeAmbienceVoice = -1;
 
         public NeonGridAudioDefinition Definition { get; private set; }
         public int VoiceCount => voices.Count;
+        public int AmbienceVoiceCount => ambienceVoices.Count;
         public int SuccessfulPlaybackCount { get; private set; }
+        public int AmbiencePlaybackStartCount { get; private set; }
         public NeonGridAudioPlayback? LastPlayback { get; private set; }
+        public NeonGridAmbienceMode RequestedAmbienceMode { get; private set; }
+        public bool IsAmbienceTransitioning => ambienceTransitioning;
 
         public void Initialize(NeonGridAudioDefinition definition,
             CircuitJuiceCoordinator eventSource = null)
         {
             Definition = definition != null && definition.IsConfigured ? definition : null;
             if (Definition == null) return;
-            for (int index = 0; index < Definition.SourcePoolSize; index++)
+            if (voices.Count == 0)
             {
-                var voiceObject = new GameObject($"SFX Voice {index + 1}");
-                voiceObject.transform.SetParent(transform, false);
-                AudioSource source = voiceObject.AddComponent<AudioSource>();
-                source.playOnAwake = false;
-                source.loop = false;
-                source.spatialBlend = 0f;
-                source.volume = 1f;
-                voices.Add(source);
+                for (int index = 0; index < Definition.SourcePoolSize; index++)
+                {
+                    var voiceObject = new GameObject($"SFX Voice {index + 1}");
+                    voiceObject.transform.SetParent(transform, false);
+                    AudioSource source = voiceObject.AddComponent<AudioSource>();
+                    source.playOnAwake = false;
+                    source.loop = false;
+                    source.spatialBlend = 0f;
+                    source.volume = 1f;
+                    voices.Add(source);
+                }
+            }
+            if (Definition.IsAmbienceConfigured && ambienceVoices.Count == 0)
+            {
+                for (int index = 0; index < 2; index++)
+                {
+                    var ambienceObject = new GameObject($"Ambience Voice {(char)('A' + index)}");
+                    ambienceObject.transform.SetParent(transform, false);
+                    AudioSource source = ambienceObject.AddComponent<AudioSource>();
+                    source.playOnAwake = false;
+                    source.loop = true;
+                    source.spatialBlend = 0f;
+                    source.volume = 0f;
+                    ambienceVoices.Add(source);
+                }
             }
             Bind(eventSource);
+        }
+
+        private void Update()
+        {
+            AdvanceAmbience(Time.unscaledDeltaTime);
         }
 
         public void Bind(CircuitJuiceCoordinator eventSource)
@@ -113,6 +145,99 @@ namespace NeonGrid.Presentation
             foreach (AudioSource voice in voices) voice.Stop();
             lastPlaybackTimes.Clear();
             LastPlayback = null;
+        }
+
+        public bool RequestAmbience(NeonGridAmbienceMode mode)
+        {
+            if (Definition == null || !Definition.IsAmbienceConfigured ||
+                ambienceVoices.Count != 2 || mode == RequestedAmbienceMode)
+                return false;
+
+            RequestedAmbienceMode = mode;
+            for (int index = 0; index < 2; index++)
+                ambienceStartVolumes[index] = ambienceVoices[index].volume;
+
+            if (mode == NeonGridAmbienceMode.None)
+            {
+                ambienceTargetVolumes[0] = 0f;
+                ambienceTargetVolumes[1] = 0f;
+                BeginAmbienceTransition();
+                return true;
+            }
+
+            AudioClip clip = Definition.GetAmbienceClip(mode);
+            int incoming = FindAmbienceVoice(clip);
+            if (incoming < 0) incoming = activeAmbienceVoice == 0 ? 1 : 0;
+            AudioSource incomingSource = ambienceVoices[incoming];
+            if (incomingSource.clip != clip)
+            {
+                incomingSource.Stop();
+                incomingSource.clip = clip;
+            }
+            if (!incomingSource.isPlaying)
+            {
+                incomingSource.Play();
+                AmbiencePlaybackStartCount++;
+            }
+            activeAmbienceVoice = incoming;
+            float target = Definition.GetAmbienceGain(mode) * Definition.AmbienceVolume;
+            for (int index = 0; index < 2; index++)
+                ambienceTargetVolumes[index] = index == incoming ? target : 0f;
+            BeginAmbienceTransition();
+            return true;
+        }
+
+        public void AdvanceAmbience(float deltaSeconds)
+        {
+            if (deltaSeconds < 0f)
+                throw new ArgumentOutOfRangeException(nameof(deltaSeconds));
+            if (!ambienceTransitioning) return;
+            ambienceFadeElapsed += deltaSeconds;
+            float duration = Definition.AmbienceFadeDuration;
+            float amount = duration <= 0f ? 1f : Mathf.Clamp01(ambienceFadeElapsed / duration);
+            for (int index = 0; index < ambienceVoices.Count; index++)
+                ambienceVoices[index].volume = Mathf.Lerp(ambienceStartVolumes[index],
+                    ambienceTargetVolumes[index], amount);
+            if (amount < 1f) return;
+
+            ambienceTransitioning = false;
+            for (int index = 0; index < ambienceVoices.Count; index++)
+            {
+                if (ambienceTargetVolumes[index] > 0f) continue;
+                ambienceVoices[index].Stop();
+                ambienceVoices[index].clip = null;
+            }
+            if (RequestedAmbienceMode == NeonGridAmbienceMode.None)
+                activeAmbienceVoice = -1;
+        }
+
+        public void StopAmbienceImmediately()
+        {
+            RequestedAmbienceMode = NeonGridAmbienceMode.None;
+            ambienceTransitioning = false;
+            activeAmbienceVoice = -1;
+            for (int index = 0; index < ambienceVoices.Count; index++)
+            {
+                ambienceVoices[index].Stop();
+                ambienceVoices[index].clip = null;
+                ambienceVoices[index].volume = 0f;
+                ambienceStartVolumes[index] = 0f;
+                ambienceTargetVolumes[index] = 0f;
+            }
+        }
+
+        private void BeginAmbienceTransition()
+        {
+            ambienceFadeElapsed = 0f;
+            ambienceTransitioning = true;
+            if (Definition.AmbienceFadeDuration <= 0f) AdvanceAmbience(0f);
+        }
+
+        private int FindAmbienceVoice(AudioClip clip)
+        {
+            for (int index = 0; index < ambienceVoices.Count; index++)
+                if (ambienceVoices[index].clip == clip) return index;
+            return -1;
         }
 
         private void OnDestroy()

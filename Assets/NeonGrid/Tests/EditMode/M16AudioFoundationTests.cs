@@ -154,14 +154,26 @@ namespace NeonGrid.Tests
         {
             NeonGridAudioService service = BuildService();
             int initialTransforms = service.GetComponentsInChildren<Transform>(true).Length;
-            Assert.That(service.VoiceCount, Is.InRange(4, 8));
+            AudioSource[] initialSources =
+                service.GetComponentsInChildren<AudioSource>(true);
+            Assert.That(service.VoiceCount, Is.EqualTo(6));
+            Assert.That(service.AmbienceVoiceCount, Is.EqualTo(2));
+            Assert.That(initialSources, Has.Length.EqualTo(8));
+            Assert.That(initialSources.Count(source => !source.loop), Is.EqualTo(6));
+            Assert.That(initialSources.Count(source => source.loop), Is.EqualTo(2));
             for (int index = 0; index < 40; index++)
                 Assert.That(service.TryPlay(NeonGridAudioEvent.UIButtonPressed,
                     index + 1f), Is.True);
             Assert.That(service.GetComponentsInChildren<Transform>(true).Length,
                 Is.EqualTo(initialTransforms));
-            Assert.That(service.GetComponentsInChildren<AudioSource>(true).Length,
+            AudioSource[] finalSources = service.GetComponentsInChildren<AudioSource>(true);
+            Assert.That(finalSources, Has.Length.EqualTo(8));
+            Assert.That(finalSources.Count(source => !source.loop),
                 Is.EqualTo(service.VoiceCount));
+            Assert.That(finalSources.Count(source => source.loop),
+                Is.EqualTo(service.AmbienceVoiceCount));
+            Assert.That(finalSources.Select(source => source.GetInstanceID()),
+                Is.EquivalentTo(initialSources.Select(source => source.GetInstanceID())));
         }
 
         [Test]
@@ -202,10 +214,18 @@ namespace NeonGrid.Tests
                 voiceIndices.Add(service.LastPlayback.Value.VoiceIndex);
             }
             AudioSource[] sources = service.GetComponentsInChildren<AudioSource>(true);
-            Assert.That(sources, Has.Length.EqualTo(service.VoiceCount));
-            Assert.That(sources.All(source => source != null && source.enabled &&
+            AudioSource[] sfxSources = sources.Where(source => !source.loop).ToArray();
+            AudioSource[] ambienceSources = sources.Where(source => source.loop).ToArray();
+            Assert.That(service.VoiceCount, Is.EqualTo(6));
+            Assert.That(service.AmbienceVoiceCount, Is.EqualTo(2));
+            Assert.That(sources, Has.Length.EqualTo(8));
+            Assert.That(sfxSources, Has.Length.EqualTo(service.VoiceCount));
+            Assert.That(ambienceSources, Has.Length.EqualTo(service.AmbienceVoiceCount));
+            Assert.That(sfxSources.All(source => source != null && source.enabled &&
                 source.gameObject.activeInHierarchy && !source.mute &&
                 source.volume > 0f && !source.loop), Is.True);
+            Assert.That(ambienceSources.All(source => source != null && source.enabled &&
+                source.gameObject.activeInHierarchy && !source.mute && source.loop), Is.True);
             Assert.That(service.LastPlayback.Value.VoiceIndex,
                 Is.InRange(0, service.VoiceCount - 1));
             Assert.That(voiceIndices.Take(service.VoiceCount + 1), Is.EqualTo(
@@ -300,8 +320,8 @@ namespace NeonGrid.Tests
                 Is.EqualTo("neon-grid-procedural-sfx-1.0"));
             Assert.That(manifest.origin, Is.EqualTo("procedural_local"));
             Assert.That(manifest.external_samples, Is.False);
-            Assert.That(manifest.sounds, Has.Length.EqualTo(11));
-            Assert.That(manifest.sounds.All(sound => sound.seed > 0), Is.True);
+            Assert.That(SfxSounds(manifest), Has.Length.EqualTo(11));
+            Assert.That(SfxSounds(manifest).All(sound => sound.seed > 0), Is.True);
         }
 
         [Test]
@@ -316,7 +336,7 @@ namespace NeonGrid.Tests
             };
             Assert.That(manifest.sounds.Select(sound => sound.id),
                 Is.SupersetOf(required));
-            foreach (AudioSound sound in manifest.sounds)
+            foreach (AudioSound sound in SfxSounds(manifest))
             {
                 string path = WavPath(sound);
                 Assert.That(File.Exists(path), Is.True, sound.id);
@@ -336,7 +356,7 @@ namespace NeonGrid.Tests
             AudioManifest manifest = LoadManifest();
             string provenance = File.ReadAllText(ProjectPath(
                 "Assets/NeonGrid/Documentation/M16_Audio_Provenance.md"));
-            foreach (AudioSound sound in manifest.sounds)
+            foreach (AudioSound sound in SfxSounds(manifest))
             {
                 string hash = Sha256(WavPath(sound));
                 Assert.That(hash, Is.EqualTo(sound.sha256), sound.id);
@@ -352,7 +372,7 @@ namespace NeonGrid.Tests
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "python",
-                    Arguments = "Tools/AudioGeneration/generate_audio.py --verify",
+                    Arguments = "Tools/AudioGeneration/generate_audio.py --verify --kind sfx",
                     WorkingDirectory = ProjectPath(string.Empty),
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -365,28 +385,71 @@ namespace NeonGrid.Tests
             string error = process.StandardError.ReadToEnd();
             process.WaitForExit();
             Assert.That(process.ExitCode, Is.Zero, error);
-            Assert.That(output, Does.Contain("Verified 11 deterministic procedural SFX"));
+            Assert.That(output, Does.Contain("Verified 11 deterministic procedural audio files"));
         }
 
         [Test]
         public void GenerationIsNeverAutomaticAndRuntimeHasNoPythonDependency()
         {
-            string runtime = string.Join("\n", Directory.GetFiles(ProjectPath(
-                    "Assets/NeonGrid/Scripts"), "*.cs", SearchOption.AllDirectories)
-                .Select(File.ReadAllText));
-            string editor = string.Join("\n", Directory.GetFiles(ProjectPath(
-                    "Assets/NeonGrid/Editor"), "*.cs", SearchOption.AllDirectories)
-                .Select(File.ReadAllText));
-            Assert.That(runtime, Does.Not.Contain("generate_audio.py"));
-            Assert.That(runtime, Does.Not.Contain("System.Diagnostics.Process"));
-            Assert.That(editor, Does.Not.Contain("generate_audio.py"));
-            Assert.That(editor, Does.Not.Contain("InitializeOnLoad"));
+            string[] runtimeFiles = Directory.GetFiles(ProjectPath(
+                "Assets/NeonGrid/Scripts"), "*.cs", SearchOption.AllDirectories);
+            string[] editorFiles = Directory.GetFiles(ProjectPath(
+                "Assets/NeonGrid/Editor"), "*.cs", SearchOption.AllDirectories);
+            string[] generatorReferences =
+            {
+                "generate_audio.py",
+                "Tools/AudioGeneration",
+                "python.exe",
+                "python3"
+            };
+            string[] automaticLifecycleMarkers =
+            {
+                "InitializeOnLoad",
+                "InitializeOnLoadMethod",
+                "DidReloadScripts",
+                "RuntimeInitializeOnLoadMethod",
+                "InitializeOnEnterPlayMode",
+                "playModeStateChanged",
+                "AssetPostprocessor",
+                "IPreprocessBuild",
+                "IPostprocessBuild",
+                "PostProcessBuild"
+            };
+
+            foreach (string file in runtimeFiles)
+            {
+                string source = File.ReadAllText(file);
+                foreach (string generatorReference in generatorReferences)
+                    Assert.That(source, Does.Not.Contain(generatorReference), file);
+                Assert.That(source, Does.Not.Contain("System.Diagnostics.Process"), file);
+                Assert.That(source, Does.Not.Contain("Process.Start("), file);
+            }
+
+            foreach (string file in editorFiles)
+            {
+                string source = File.ReadAllText(file);
+                foreach (string generatorReference in generatorReferences)
+                    Assert.That(source, Does.Not.Contain(generatorReference), file);
+
+                if (!automaticLifecycleMarkers.Any(source.Contains)) continue;
+                Assert.That(source, Does.Not.Contain("System.Diagnostics.Process"), file);
+                Assert.That(source, Does.Not.Contain("Process.Start("), file);
+                Assert.That(source, Does.Not.Contain("ProcessStartInfo"), file);
+            }
+
+            string verificationRunner = File.ReadAllText(ProjectPath(
+                "Assets/NeonGrid/Editor/Verification/NeonGridVerificationRunner.cs"));
+            Assert.That(verificationRunner, Does.Contain("InitializeOnLoad"));
+            foreach (string generatorReference in generatorReferences)
+                Assert.That(verificationRunner, Does.Not.Contain(generatorReference));
+            Assert.That(verificationRunner, Does.Not.Contain("Process.Start("));
+            Assert.That(verificationRunner, Does.Not.Contain("ProcessStartInfo"));
         }
 
         [Test]
         public void ImportedClipsUseLocalShortSfxPolicy()
         {
-            foreach (AudioSound sound in LoadManifest().sounds)
+            foreach (AudioSound sound in SfxSounds(LoadManifest()))
             {
                 string assetPath = $"Assets/NeonGrid/Audio/SFX/{sound.category}/{sound.filename}";
                 var importer = (AudioImporter)AssetImporter.GetAtPath(assetPath);
@@ -507,6 +570,11 @@ namespace NeonGrid.Tests
                 ProjectPath(ManifestPath)));
         }
 
+        private static AudioSound[] SfxSounds(AudioManifest manifest)
+        {
+            return manifest.sounds.Where(sound => sound.asset_kind != "ambience").ToArray();
+        }
+
         private static string ProjectPath(string relative)
         {
             string root = Directory.GetParent(Application.dataPath).FullName;
@@ -570,6 +638,7 @@ namespace NeonGrid.Tests
             public string id;
             public string filename;
             public string category;
+            public string asset_kind;
             public int seed;
             public double duration;
             public string sha256;

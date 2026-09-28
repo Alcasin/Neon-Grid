@@ -19,6 +19,8 @@ namespace NeonGrid.Presentation
         private Text currentLevelLabel;
         private Text completionHoldLabel;
         private Text themeLabel;
+        private Text ambienceLabel;
+        private NeonGridAmbienceMode ambienceMode = NeonGridAmbienceMode.Gameplay;
 
         public GameplayVisualPrototypeDefinition Definition => definition;
         public LevelDefinition CurrentLevel { get; private set; }
@@ -68,6 +70,7 @@ namespace NeonGrid.Presentation
             CurrentBoardController = boardRoot.AddComponent<BoardController>();
             CurrentBoardController.Initialize(level, ActiveTheme, definition.CircuitJuice,
                 definition.AudioDefinition);
+            CurrentBoardController.AudioService?.RequestAmbience(ambienceMode);
             CurrentBoardController.SetCompletionPresentationHeld(holdCompletionPresentation);
             if (currentLevelLabel != null)
                 currentLevelLabel.text = $"M16 JUICE QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
@@ -155,6 +158,48 @@ namespace NeonGrid.Presentation
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -540f), ActiveTheme.Board, ActiveTheme.Hint,
                 PrepareHintForQa, new Vector2(300f, 68f));
+            CreateButton(canvasObject.transform, "Gameplay Ambience", "AMB: GAMEPLAY", font,
+                new Vector2(0.28f, 1f), new Vector2(0.28f, 1f), new Vector2(0f, -620f),
+                ActiveTheme.Board, ActiveTheme.PoweredEnergy,
+                () => SetAmbienceMode(NeonGridAmbienceMode.Gameplay), new Vector2(250f, 62f));
+            CreateButton(canvasObject.transform, "City Ambience", "AMB: CITY", font,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -620f),
+                ActiveTheme.Board, ActiveTheme.PoweredEnergy,
+                () => SetAmbienceMode(NeonGridAmbienceMode.City), new Vector2(220f, 62f));
+            Button none = CreateButton(canvasObject.transform, "No Ambience", "AMB: NONE", font,
+                new Vector2(0.72f, 1f), new Vector2(0.72f, 1f), new Vector2(0f, -620f),
+                ActiveTheme.Board, ActiveTheme.PoweredEnergy,
+                () => SetAmbienceMode(NeonGridAmbienceMode.None), new Vector2(220f, 62f));
+            ambienceLabel = none.transform.Find("Label").GetComponent<Text>();
+            RefreshAmbienceControl();
+        }
+
+        public void SetAmbienceMode(NeonGridAmbienceMode mode)
+        {
+            ambienceMode = mode;
+            CurrentBoardController?.AudioService?.RequestAmbience(mode);
+            RefreshAmbienceControl();
+        }
+
+        private void RefreshAmbienceControl()
+        {
+            if (ambienceLabel == null) return;
+            Transform selector = ambienceLabel.transform.parent.parent;
+            SetAmbienceCaption(selector, "Gameplay Ambience", "AMB: GAMEPLAY",
+                NeonGridAmbienceMode.Gameplay);
+            SetAmbienceCaption(selector, "City Ambience", "AMB: CITY",
+                NeonGridAmbienceMode.City);
+            SetAmbienceCaption(selector, "No Ambience", "AMB: NONE",
+                NeonGridAmbienceMode.None);
+        }
+
+        private void SetAmbienceCaption(Transform selector, string objectName, string caption,
+            NeonGridAmbienceMode mode)
+        {
+            Text label = selector.Find($"{objectName}/Label")?.GetComponent<Text>();
+            if (label != null) label.text = ambienceMode == mode
+                ? $"{caption} [ON]"
+                : caption;
         }
 
         public void PrepareHintForQa()

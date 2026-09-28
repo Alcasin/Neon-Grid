@@ -62,6 +62,61 @@ force mono, preserve the authored 48 kHz sample rate, preload, PCM, and
 latency and compression artifacts while keeping the total resident size small.
 No global Unity audio setting is modified.
 
+## M16-B2 procedural ambience
+
+The B2 prototype adds two locally generated ambient beds. They use the same
+dependency-free generator and contain no downloads, recordings, samples, presets,
+or external source audio.
+
+| ID | Seed | Duration | Channels | SHA-256 |
+|---|---:|---:|---:|---|
+| gameplay_ambience | 3201 | 28.0 s | 2 | `491A2BBEDE962B2069C7EA03FA8D81E4D177DB13623A511FF878041719AC39ED` |
+| city_ambience | 3202 | 30.0 s | 2 | `C9E309D8922F839C551A2D07110C54032F26A6B9C86CB93F2335D809B60951E0` |
+
+Gameplay ambience combines a restrained 82/123/167 Hz infrastructure body,
+slow periodic modulation, softly shaped synthetic air, and very low deterministic
+micro-detail. City ambience uses a broader 58/87/132 Hz body, slower modulation,
+softer upper detail, and slightly greater—but still center-coherent—stereo width.
+Neither recipe contains melody, chord progression, beat, field recording, or
+one-off landmark event.
+
+Every oscillator and modulation rate completes an integer number of cycles over
+the loop. Seeded spectral components also use integer-cycle frequencies, so the
+waveform and its modulation wrap continuously without a fade-to-silence gap.
+Source files are stereo 48 kHz, signed 16-bit PCM WAV. Conservative peaks of
+-15 dBFS (Gameplay) and -16 dBFS (City), followed by runtime ambience gains of
+0.153 for Gameplay and 0.18 for City, keep SFX in the foreground. The Gameplay
+default reflects the accepted M16-B2 listening pass; City remains unchanged.
+
+Generate only B2 ambience, without rewriting B1 SFX:
+
+```text
+python Tools/AudioGeneration/generate_audio.py --kind ambience --write-hashes
+```
+
+Verify deterministic ambience reproduction in a temporary directory:
+
+```text
+python Tools/AudioGeneration/generate_audio.py --verify --kind ambience
+```
+
+Unity imports these longer loops as Vorbis quality 0.55, Compressed In Memory,
+preloaded, stereo, and at the authored 48 kHz sample rate. This avoids the roughly
+5.4–5.8 MB decoded resident cost per PCM loop while keeping these short 28–30
+second assets responsive. The two dedicated looping ambience voices are separate
+from the six SFX voices and crossfade over 0.8 seconds. Repeated requests for the
+current mode do not restart or stack playback. Ambience remains prototype-only;
+no campaign or save binding is present.
+
+M17 Settings retains the requirement for separate user-adjustable SFX and
+Ambience volume controls, with a likely Master volume parent. M16-B2 provides
+only the accepted defaults and does not add settings UI or persistence.
+
+The prototype buttons `AMB: GAMEPLAY`, `AMB: CITY`, and `AMB: NONE` provide an
+explicit audition path. Listen to each active mode for at least five minutes on a
+phone speaker and headphones, exercise all accepted B1 SFX over it, and check for
+fatigue, obvious repetition, boundary clicks, masking, and mono compatibility.
+
 ## Prototype listening QA
 
 `HOLD COMPLETION` is a presentation QA control only. It holds back the result

@@ -15,6 +15,11 @@ MonoBehaviour:
   masterSfxMultiplier: 1
   sfxVolume: 1
   ambienceVolume: 1
+  ambienceGain: 0.18
+  gameplayAmbienceGain: 0.153
+  ambienceFadeDuration: 0.8
+  gameplayAmbience: {fileID: 8300000, guid: 4d9b9840690ecc343abb2663e1031b1b, type: 3}
+  cityAmbience: {fileID: 8300000, guid: ed18bec384d93fb4894438f9ffdff79e, type: 3}
   sourcePoolSize: 6
   cues:
   - eventType: 0
@@ -75,7 +80,7 @@ MonoBehaviour:
     variationSeed: 2612
   - eventType: 8
     clip: {fileID: 8300000, guid: d7e9688e2ca7e564e919b4a8eef02fc8, type: 3}
-    gain: 0.68
+    gain: 0.612
     minimumPitch: 0.99
     maximumPitch: 1.01
     cooldownSeconds: 0.12
