@@ -19,10 +19,12 @@ namespace NeonGrid.Editor
     {
         private const string MenuRoot = "Neon Grid/Verification/";
         private const string ResultsDirectory = "Logs/M16B2Verification";
-        private const string PendingAudioPlayModeKey =
+        private const string PendingPlayModeKey =
             "NeonGrid.Verification.M16B2.AudioPlayMode.Pending";
-        private const string AudioPlayModeStartTicksKey =
+        private const string PlayModeStartTicksKey =
             "NeonGrid.Verification.M16B2.AudioPlayMode.StartTicks";
+        private const string PendingPlayModeSuiteKey =
+            "NeonGrid.Verification.PlayMode.Suite";
         private const double ContinuationDelaySeconds = 0.5d;
         private const int RequiredStableEditorFrames = 5;
 
@@ -87,13 +89,19 @@ namespace NeonGrid.Editor
 
         static NeonGridVerificationRunner()
         {
-            RecoverPendingAudioPlayModeRun();
+            RecoverPendingPlayModeRun();
         }
 
         [MenuItem(MenuRoot + "M16 B2 - Focused")]
         private static void RunM16B2Focused()
         {
             StartSingle(FocusedB2());
+        }
+
+        [MenuItem(MenuRoot + "M16 C1 - Focused")]
+        private static void RunM16C1Focused()
+        {
+            StartSingle(FocusedC1());
         }
 
         [MenuItem(MenuRoot + "M16 B1 - Regression")]
@@ -126,6 +134,12 @@ namespace NeonGrid.Editor
             StartSingle(AudioPlayMode());
         }
 
+        [MenuItem(MenuRoot + "Haptics PlayMode")]
+        private static void RunHapticsPlayMode()
+        {
+            StartSingle(HapticsPlayMode());
+        }
+
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification")]
         private static void RunCompleteVerification()
         {
@@ -144,18 +158,20 @@ namespace NeonGrid.Editor
         }
 
         [MenuItem(MenuRoot + "M16 B2 - Focused", true)]
+        [MenuItem(MenuRoot + "M16 C1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
         [MenuItem(MenuRoot + "Broader Regression", true)]
         [MenuItem(MenuRoot + "Full EditMode", true)]
         [MenuItem(MenuRoot + "Audio PlayMode", true)]
+        [MenuItem(MenuRoot + "Haptics PlayMode", true)]
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification", true)]
         private static bool ValidateCommands()
         {
             return !isRunning && !EditorApplication.isCompiling &&
                    !EditorApplication.isUpdating &&
                    !EditorApplication.isPlayingOrWillChangePlaymode &&
-                   !SessionState.GetBool(PendingAudioPlayModeKey, false);
+                   !SessionState.GetBool(PendingPlayModeKey, false);
         }
 
         private static void StartSingle(SuiteDefinition suite)
@@ -217,7 +233,7 @@ namespace NeonGrid.Editor
                 };
                 if (currentSuite.IsPlayMode)
                 {
-                    PersistPendingAudioPlayModeRun();
+                    PersistPendingPlayModeRun();
                 }
                 testRunActive = true;
                 testRunnerApi.Execute(settings);
@@ -272,7 +288,7 @@ namespace NeonGrid.Editor
                 testRunActive = false;
                 if (currentSuite.IsPlayMode)
                 {
-                    ClearPendingAudioPlayModeRun();
+                    ClearPendingPlayModeRun();
                 }
                 ReleaseRunnerObjects();
                 ScheduleNextSuite();
@@ -293,7 +309,7 @@ namespace NeonGrid.Editor
             testRunActive = false;
             if (currentSuite.IsPlayMode)
             {
-                ClearPendingAudioPlayModeRun();
+                ClearPendingPlayModeRun();
             }
             DateTime endUtc = DateTime.UtcNow;
             var outcome = new SuiteOutcome(
@@ -398,23 +414,27 @@ namespace NeonGrid.Editor
             testRunnerApi.RegisterCallbacks(callbacks);
         }
 
-        private static void PersistPendingAudioPlayModeRun()
+        private static void PersistPendingPlayModeRun()
         {
-            SessionState.SetBool(PendingAudioPlayModeKey, true);
-            SessionState.SetString(AudioPlayModeStartTicksKey,
+            SessionState.SetBool(PendingPlayModeKey, true);
+            SessionState.SetString(PendingPlayModeSuiteKey, currentSuite.FileStem);
+            SessionState.SetString(PlayModeStartTicksKey,
                 currentStartUtc.Ticks.ToString());
         }
 
-        private static void RecoverPendingAudioPlayModeRun()
+        private static void RecoverPendingPlayModeRun()
         {
-            if (!SessionState.GetBool(PendingAudioPlayModeKey, false) ||
+            if (!SessionState.GetBool(PendingPlayModeKey, false) ||
                 testRunnerApi != null || callbacks != null)
             {
                 return;
             }
 
-            currentSuite = AudioPlayMode();
-            string serializedTicks = SessionState.GetString(AudioPlayModeStartTicksKey, "");
+            string fileStem = SessionState.GetString(PendingPlayModeSuiteKey,
+                "Audio_PlayMode");
+            currentSuite = fileStem == "Haptics_PlayMode" ? HapticsPlayMode() :
+                AudioPlayMode();
+            string serializedTicks = SessionState.GetString(PlayModeStartTicksKey, "");
             if (!long.TryParse(serializedTicks, out long ticks))
             {
                 ticks = DateTime.UtcNow.Ticks;
@@ -427,13 +447,15 @@ namespace NeonGrid.Editor
             EnsureResultsDirectory();
             RegisterRunnerCallbacks();
             Debug.Log("Neon Grid verification resumed result observation after " +
-                      "Audio PlayMode domain reload. No second test run was started.");
+                      currentSuite.DisplayName +
+                      " domain reload. No second test run was started.");
         }
 
-        private static void ClearPendingAudioPlayModeRun()
+        private static void ClearPendingPlayModeRun()
         {
-            SessionState.SetBool(PendingAudioPlayModeKey, false);
-            SessionState.EraseString(AudioPlayModeStartTicksKey);
+            SessionState.SetBool(PendingPlayModeKey, false);
+            SessionState.EraseString(PendingPlayModeSuiteKey);
+            SessionState.EraseString(PlayModeStartTicksKey);
         }
 
         private static void ReleaseRunnerObjects()
@@ -461,6 +483,12 @@ namespace NeonGrid.Editor
         {
             return SuiteDefinition.ForTests("M16 B2 Focused", "M16_B2_Focused",
                 TestRunnerMode.EditMode, "NeonGrid.Tests.M16AmbientAudioFoundationTests");
+        }
+
+        private static SuiteDefinition FocusedC1()
+        {
+            return SuiteDefinition.ForTests("M16 C1 Focused", "M16_C1_Focused",
+                TestRunnerMode.EditMode, "NeonGrid.Tests.M16HapticsFoundationTests");
         }
 
         private static SuiteDefinition B1Regression()
@@ -493,6 +521,12 @@ namespace NeonGrid.Editor
         {
             return SuiteDefinition.ForTests("Audio PlayMode", "Audio_PlayMode",
                 TestRunnerMode.PlayMode, "NeonGrid.Tests.M16AudioRuntimeTests");
+        }
+
+        private static SuiteDefinition HapticsPlayMode()
+        {
+            return SuiteDefinition.ForTests("Haptics PlayMode", "Haptics_PlayMode",
+                TestRunnerMode.PlayMode, "NeonGrid.Tests.M16HapticsRuntimeTests");
         }
 
         private static void EnsureResultsDirectory()

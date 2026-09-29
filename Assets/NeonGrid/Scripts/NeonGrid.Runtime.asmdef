@@ -1,7 +1,7 @@
 {
   "name": "NeonGrid.Runtime",
   "rootNamespace": "NeonGrid",
-  "references": ["Unity.InputSystem", "Unity.ugui"],
+  "references": ["Unity.InputSystem", "Unity.ugui", "UnityEngine.AndroidJNIModule"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

@@ -1,0 +1,13 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.neongrid.haptics"
+
+    compileSdk getProperty("unity.compileSdkVersion") as int
+    buildToolsVersion = getProperty("unity.buildToolsVersion")
+
+    defaultConfig {
+        minSdk getProperty("unity.minSdkVersion") as int
+        targetSdk getProperty("unity.targetSdkVersion") as int
+    }
+}

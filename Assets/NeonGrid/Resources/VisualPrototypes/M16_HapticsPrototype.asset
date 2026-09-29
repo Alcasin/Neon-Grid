@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc1ec264e8b24af185bf19908ed1f11f, type: 3}
+  m_Name: M16_HapticsPrototype
+  m_EditorClassIdentifier: NeonGrid.Runtime::NeonGrid.Data.NeonGridHapticsDefinition
+  cues:
+  - eventType: 0
+    durationMilliseconds: 12
+    intensity: 0.18
+    cooldownSeconds: 0.045
+  - eventType: 2
+    durationMilliseconds: 18
+    intensity: 0.28
+    cooldownSeconds: 0.08
+  - eventType: 3
+    durationMilliseconds: 28
+    intensity: 0.42
+    cooldownSeconds: 0.15
+  - eventType: 4
+    durationMilliseconds: 32
+    intensity: 0.38
+    cooldownSeconds: 0.25
+  - eventType: 1
+    durationMilliseconds: 36
+    intensity: 0.62
+    cooldownSeconds: 0.12
+  - eventType: 5
+    durationMilliseconds: 55
+    intensity: 0.68
+    cooldownSeconds: 1

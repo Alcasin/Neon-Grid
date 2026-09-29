@@ -20,6 +20,7 @@ namespace NeonGrid.Presentation
         public TutorialRuntime Tutorial => tutorial;
         public BoardView BoardView => boardView;
         public NeonGridAudioService AudioService { get; private set; }
+        public NeonGridHapticsService HapticsService { get; private set; }
         public bool IsCompletionPresentationHeld => hudView != null &&
                                                      hudView.IsCompletionPresentationHeld;
         public bool IsCompletionPanelVisible => hudView != null &&
@@ -45,10 +46,11 @@ namespace NeonGrid.Presentation
 
         public void Initialize(LevelDefinition levelDefinition,
             CircuitVisualThemeDefinition visualTheme, CircuitJuiceDefinition juiceDefinition,
-            NeonGridAudioDefinition audioDefinition)
+            NeonGridAudioDefinition audioDefinition,
+            NeonGridHapticsDefinition hapticsDefinition = null)
         {
             Initialize(new GameplaySession(levelDefinition), null, null, null, visualTheme,
-                juiceDefinition, audioDefinition);
+                juiceDefinition, audioDefinition, hapticsDefinition);
         }
 
         public void Initialize(GameplaySession gameplaySession, GameplayResultActions resultActions)
@@ -66,7 +68,8 @@ namespace NeonGrid.Presentation
             LevelTutorialDefinition tutorialDefinition, int? levelOrdinal,
             CircuitVisualThemeDefinition visualTheme,
             CircuitJuiceDefinition juiceDefinition = null,
-            NeonGridAudioDefinition audioDefinition = null)
+            NeonGridAudioDefinition audioDefinition = null,
+            NeonGridHapticsDefinition hapticsDefinition = null)
         {
             session = gameplaySession ?? throw new System.ArgumentNullException(nameof(gameplaySession));
             tutorial = new TutorialRuntime(tutorialDefinition);
@@ -78,6 +81,12 @@ namespace NeonGrid.Presentation
             {
                 AudioService = gameObject.AddComponent<NeonGridAudioService>();
                 AudioService.Initialize(audioDefinition, boardView.JuiceCoordinator);
+            }
+            if (hapticsDefinition != null && hapticsDefinition.IsConfigured &&
+                boardView.JuiceCoordinator != null)
+            {
+                HapticsService = gameObject.AddComponent<NeonGridHapticsService>();
+                HapticsService.Initialize(hapticsDefinition, boardView.JuiceCoordinator);
             }
 
             hudView = gameObject.AddComponent<GameplayHudView>();
@@ -187,6 +196,7 @@ namespace NeonGrid.Presentation
         {
             if (session == null) return;
             AudioService?.StopAll();
+            HapticsService?.ResetCompletionLifecycle();
             tutorial.Restart();
             pendingTransition = CircuitJuiceTransition.Restart;
             try

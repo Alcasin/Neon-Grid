@@ -16,5 +16,6 @@ MonoBehaviour:
   productionVisualTheme: {fileID: 11400000, guid: d4011d9cb6796db44a195eeabef815e3, type: 2}
   circuitJuice: {fileID: 11400000, guid: 66d3d6caf5607044fae6d06e81fcf86a, type: 2}
   audioDefinition: {fileID: 11400000, guid: de608779bcb6512458c8e063ecedad30, type: 2}
+  hapticsDefinition: {fileID: 11400000, guid: 1b7bd36b58cc4d7e96a8137a01af10aa, type: 2}
   simpleLevel: {fileID: 11400000, guid: 24d6b5a6f9ac7ea4d932b35d6f3dc956, type: 2}
   denseLevel: {fileID: 11400000, guid: fdc6a5f69d8d8cf4a8781ce44627bd60, type: 2}

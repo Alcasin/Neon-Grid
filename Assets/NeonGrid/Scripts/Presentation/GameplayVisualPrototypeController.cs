@@ -20,6 +20,7 @@ namespace NeonGrid.Presentation
         private Text completionHoldLabel;
         private Text themeLabel;
         private Text ambienceLabel;
+        private Text hapticsLabel;
         private NeonGridAmbienceMode ambienceMode = NeonGridAmbienceMode.Gameplay;
 
         public GameplayVisualPrototypeDefinition Definition => definition;
@@ -34,6 +35,9 @@ namespace NeonGrid.Presentation
                                         definition.CircuitJuice.IsConfigured;
         public bool UsesPrototypeAudio => definition?.AudioDefinition != null &&
                                           definition.AudioDefinition.IsConfigured;
+        public bool UsesPrototypeHaptics => definition?.HapticsDefinition != null &&
+                                            definition.HapticsDefinition.IsConfigured;
+        public bool HapticsEnabled => NeonGridHapticsSettings.HapticsEnabled;
 
         private void Awake()
         {
@@ -69,8 +73,9 @@ namespace NeonGrid.Presentation
             boardRoot.transform.SetParent(transform, false);
             CurrentBoardController = boardRoot.AddComponent<BoardController>();
             CurrentBoardController.Initialize(level, ActiveTheme, definition.CircuitJuice,
-                definition.AudioDefinition);
+                definition.AudioDefinition, definition.HapticsDefinition);
             CurrentBoardController.AudioService?.RequestAmbience(ambienceMode);
+            CurrentBoardController.HapticsService?.SetHapticsEnabled(HapticsEnabled);
             CurrentBoardController.SetCompletionPresentationHeld(holdCompletionPresentation);
             if (currentLevelLabel != null)
                 currentLevelLabel.text = $"M16 JUICE QA  /  {ActiveTheme.DisplayName}  /  {level.name}";
@@ -172,6 +177,12 @@ namespace NeonGrid.Presentation
                 () => SetAmbienceMode(NeonGridAmbienceMode.None), new Vector2(220f, 62f));
             ambienceLabel = none.transform.Find("Label").GetComponent<Text>();
             RefreshAmbienceControl();
+            Button haptics = CreateButton(canvasObject.transform, "Haptics Toggle", string.Empty,
+                font, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -700f), ActiveTheme.Board, ActiveTheme.Hint,
+                ToggleHaptics, new Vector2(300f, 62f));
+            hapticsLabel = haptics.transform.Find("Label").GetComponent<Text>();
+            RefreshHapticsControl();
         }
 
         public void SetAmbienceMode(NeonGridAmbienceMode mode)
@@ -200,6 +211,25 @@ namespace NeonGrid.Presentation
             if (label != null) label.text = ambienceMode == mode
                 ? $"{caption} [ON]"
                 : caption;
+        }
+
+        public void SetHapticsEnabled(bool enabled)
+        {
+            CurrentBoardController?.HapticsService?.SetHapticsEnabled(enabled);
+            if (CurrentBoardController?.HapticsService == null)
+                NeonGridHapticsSettings.HapticsEnabled = enabled;
+            RefreshHapticsControl();
+        }
+
+        private void ToggleHaptics()
+        {
+            SetHapticsEnabled(!HapticsEnabled);
+        }
+
+        private void RefreshHapticsControl()
+        {
+            if (hapticsLabel != null)
+                hapticsLabel.text = HapticsEnabled ? "HAPTICS: ON" : "HAPTICS: OFF";
         }
 
         public void PrepareHintForQa()

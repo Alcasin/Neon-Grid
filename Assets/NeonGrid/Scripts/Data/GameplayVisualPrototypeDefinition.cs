@@ -10,6 +10,7 @@ namespace NeonGrid.Data
         [SerializeField] private CircuitVisualThemeDefinition productionVisualTheme;
         [SerializeField] private CircuitJuiceDefinition circuitJuice;
         [SerializeField] private NeonGridAudioDefinition audioDefinition;
+        [SerializeField] private NeonGridHapticsDefinition hapticsDefinition;
         [SerializeField] private LevelDefinition simpleLevel;
         [SerializeField] private LevelDefinition denseLevel;
 
@@ -17,6 +18,7 @@ namespace NeonGrid.Data
         public CircuitVisualThemeDefinition ProductionVisualTheme => productionVisualTheme;
         public CircuitJuiceDefinition CircuitJuice => circuitJuice;
         public NeonGridAudioDefinition AudioDefinition => audioDefinition;
+        public NeonGridHapticsDefinition HapticsDefinition => hapticsDefinition;
         public LevelDefinition SimpleLevel => simpleLevel;
         public LevelDefinition DenseLevel => denseLevel;
         public bool IsConfigured => visualTheme != null && visualTheme.IsConfigured &&
@@ -43,6 +45,11 @@ namespace NeonGrid.Data
         public void SetAudioDefinition(NeonGridAudioDefinition value)
         {
             audioDefinition = value;
+        }
+
+        public void SetHapticsDefinition(NeonGridHapticsDefinition value)
+        {
+            hapticsDefinition = value;
         }
 #endif
     }
