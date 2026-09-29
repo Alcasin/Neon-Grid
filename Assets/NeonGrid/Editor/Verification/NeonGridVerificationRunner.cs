@@ -110,6 +110,12 @@ namespace NeonGrid.Editor
             StartSingle(FocusedD1());
         }
 
+        [MenuItem(MenuRoot + "Hint Performance - Focused")]
+        private static void RunHintPerformanceFocused()
+        {
+            StartSingle(HintPerformanceFocused());
+        }
+
         [MenuItem(MenuRoot + "M16 B1 - Regression")]
         private static void RunM16B1Regression()
         {
@@ -172,6 +178,7 @@ namespace NeonGrid.Editor
         [MenuItem(MenuRoot + "M16 B2 - Focused", true)]
         [MenuItem(MenuRoot + "M16 C1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 D1 - Focused", true)]
+        [MenuItem(MenuRoot + "Hint Performance - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
         [MenuItem(MenuRoot + "Broader Regression", true)]
@@ -511,6 +518,13 @@ namespace NeonGrid.Editor
             return SuiteDefinition.ForTests("M16 D1 Focused", "M16_D1_Focused",
                 TestRunnerMode.EditMode,
                 "NeonGrid.Tests.M16ProductionGameplayFeedbackTests");
+        }
+
+        private static SuiteDefinition HintPerformanceFocused()
+        {
+            return SuiteDefinition.ForTests("Hint Performance Focused",
+                "Hint_Performance_Focused", TestRunnerMode.EditMode,
+                "NeonGrid.Tests.HintPerformanceInstrumentationTests");
         }
 
         private static SuiteDefinition B1Regression()

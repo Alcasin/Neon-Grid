@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NeonGrid.Data;
+using NeonGrid.Session;
 using NeonGrid.Simulation;
 using UnityEngine;
 
@@ -101,6 +102,20 @@ namespace NeonGrid.Presentation
         }
 
         public void HighlightHint(GridPosition? position)
+        {
+            HighlightHintCore(position);
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        internal void HighlightHint(GridPosition? position, HintPerformanceTrace diagnostics)
+        {
+            diagnostics?.MarkPresentationStarted();
+            HighlightHintCore(position);
+            diagnostics?.EmitOnce();
+        }
+#endif
+
+        private void HighlightHintCore(GridPosition? position)
         {
             bool newlyTargeted = position.HasValue &&
                                  (!hintPosition.HasValue ||

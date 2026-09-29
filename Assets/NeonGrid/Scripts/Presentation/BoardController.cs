@@ -247,7 +247,12 @@ namespace NeonGrid.Presentation
             if (session == null)
                 return HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            HintPerformanceTrace diagnostics = HintPerformanceTrace.Begin(session.ActiveLevel.name);
+            session.RequestHint(null, diagnostics);
+#else
             session.RequestHint();
+#endif
             session.UpdateHintRequest();
             HintResult hint = session.LastHint;
             ApplyHintHighlight();
@@ -263,7 +268,12 @@ namespace NeonGrid.Presentation
         private void ApplyHintHighlight()
         {
             PuzzleAction? action = session.LastHint.SuggestedAction;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            boardView.HighlightHint(action.HasValue ? action.Value.Position : (GridPosition?)null,
+                session.TakeHintTraceForPresentation());
+#else
             boardView.HighlightHint(action.HasValue ? action.Value.Position : (GridPosition?)null);
+#endif
         }
 
         private void ApplyTutorialPresentation()

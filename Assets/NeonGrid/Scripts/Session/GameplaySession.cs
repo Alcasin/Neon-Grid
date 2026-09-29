@@ -17,6 +17,11 @@ namespace NeonGrid.Session
         private readonly IHintSolverRunner hintSolverRunner;
         private readonly ConcurrentQueue<HintSolverCompletion> hintCompletions =
             new ConcurrentQueue<HintSolverCompletion>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private readonly List<HintPerformanceTrace> outstandingHintTraces =
+            new List<HintPerformanceTrace>();
+        private HintPerformanceTrace hintTraceAwaitingPresentation;
+#endif
         private CircuitSimulation simulation;
         private int boardVersion;
         private int nextHintRequestId;
@@ -173,6 +178,31 @@ namespace NeonGrid.Session
 
         public HintResult RequestHint(PuzzleSolverOptions options = null)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return RequestHint(options, HintPerformanceTrace.Begin(ActiveLevel.name));
+#else
+            return RequestHintCore(options);
+#endif
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        internal HintResult RequestHint(PuzzleSolverOptions options,
+            HintPerformanceTrace diagnostics)
+        {
+            return RequestHintCore(options,
+                diagnostics ?? HintPerformanceTrace.Begin(ActiveLevel.name));
+        }
+#endif
+
+        private HintResult RequestHintCore(PuzzleSolverOptions options
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            , HintPerformanceTrace diagnostics
+#endif
+        )
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            diagnostics.MarkSessionEntered();
+#endif
             if (IsDisposed)
                 return SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
             if (IsCompleted)
@@ -182,23 +212,68 @@ namespace NeonGrid.Session
             if (IsHintSearchInProgress)
                 return LastHint;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            diagnostics.MarkSnapshotStarted();
+#endif
             BoardState snapshot = Board.CreateIndependentCopy();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            diagnostics.MarkSnapshotFinished();
+#endif
             PuzzleSolverOptions requestOptions = CopyOptions(options ?? solverOptions);
             int requestId = ++nextHintRequestId;
             int requestBoardVersion = boardVersion;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            diagnostics.BindRequest(requestId, requestBoardVersion);
+            foreach (HintPerformanceTrace outstanding in outstandingHintTraces)
+            {
+                if (outstanding.HasSolverFinished) continue;
+                outstanding.MarkOverlap();
+                diagnostics.MarkOverlap();
+            }
+            outstandingHintTraces.Add(diagnostics);
+#endif
             activeHintRequestId = requestId;
             SetHint(HintResult.WithoutAction(HintStatus.HintSearching));
             try
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (hintSolverRunner is IInstrumentedHintSolverRunner instrumented)
+                {
+                    instrumented.Start(snapshot, requestOptions, diagnostics,
+                        result => hintCompletions.Enqueue(
+                            HintSolverCompletion.Succeeded(requestId, requestBoardVersion, result,
+                                diagnostics)),
+                        exception => hintCompletions.Enqueue(
+                            HintSolverCompletion.Failed(requestId, requestBoardVersion, exception,
+                                diagnostics)));
+                }
+                else
+                {
+                    hintSolverRunner.Start(snapshot, requestOptions,
+                        result => hintCompletions.Enqueue(
+                            HintSolverCompletion.Succeeded(requestId, requestBoardVersion, result,
+                                diagnostics)),
+                        exception => hintCompletions.Enqueue(
+                            HintSolverCompletion.Failed(requestId, requestBoardVersion, exception,
+                                diagnostics)));
+                }
+#else
                 hintSolverRunner.Start(snapshot, requestOptions,
                     result => hintCompletions.Enqueue(
                         HintSolverCompletion.Succeeded(requestId, requestBoardVersion, result)),
                     exception => hintCompletions.Enqueue(
                         HintSolverCompletion.Failed(requestId, requestBoardVersion, exception)));
+#endif
             }
             catch (Exception exception)
             {
                 activeHintRequestId = 0;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                outstandingHintTraces.Remove(diagnostics);
+                diagnostics.MarkWorkerFailed(exception);
+                diagnostics.MarkMainThreadHandled(boardVersion, false);
+                diagnostics.EmitOnce();
+#endif
                 HintSearchFailed?.Invoke(exception);
                 return SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
             }
@@ -211,19 +286,37 @@ namespace NeonGrid.Session
             bool changed = false;
             while (hintCompletions.TryDequeue(out HintSolverCompletion completion))
             {
-                if (IsDisposed || completion.RequestId != activeHintRequestId ||
-                    completion.BoardVersion != boardVersion)
+                bool stale = IsDisposed || completion.RequestId != activeHintRequestId ||
+                             completion.BoardVersion != boardVersion;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                HintPerformanceTrace diagnostics = completion.Diagnostics;
+                diagnostics?.MarkMainThreadHandled(boardVersion, stale);
+                if (diagnostics != null) outstandingHintTraces.Remove(diagnostics);
+#endif
+                if (stale)
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    diagnostics?.EmitOnce();
+#endif
                     continue;
+                }
 
                 activeHintRequestId = 0;
                 if (completion.Exception != null)
                 {
                     HintSearchFailed?.Invoke(completion.Exception);
                     SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    diagnostics?.EmitOnce();
+#endif
                 }
                 else
                 {
-                    ApplyHintResult(completion.Result);
+                    ApplyHintResult(completion.Result
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        , diagnostics
+#endif
+                    );
                 }
                 changed = true;
             }
@@ -231,21 +324,49 @@ namespace NeonGrid.Session
             return changed;
         }
 
-        private HintResult ApplyHintResult(PuzzleSolverResult result)
+        private HintResult ApplyHintResult(PuzzleSolverResult result
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            , HintPerformanceTrace diagnostics
+#endif
+        )
         {
             switch (result.Status)
             {
                 case PuzzleSolverStatus.Solved:
                     if (result.Solution.Count == 0)
+                    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        diagnostics?.EmitOnce();
+#endif
                         return SetHint(HintResult.WithoutAction(HintStatus.NoHintNeeded));
+                    }
                     HintsUsed = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    diagnostics?.MarkMoveSelected();
+                    hintTraceAwaitingPresentation = diagnostics;
+#endif
                     return SetHint(HintResult.Available(result.Solution[0]));
                 case PuzzleSolverStatus.SearchLimitReached:
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    diagnostics?.EmitOnce();
+#endif
                     return SetHint(HintResult.WithoutAction(HintStatus.SolverLimitReached));
                 default:
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    diagnostics?.EmitOnce();
+#endif
                     return SetHint(HintResult.WithoutAction(HintStatus.UnsolvableOrInvalid));
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        internal HintPerformanceTrace TakeHintTraceForPresentation()
+        {
+            HintPerformanceTrace diagnostics = hintTraceAwaitingPresentation;
+            hintTraceAwaitingPresentation = null;
+            return diagnostics;
+        }
+#endif
 
         private HintResult SetHint(HintResult hint)
         {
@@ -340,28 +461,54 @@ namespace NeonGrid.Session
             public int BoardVersion { get; }
             public PuzzleSolverResult Result { get; }
             public Exception Exception { get; }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            public HintPerformanceTrace Diagnostics { get; }
+#endif
 
             private HintSolverCompletion(int requestId, int boardVersion,
-                PuzzleSolverResult result, Exception exception)
+                PuzzleSolverResult result, Exception exception
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                , HintPerformanceTrace diagnostics
+#endif
+            )
             {
                 RequestId = requestId;
                 BoardVersion = boardVersion;
                 Result = result;
                 Exception = exception;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Diagnostics = diagnostics;
+#endif
             }
 
             public static HintSolverCompletion Succeeded(int requestId, int boardVersion,
-                PuzzleSolverResult result)
+                PuzzleSolverResult result
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                , HintPerformanceTrace diagnostics
+#endif
+            )
             {
                 return new HintSolverCompletion(requestId, boardVersion,
-                    result ?? throw new ArgumentNullException(nameof(result)), null);
+                    result ?? throw new ArgumentNullException(nameof(result)), null
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    , diagnostics
+#endif
+                );
             }
 
             public static HintSolverCompletion Failed(int requestId, int boardVersion,
-                Exception exception)
+                Exception exception
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                , HintPerformanceTrace diagnostics
+#endif
+            )
             {
                 return new HintSolverCompletion(requestId, boardVersion, null,
-                    exception ?? new InvalidOperationException("Hint solver failed without an exception."));
+                    exception ?? new InvalidOperationException("Hint solver failed without an exception.")
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    , diagnostics
+#endif
+                );
             }
         }
     }
