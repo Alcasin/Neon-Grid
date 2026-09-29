@@ -42,6 +42,7 @@ namespace NeonGrid.Presentation
         public const float BottomControlsCenterY = 96f;
         public const float TutorialCenterY = -226f;
         public const float TutorialPanelHeight = 104f;
+        public const float CompletionResultFadeSeconds = 0.32f;
         public const float SelectorVerticalSpacing = 48f;
         public const float SelectorGridTopInset = 380f;
         public const float SelectorBackButtonCenterY = 170f;

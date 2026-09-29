@@ -32,6 +32,7 @@ namespace NeonGrid.Presentation
         private Button mapButton;
         private Button nextButton;
         private GameObject completionPanel;
+        private CanvasGroup completionCanvasGroup;
         private GameObject leaveConfirmationPanel;
         private GameObject tutorialPanel;
         private GameObject canvasObject;
@@ -39,6 +40,9 @@ namespace NeonGrid.Presentation
         private GameplayResultActions resultActions;
         private GameplaySession displayedSession;
         private CircuitVisualThemeDefinition visualTheme;
+        private float completionFadeElapsed;
+        private bool completionFadeActive;
+        private bool completionFadeFramePending;
 
         public bool UsesProductionSkin => visualTheme != null &&
                                           visualTheme.UsesProductionTreatment;
@@ -48,6 +52,10 @@ namespace NeonGrid.Presentation
         public bool IsCompletionPresentationHeld { get; private set; }
         public bool IsCompletionPanelVisible => completionPanel != null &&
                                                 completionPanel.activeSelf;
+        internal float CompletionPanelAlpha => completionCanvasGroup?.alpha ?? 0f;
+        internal float CompletionFadeDuration => ProgrammerUiMetrics.CompletionResultFadeSeconds;
+        internal bool IsCompletionFadeActive => completionFadeActive;
+        internal bool IsCompletionFadeFramePending => completionFadeFramePending;
 
         public void Build(Action undo, Action restart, Action requestHint)
         {
@@ -136,6 +144,10 @@ namespace NeonGrid.Presentation
             completionPanel = CreatePanel(canvasObject.transform, "Completion Panel",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
                 resultActions == null ? new Vector2(760f, 600f) : new Vector2(760f, 700f));
+            completionCanvasGroup = completionPanel.AddComponent<CanvasGroup>();
+            completionCanvasGroup.alpha = 0f;
+            completionCanvasGroup.interactable = true;
+            completionCanvasGroup.blocksRaycasts = true;
             completionTitleText = CreateText(completionPanel.transform, "Completion Title", font,
                 ProgrammerUiMetrics.CompletionTitleFontSize, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f),
@@ -222,7 +234,7 @@ namespace NeonGrid.Presentation
             hintText.text = GetHintText(session);
 
             SessionCompletionResult result = session.CompletionResult;
-            completionPanel.SetActive(result != null && !IsCompletionPresentationHeld);
+            SetCompletionPanelVisible(result != null && !IsCompletionPresentationHeld);
             if (backButton != null)
                 backButton.gameObject.SetActive(result == null);
             if (result != null)
@@ -240,6 +252,61 @@ namespace NeonGrid.Presentation
         {
             IsCompletionPresentationHeld = held;
             if (displayedSession != null) Refresh(displayedSession);
+        }
+
+        private void Update()
+        {
+            AdvanceCompletionFade(Time.unscaledDeltaTime);
+        }
+
+        internal void AdvanceCompletionFade(float deltaSeconds)
+        {
+            if (!completionFadeActive || completionCanvasGroup == null) return;
+            if (completionFadeFramePending)
+            {
+                completionFadeFramePending = false;
+                completionCanvasGroup.alpha = 0f;
+                return;
+            }
+            completionFadeElapsed += Mathf.Max(0f, deltaSeconds);
+            float duration = ProgrammerUiMetrics.CompletionResultFadeSeconds;
+            float progress = duration <= 0f
+                ? 1f
+                : Mathf.Clamp01(completionFadeElapsed / duration);
+            completionCanvasGroup.alpha = Mathf.SmoothStep(0f, 1f, progress);
+            if (completionCanvasGroup.alpha < 1f) return;
+            completionCanvasGroup.alpha = 1f;
+            completionFadeActive = false;
+        }
+
+        private void SetCompletionPanelVisible(bool visible)
+        {
+            if (completionPanel == null || completionCanvasGroup == null) return;
+            if (!visible)
+            {
+                completionPanel.SetActive(false);
+                completionCanvasGroup.alpha = 0f;
+                completionFadeElapsed = 0f;
+                completionFadeActive = false;
+                completionFadeFramePending = false;
+                return;
+            }
+
+            if (completionPanel.activeSelf) return;
+            completionFadeElapsed = 0f;
+            if (UsesProductionSkin && ProgrammerUiMetrics.CompletionResultFadeSeconds > 0f)
+            {
+                completionCanvasGroup.alpha = 0f;
+                completionFadeActive = true;
+                completionFadeFramePending = true;
+            }
+            else
+            {
+                completionCanvasGroup.alpha = 1f;
+                completionFadeActive = false;
+                completionFadeFramePending = false;
+            }
+            completionPanel.SetActive(true);
         }
 
         private void RefreshResultNavigation()

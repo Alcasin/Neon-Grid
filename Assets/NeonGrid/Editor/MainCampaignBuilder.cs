@@ -21,6 +21,8 @@ namespace NeonGrid.Editor
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonProductionPrototype.asset";
         private const string CampaignUiThemePath =
             "Assets/NeonGrid/Resources/VisualThemes/TechnicalNeonCampaignUiPrototype.asset";
+        private const string GameplayFeedbackPath =
+            "Assets/NeonGrid/Resources/GameplayFeedback/M16_ProductionGameplayFeedback.asset";
         internal const string PowerStationArtPath =
             "Assets/NeonGrid/Art/CityBuildings/PowerStation/PowerStation_Final.asset";
         internal const string SubstationArtPath =
@@ -87,6 +89,13 @@ namespace NeonGrid.Editor
 
             campaign.SetData("neon_grid_main", chapters, "Neon Grid", productionTheme,
                 campaignUiTheme);
+            ProductionGameplayFeedbackDefinition gameplayFeedback =
+                AssetDatabase.LoadAssetAtPath<ProductionGameplayFeedbackDefinition>(
+                    GameplayFeedbackPath);
+            if (gameplayFeedback == null || !gameplayFeedback.IsConfigured)
+                throw new InvalidOperationException(
+                    $"Missing or invalid production gameplay feedback: {GameplayFeedbackPath}");
+            campaign.SetGameplayFeedback(gameplayFeedback);
             CityBuildingArtDefinition powerStationArt = LoadFinalArt(PowerStationArtPath,
                 "power_station");
             CityBuildingArtDefinition substationArt = LoadFinalArt(SubstationArtPath,

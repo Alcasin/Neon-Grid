@@ -49,6 +49,12 @@ namespace NeonGrid.Presentation
             Definition = definition != null && definition.IsConfigured ? definition : null;
             backend = backendOverride ?? NeonGridHapticsBackendFactory.Create();
             if (Definition == null) return;
+            Bind(eventSource);
+        }
+
+        public void Bind(CircuitJuiceCoordinator eventSource)
+        {
+            Unbind();
             coordinator = eventSource;
             if (coordinator != null)
                 coordinator.PresentationEvent += HandlePresentationEvent;

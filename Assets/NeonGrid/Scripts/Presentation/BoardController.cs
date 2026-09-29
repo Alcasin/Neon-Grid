@@ -216,6 +216,32 @@ namespace NeonGrid.Presentation
             AudioService?.TryPlay(NeonGridAudioEvent.UIButtonPressed);
         }
 
+        public void AttachFeedbackServices(NeonGridAudioService audioService,
+            NeonGridHapticsService hapticsService)
+        {
+            CircuitJuiceCoordinator coordinator = boardView?.JuiceCoordinator;
+            if (coordinator == null)
+                throw new System.InvalidOperationException(
+                    "Feedback services require an initialized circuit juice coordinator.");
+
+            if (AudioService != null && AudioService != audioService)
+                AudioService.Bind(null);
+            if (HapticsService != null && HapticsService != hapticsService)
+                HapticsService.Bind(null);
+            AudioService = audioService;
+            HapticsService = hapticsService;
+            AudioService?.Bind(coordinator);
+            HapticsService?.Bind(coordinator);
+        }
+
+        public void DetachFeedbackServices()
+        {
+            AudioService?.Bind(null);
+            HapticsService?.Bind(null);
+            AudioService = null;
+            HapticsService = null;
+        }
+
         public HintResult RequestHint()
         {
             if (session == null)

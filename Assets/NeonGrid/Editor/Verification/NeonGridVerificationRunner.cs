@@ -104,6 +104,12 @@ namespace NeonGrid.Editor
             StartSingle(FocusedC1());
         }
 
+        [MenuItem(MenuRoot + "M16 D1 - Focused")]
+        private static void RunM16D1Focused()
+        {
+            StartSingle(FocusedD1());
+        }
+
         [MenuItem(MenuRoot + "M16 B1 - Regression")]
         private static void RunM16B1Regression()
         {
@@ -140,6 +146,12 @@ namespace NeonGrid.Editor
             StartSingle(HapticsPlayMode());
         }
 
+        [MenuItem(MenuRoot + "Production Feedback PlayMode")]
+        private static void RunProductionFeedbackPlayMode()
+        {
+            StartSingle(ProductionFeedbackPlayMode());
+        }
+
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification")]
         private static void RunCompleteVerification()
         {
@@ -159,12 +171,14 @@ namespace NeonGrid.Editor
 
         [MenuItem(MenuRoot + "M16 B2 - Focused", true)]
         [MenuItem(MenuRoot + "M16 C1 - Focused", true)]
+        [MenuItem(MenuRoot + "M16 D1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
         [MenuItem(MenuRoot + "Broader Regression", true)]
         [MenuItem(MenuRoot + "Full EditMode", true)]
         [MenuItem(MenuRoot + "Audio PlayMode", true)]
         [MenuItem(MenuRoot + "Haptics PlayMode", true)]
+        [MenuItem(MenuRoot + "Production Feedback PlayMode", true)]
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification", true)]
         private static bool ValidateCommands()
         {
@@ -433,6 +447,7 @@ namespace NeonGrid.Editor
             string fileStem = SessionState.GetString(PendingPlayModeSuiteKey,
                 "Audio_PlayMode");
             currentSuite = fileStem == "Haptics_PlayMode" ? HapticsPlayMode() :
+                fileStem == "Production_Feedback_PlayMode" ? ProductionFeedbackPlayMode() :
                 AudioPlayMode();
             string serializedTicks = SessionState.GetString(PlayModeStartTicksKey, "");
             if (!long.TryParse(serializedTicks, out long ticks))
@@ -491,6 +506,13 @@ namespace NeonGrid.Editor
                 TestRunnerMode.EditMode, "NeonGrid.Tests.M16HapticsFoundationTests");
         }
 
+        private static SuiteDefinition FocusedD1()
+        {
+            return SuiteDefinition.ForTests("M16 D1 Focused", "M16_D1_Focused",
+                TestRunnerMode.EditMode,
+                "NeonGrid.Tests.M16ProductionGameplayFeedbackTests");
+        }
+
         private static SuiteDefinition B1Regression()
         {
             return SuiteDefinition.ForTests("M16 B1 Regression", "M16_B1_Regression",
@@ -527,6 +549,13 @@ namespace NeonGrid.Editor
         {
             return SuiteDefinition.ForTests("Haptics PlayMode", "Haptics_PlayMode",
                 TestRunnerMode.PlayMode, "NeonGrid.Tests.M16HapticsRuntimeTests");
+        }
+
+        private static SuiteDefinition ProductionFeedbackPlayMode()
+        {
+            return SuiteDefinition.ForTests("Production Feedback PlayMode",
+                "Production_Feedback_PlayMode", TestRunnerMode.PlayMode,
+                "NeonGrid.Tests.M16ProductionFeedbackRuntimeTests");
         }
 
         private static void EnsureResultsDirectory()

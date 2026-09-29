@@ -12,7 +12,9 @@ namespace NeonGrid.Presentation
         private CampaignIntroView introView;
         private CampaignEndingView endingView;
         private CityRestorationSequenceController restorationSequence;
+        private ProductionGameplayFeedbackController gameplayFeedback;
         private GameObject boardRoot;
+        private BoardController activeBoard;
         private CampaignNarrativeDefinition narrative;
 
         public CampaignFlowCoordinator Flow { get; private set; }
@@ -21,6 +23,8 @@ namespace NeonGrid.Presentation
         public CampaignIntroView IntroView => introView;
         public CampaignEndingView EndingView => endingView;
         public CampaignRuntimeView CampaignView => campaignView;
+        public ProductionGameplayFeedbackController GameplayFeedback => gameplayFeedback;
+        public BoardController ActiveBoard => activeBoard;
 
         private void Awake()
         {
@@ -37,7 +41,13 @@ namespace NeonGrid.Presentation
         public void Initialize(CampaignDefinition definition, ICampaignProgressStore store)
         {
             campaign = definition ?? throw new System.ArgumentNullException(nameof(definition));
-            EnsureDisplayCamera();
+            Camera displayCamera = EnsureDisplayCamera();
+            if (campaign.GameplayFeedback != null && campaign.GameplayFeedback.IsConfigured)
+            {
+                gameplayFeedback = GetComponent<ProductionGameplayFeedbackController>() ??
+                                   gameObject.AddComponent<ProductionGameplayFeedbackController>();
+                gameplayFeedback.Initialize(campaign.GameplayFeedback, displayCamera);
+            }
 
             CampaignLoadResult load = store.Load(campaign);
             LoadStatus = load.Status;
@@ -125,6 +135,7 @@ namespace NeonGrid.Presentation
 
         private void OnDestroy()
         {
+            gameplayFeedback?.ExitGameplay();
             if (Flow != null)
                 Flow.ProgressRecorded -= OnProgressRecorded;
         }
@@ -187,9 +198,11 @@ namespace NeonGrid.Presentation
             boardRoot.transform.SetParent(transform, false);
             var resultActions = new GameplayResultActions(Retry, ShowCurrentChapter, ShowMap, Next,
                 ShowCurrentChapter, () => Flow.ResultNavigation);
-            boardRoot.AddComponent<BoardController>().Initialize(Flow.ActiveSession, resultActions,
+            activeBoard = boardRoot.AddComponent<BoardController>();
+            activeBoard.Initialize(Flow.ActiveSession, resultActions,
                 Flow.ActiveTutorial, FindLevelOrdinal(Flow.SelectedChapter, Flow.ActiveLevel),
-                campaign.GameplayVisualTheme);
+                campaign.GameplayVisualTheme, campaign.GameplayFeedback?.CircuitJuice);
+            gameplayFeedback?.EnterGameplay(activeBoard);
         }
 
         internal static int FindLevelOrdinal(CampaignChapterDefinition chapter,
@@ -237,6 +250,8 @@ namespace NeonGrid.Presentation
 
         private void DestroyBoard()
         {
+            gameplayFeedback?.ExitGameplay();
+            activeBoard = null;
             if (boardRoot == null) return;
             boardRoot.SetActive(false);
             if (Application.isPlaying)
