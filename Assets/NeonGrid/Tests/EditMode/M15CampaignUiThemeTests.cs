@@ -261,8 +261,11 @@ namespace NeonGrid.Tests
                 .GetComponent<Text>().text, Is.EqualTo("NEON GRID\nCITY RESTORATION"));
             Assert.That(Find(controller.CampaignView.transform, "Total Stars")
                 .GetComponent<Text>().text, Is.EqualTo("★ 6 / 150"));
-            Assert.That(Find(controller.CampaignView.transform,
-                "Technical Neon Map Header Module"), Is.Not.Null);
+            Transform headerModule = Find(controller.CampaignView.transform,
+                "Technical Neon Map Header Module");
+            Assert.That(headerModule, Is.Not.Null);
+            Assert.That(headerModule.GetComponent<Image>(), Is.Not.Null);
+            Assert.That(headerModule.GetComponent<Outline>(), Is.Null);
         }
 
         [Test]

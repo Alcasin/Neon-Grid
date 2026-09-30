@@ -135,13 +135,17 @@ namespace NeonGrid.Presentation
             usesCityMap = true;
             Text title = CreateText(mapPanel.transform, "Title", "NEON GRID\nCITY RESTORATION", font,
                 ProgrammerUiMetrics.CityMapHeaderFontSize, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -92f),
-                new Vector2(940f, 150f));
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -(ProgrammerUiMetrics.CityMapHeaderTopPadding +
+                                  ProgrammerUiMetrics.CityMapHeaderHeight * 0.5f)),
+                new Vector2(940f, ProgrammerUiMetrics.CityMapHeaderHeight));
             title.lineSpacing = 0.82f;
             totalStarsText = CreateText(mapPanel.transform, "Total Stars", string.Empty, font,
                 ProgrammerUiMetrics.CityMapStarsFontSize,
                 TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -212f), new Vector2(760f, 70f));
+            mapPanel.AddComponent<CityMapHeaderSafeAreaLayout>().Initialize(
+                title.rectTransform, totalStarsText.rectTransform);
 
             GameObject composition = CreatePanel(mapPanel.transform, "City Composition",
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -843,6 +847,52 @@ namespace NeonGrid.Presentation
                 Button = button;
                 Label = label;
             }
+        }
+    }
+
+    internal sealed class CityMapHeaderSafeAreaLayout : MonoBehaviour
+    {
+        private RectTransform[] elements;
+        private Vector2[] baselinePositions;
+
+        internal void Initialize(params RectTransform[] headerElements)
+        {
+            elements = headerElements;
+            baselinePositions = new Vector2[elements.Length];
+            for (int index = 0; index < elements.Length; index++)
+                baselinePositions[index] = elements[index].anchoredPosition;
+            ApplyCurrentSafeArea();
+        }
+
+        internal void ApplyLayout(Rect safeArea, float screenHeight, float canvasScaleFactor)
+        {
+            if (elements == null || baselinePositions == null) return;
+            float topInset = CalculateTopInset(screenHeight, safeArea.yMax, canvasScaleFactor);
+            for (int index = 0; index < elements.Length; index++)
+                elements[index].anchoredPosition = baselinePositions[index] + Vector2.down * topInset;
+        }
+
+        internal static float CalculateTopInset(float screenHeight, float safeAreaTop,
+            float canvasScaleFactor)
+        {
+            float unsafePixels = Mathf.Max(0f, screenHeight - safeAreaTop);
+            return unsafePixels / Mathf.Max(0.0001f, canvasScaleFactor);
+        }
+
+        private void OnEnable()
+        {
+            ApplyCurrentSafeArea();
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            ApplyCurrentSafeArea();
+        }
+
+        private void ApplyCurrentSafeArea()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            ApplyLayout(Screen.safeArea, Screen.height, canvas != null ? canvas.scaleFactor : 1f);
         }
     }
 }

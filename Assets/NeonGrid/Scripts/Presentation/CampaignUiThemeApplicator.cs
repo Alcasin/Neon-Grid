@@ -154,7 +154,7 @@ namespace NeonGrid.Presentation
                     if (map != null)
                         EnsureModule(map, "Technical Neon Map Header Module",
                             new Vector2(0.5f, 1f), new Vector2(0f, -125f),
-                            new Vector2(940f, 245f), theme);
+                            new Vector2(940f, 245f), theme, false);
                     break;
             }
         }
@@ -226,9 +226,16 @@ namespace NeonGrid.Presentation
         }
 
         private static void EnsureModule(Transform parent, string name, Vector2 anchor,
-            Vector2 position, Vector2 size, CampaignUiThemeDefinition theme)
+            Vector2 position, Vector2 size, CampaignUiThemeDefinition theme,
+            bool showOutline = true)
         {
-            if (parent.Find(name) != null) return;
+            Transform existing = parent.Find(name);
+            if (existing != null)
+            {
+                if (!showOutline && existing.TryGetComponent(out Outline existingOutline))
+                    existingOutline.enabled = false;
+                return;
+            }
             GameObject shadow = CreatePanel(parent, name + " Shadow", anchor, anchor,
                 position + new Vector2(0f, -8f), size, WithAlpha(Color.black,
                     theme.ShadowAlpha));
@@ -236,7 +243,7 @@ namespace NeonGrid.Presentation
             GameObject module = CreatePanel(parent, name, anchor, anchor, position, size,
                 theme.PanelSurface);
             module.transform.SetSiblingIndex(Mathf.Min(1, parent.childCount - 1));
-            AddOutline(module, theme.PanelEdge, theme.KeylineThickness);
+            if (showOutline) AddOutline(module, theme.PanelEdge, theme.KeylineThickness);
 
             RectTransform inset = CreatePanel(module.transform, "Inset Highlight",
                 Vector2.zero, Vector2.one, Vector2.zero,

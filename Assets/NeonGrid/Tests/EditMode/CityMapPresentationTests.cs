@@ -209,6 +209,52 @@ namespace NeonGrid.Tests
             }
         }
 
+        [Test]
+        public void ProductionHeader_UsesTopSafeAreaWithoutMovingMapOrAccumulatingOffsets()
+        {
+            CampaignDefinition campaign = LoadMain();
+            var progress = new CampaignProgressService(campaign);
+            using (ViewScope scope = BuildView(campaign, progress, out GameObject root))
+            {
+                Transform map = FindMap(root);
+                RectTransform title = map.Find("Title").GetComponent<RectTransform>();
+                RectTransform stars = map.Find("Total Stars").GetComponent<RectTransform>();
+                RectTransform composition = map.Find("City Composition").GetComponent<RectTransform>();
+                CityMapHeaderSafeAreaLayout layout =
+                    map.GetComponent<CityMapHeaderSafeAreaLayout>();
+                Vector2 compositionBaseline = composition.anchoredPosition;
+                var fullDisplay = new Rect(0f, 0f, 1080f, 1920f);
+
+                layout.ApplyLayout(fullDisplay, 1920f, 1f);
+                Assert.That(title.anchorMin, Is.EqualTo(new Vector2(0.5f, 1f)));
+                Assert.That(title.anchorMax, Is.EqualTo(new Vector2(0.5f, 1f)));
+                Assert.That(title.pivot, Is.EqualTo(new Vector2(0.5f, 0.5f)));
+                Assert.That(title.anchoredPosition.y, Is.EqualTo(-92f));
+                Assert.That(stars.anchoredPosition.y, Is.EqualTo(-212f));
+
+                var cutoutSafeArea = new Rect(0f, 0f, 1080f, 1840f);
+                layout.ApplyLayout(cutoutSafeArea, 1920f, 2f);
+                Assert.That(title.anchoredPosition.y, Is.EqualTo(-132f));
+                Assert.That(stars.anchoredPosition.y, Is.EqualTo(-252f));
+                Assert.That(composition.anchoredPosition, Is.EqualTo(compositionBaseline));
+
+                layout.ApplyLayout(cutoutSafeArea, 1920f, 2f);
+                Assert.That(title.anchoredPosition.y, Is.EqualTo(-132f));
+                Assert.That(stars.anchoredPosition.y, Is.EqualTo(-252f));
+                Assert.That(composition.anchoredPosition, Is.EqualTo(compositionBaseline));
+            }
+        }
+
+        [TestCase(1920f, 1920f, 1f, 0f)]
+        [TestCase(2340f, 2260f, 2f, 40f)]
+        [TestCase(1280f, 1240f, 0.8f, 50f)]
+        public void ProductionHeader_TopInsetConversionSupportsDifferentPortraitScales(
+            float screenHeight, float safeAreaTop, float canvasScale, float expectedInset)
+        {
+            Assert.That(CityMapHeaderSafeAreaLayout.CalculateTopInset(
+                screenHeight, safeAreaTop, canvasScale), Is.EqualTo(expectedInset).Within(0.001f));
+        }
+
         [TestCase("PowerStation_VerticalSlice")]
         [TestCase("Substation_VerticalSlice")]
         [TestCase("ControlCenter_VerticalSlice")]
