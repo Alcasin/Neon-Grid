@@ -44,6 +44,59 @@ namespace NeonGrid.Tests
                 PuzzleActionType.RotateClockwise)), Is.False);
         }
 
+        [TestCase("Levels/PowerStation/PS_01")]
+        [TestCase("Levels/AutomationPlant/AP_07")]
+        [TestCase("Levels/CentralGrid/CG_10")]
+        [TestCase("Levels/Substation/S_03")]
+        [TestCase("Levels/PowerStation/PS_09")]
+        [TestCase("Levels/ControlCenter/CC_01")]
+        [TestCase("Levels/ControlCenter/CC_03")]
+        public void ValidActionOrdering_IsInvariantAcrossDerivedPersistentStates(
+            string resourcePath)
+        {
+            PuzzleSearchState state = PuzzleSearchState.FromBoard(
+                LoadLevel(resourcePath).CreateBoardState());
+            PuzzleAction[] expected = state.GetValidActions().ToArray();
+            Assert.That(expected, Is.Not.Empty, resourcePath);
+
+            for (int step = 0; step < 16; step++)
+            {
+                Assert.That(state.GetValidActions(), Is.EqualTo(expected),
+                    $"{resourcePath}, step {step}");
+                Assert.That(state.ApplyAction(expected[step % expected.Length]), Is.True);
+            }
+        }
+
+        [Test]
+        public void ValidActionTemplate_ExcludesLockedTilesAndPreservesRowMajorOrder()
+        {
+            PuzzleSearchState state = PuzzleSearchState.FromBoard(new BoardState(6, 1, new[]
+            {
+                Tile(0, 0, TileType.Diode, 0, false),
+                Tile(1, 0, TileType.AndGate, 2, true),
+                Tile(2, 0, TileType.Switch, 0, false, false),
+                Tile(3, 0, TileType.OrGate, 1, false),
+                Tile(4, 0, TileType.PowerSource, 0, true),
+                Tile(5, 0, TileType.OutputLamp, 0, true)
+            }));
+            var expected = new[]
+            {
+                new PuzzleAction(new GridPosition(1, 0),
+                    PuzzleActionType.RotateClockwise),
+                new PuzzleAction(new GridPosition(2, 0),
+                    PuzzleActionType.ToggleSwitch),
+                new PuzzleAction(new GridPosition(4, 0),
+                    PuzzleActionType.RotateClockwise),
+                new PuzzleAction(new GridPosition(5, 0),
+                    PuzzleActionType.RotateClockwise)
+            };
+
+            Assert.That(state.GetValidActions(), Is.EqualTo(expected));
+            foreach (PuzzleAction action in expected)
+                Assert.That(state.ApplyAction(action), Is.True);
+            Assert.That(state.GetValidActions(), Is.EqualTo(expected));
+        }
+
         [Test]
         public void RuntimeAndSearchState_UseTheSameActionValidity()
         {

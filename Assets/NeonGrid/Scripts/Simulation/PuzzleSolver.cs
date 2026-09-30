@@ -90,6 +90,7 @@ namespace NeonGrid.Simulation
                 return Result(PuzzleSolverStatus.Solved, Array.Empty<PuzzleAction>(), 1, 0, profile,
                     solverStart);
 
+            IReadOnlyList<PuzzleAction> actions = initialState.GetValidActions();
             var frontier = new Queue<SearchNode>();
             frontier.Enqueue(new SearchNode(initialState));
             var visited = new HashSet<PuzzleStateKey> { initialState.Key };
@@ -101,7 +102,6 @@ namespace NeonGrid.Simulation
             {
                 SearchNode current = frontier.Dequeue();
                 if (profile != null) profile.NodesExpanded++;
-                IReadOnlyList<PuzzleAction> actions = current.State.GetValidActions();
                 if (current.Depth >= options.MaximumDepth)
                 {
                     if (HasUnvisitedSuccessor(current.State, actions, visited, profile))

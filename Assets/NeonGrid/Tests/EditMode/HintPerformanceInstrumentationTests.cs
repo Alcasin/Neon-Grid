@@ -54,7 +54,7 @@ namespace NeonGrid.Tests
             Assert.That(profile.Copies, Is.GreaterThan(0));
             Assert.That(profile.Keys, Is.GreaterThan(0));
             Assert.That(profile.Powers, Is.EqualTo(profile.UniqueStatesVisited));
-            Assert.That(profile.ActionLists, Is.EqualTo(profile.NodesExpanded));
+            Assert.That(profile.ActionLists, Is.EqualTo(1));
             Assert.That(profile.PathArraysAllocated, Is.EqualTo(1));
             Assert.That(profile.PathElementsCopied, Is.EqualTo(result.Solution.Count));
             Assert.That(profile.MaximumFrontierSize, Is.GreaterThan(0));
@@ -80,6 +80,7 @@ namespace NeonGrid.Tests
             Assert.That(profile.DuplicateSuccessorsRejected, Is.EqualTo(1));
             Assert.That(profile.Copies, Is.EqualTo(profile.UniqueStatesVisited));
             Assert.That(profile.Keys, Is.EqualTo(profile.SuccessorsGenerated + 1));
+            Assert.That(profile.ActionLists, Is.EqualTo(1));
             Assert.That(profile.PathArraysAllocated, Is.Zero);
             Assert.That(profile.PathElementsCopied, Is.Zero);
         }
@@ -101,6 +102,7 @@ namespace NeonGrid.Tests
                 new PuzzleSolverOptions { MaximumExploredStates = 100, MaximumDepth = 0 },
                 depthLimitedProfile);
             Assert.That(depthLimited.Status, Is.EqualTo(PuzzleSolverStatus.SearchLimitReached));
+            Assert.That(depthLimitedProfile.ActionLists, Is.EqualTo(1));
             Assert.That(depthLimitedProfile.PathArraysAllocated, Is.Zero);
             Assert.That(depthLimitedProfile.PathElementsCopied, Is.Zero);
 
@@ -114,6 +116,7 @@ namespace NeonGrid.Tests
                 PuzzleSolverProfiles.RuntimeHint, completeProfile);
             Assert.That(alreadyComplete.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
             Assert.That(alreadyComplete.Solution, Is.Empty);
+            Assert.That(completeProfile.ActionLists, Is.Zero);
             Assert.That(completeProfile.PathArraysAllocated, Is.Zero);
             Assert.That(completeProfile.PathElementsCopied, Is.Zero);
         }
