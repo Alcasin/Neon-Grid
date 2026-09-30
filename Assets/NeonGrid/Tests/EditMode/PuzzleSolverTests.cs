@@ -89,6 +89,77 @@ namespace NeonGrid.Tests
             Assert.That(rotated.Key, Is.Not.EqualTo(toggled.Key));
         }
 
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void SuccessorKey_ClockwiseRotationMatchesCloneApplyKey(int startingRotation)
+        {
+            var action = new PuzzleAction(new GridPosition(0, 0),
+                PuzzleActionType.RotateClockwise);
+            PuzzleSearchState parent = PuzzleSearchState.FromBoard(new BoardState(1, 1,
+                new[] { Tile(0, 0, TileType.AndGate, startingRotation, true) }));
+            PuzzleSearchState successor = parent.CreateIndependentCopy();
+
+            Assert.That(successor.ApplyAction(action), Is.True);
+            Assert.That(parent.GetSuccessorKey(action), Is.EqualTo(successor.Key));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void SuccessorKey_SwitchToggleMatchesCloneApplyKey(bool startingSwitchOn)
+        {
+            var action = new PuzzleAction(new GridPosition(0, 0),
+                PuzzleActionType.ToggleSwitch);
+            PuzzleSearchState parent = PuzzleSearchState.FromBoard(new BoardState(1, 1,
+                new[] { Tile(0, 0, TileType.Switch, 0, false, startingSwitchOn) }));
+            PuzzleSearchState successor = parent.CreateIndependentCopy();
+
+            Assert.That(successor.ApplyAction(action), Is.True);
+            Assert.That(parent.GetSuccessorKey(action), Is.EqualTo(successor.Key));
+        }
+
+        [TestCase("Levels/Substation/S_03")]
+        [TestCase("Levels/PowerStation/PS_09")]
+        [TestCase("Levels/ControlCenter/CC_01")]
+        [TestCase("Levels/ControlCenter/CC_03")]
+        [TestCase("Levels/AutomationPlant/AP_07")]
+        [TestCase("Levels/CentralGrid/CG_10")]
+        public void SuccessorKey_MatchesCloneApplyAcrossRepresentativeDerivedStates(
+            string resourcePath)
+        {
+            PuzzleSearchState parent = PuzzleSearchState.FromBoard(
+                LoadLevel(resourcePath).CreateBoardState());
+            for (int step = 0; step < 12; step++)
+            {
+                IReadOnlyList<PuzzleAction> actions = parent.GetValidActions();
+                Assert.That(actions, Is.Not.Empty, resourcePath);
+                foreach (PuzzleAction action in actions)
+                {
+                    PuzzleSearchState successor = parent.CreateIndependentCopy();
+                    Assert.That(successor.ApplyAction(action), Is.True, action.ToString());
+                    Assert.That(parent.GetSuccessorKey(action), Is.EqualTo(successor.Key),
+                        $"{resourcePath}, step {step}, {action}");
+                }
+
+                PuzzleSearchState next = parent.CreateIndependentCopy();
+                Assert.That(next.ApplyAction(actions[step % actions.Count]), Is.True);
+                parent = next;
+            }
+        }
+
+        [Test]
+        public void SuccessorKey_DoesNotMakeLockedTileActionValid()
+        {
+            PuzzleSearchState state = PuzzleSearchState.FromBoard(new BoardState(1, 1,
+                new[] { Tile(0, 0, TileType.Diode, 0, false) }));
+            var rejected = new PuzzleAction(new GridPosition(0, 0),
+                PuzzleActionType.RotateClockwise);
+
+            Assert.That(state.GetValidActions(), Is.Empty);
+            Assert.Throws<System.ArgumentException>(() => state.GetSuccessorKey(rejected));
+        }
+
         [Test]
         public void TransientElectricalState_DoesNotChangeLogicalStateIdentity()
         {
@@ -231,6 +302,24 @@ namespace NeonGrid.Tests
             Assert.That(result.Status, Is.EqualTo(PuzzleSolverStatus.SearchLimitReached));
         }
 
+        [Test]
+        public void DuplicateAtStateBudget_DoesNotReportSearchLimitUnlessNovelStateExists()
+        {
+            var board = new BoardState(1, 1,
+                new[] { Tile(0, 0, TileType.StraightWire, 0, true) });
+
+            PuzzleSolverResult duplicateOnly = new PuzzleSolver().Solve(board,
+                new PuzzleSolverOptions { MaximumExploredStates = 4, MaximumDepth = 64 });
+            PuzzleSolverResult novelAtBudget = new PuzzleSolver().Solve(board,
+                new PuzzleSolverOptions { MaximumExploredStates = 3, MaximumDepth = 64 });
+
+            Assert.That(duplicateOnly.Status, Is.EqualTo(PuzzleSolverStatus.Unsolvable));
+            Assert.That(duplicateOnly.ExploredStateCount, Is.EqualTo(4));
+            Assert.That(novelAtBudget.Status,
+                Is.EqualTo(PuzzleSolverStatus.SearchLimitReached));
+            Assert.That(novelAtBudget.ExploredStateCount, Is.EqualTo(3));
+        }
+
         [TestCase("Levels/M1_Test_01")]
         [TestCase("Levels/M1_Test_02")]
         [TestCase("Levels/M1_Test_03")]
@@ -271,6 +360,32 @@ namespace NeonGrid.Tests
             Assert.That(result.DeepestSearchDepth, Is.EqualTo(depth));
             Assert.That(result.ExploredStateCount, Is.EqualTo(states));
             Assert.That(string.Join("|", result.Solution), Is.EqualTo(sequence));
+        }
+
+        [TestCase("Levels/PowerStation/PS_01", 2, 1,
+            "RotateClockwise (1, 0)")]
+        [TestCase("Levels/AutomationPlant/AP_07", 4702, 7,
+            "RotateClockwise (5, 0)|RotateClockwise (5, 0)|RotateClockwise (5, 0)|RotateClockwise (2, 2)|RotateClockwise (5, 3)|RotateClockwise (4, 4)|RotateClockwise (4, 4)")]
+        [TestCase("Levels/CentralGrid/CG_10", 45741, 10,
+            "RotateClockwise (1, 0)|RotateClockwise (2, 0)|RotateClockwise (2, 0)|RotateClockwise (5, 0)|RotateClockwise (5, 0)|RotateClockwise (5, 0)|RotateClockwise (4, 1)|RotateClockwise (4, 3)|ToggleSwitch (2, 5)|RotateClockwise (4, 5)")]
+        public void PreCloneDuplicateRejection_PreservesProductionGoldenResult(
+            string resourcePath, int exploredStates, int depth, string sequence)
+        {
+            BoardState board = LoadLevel(resourcePath).CreateBoardState();
+            PuzzleSolverResult first = new PuzzleSolver().Solve(board,
+                PuzzleSolverProfiles.RuntimeHint);
+            PuzzleSolverResult repeated = new PuzzleSolver().Solve(board,
+                PuzzleSolverProfiles.RuntimeHint);
+
+            Assert.That(first.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(first.ExploredStateCount, Is.EqualTo(exploredStates));
+            Assert.That(first.MinimumMoveCount, Is.EqualTo(depth));
+            Assert.That(first.DeepestSearchDepth, Is.EqualTo(depth));
+            Assert.That(string.Join("|", first.Solution), Is.EqualTo(sequence));
+            Assert.That(repeated.Status, Is.EqualTo(first.Status));
+            Assert.That(repeated.ExploredStateCount, Is.EqualTo(first.ExploredStateCount));
+            Assert.That(repeated.DeepestSearchDepth, Is.EqualTo(first.DeepestSearchDepth));
+            Assert.That(repeated.Solution, Is.EqualTo(first.Solution));
         }
 
         [Test]

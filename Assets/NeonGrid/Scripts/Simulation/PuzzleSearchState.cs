@@ -14,13 +14,7 @@ namespace NeonGrid.Simulation
 
         public PuzzleStateKey Key
         {
-            get
-            {
-                long start = profile == null ? 0 : Stopwatch.GetTimestamp();
-                PuzzleStateKey key = CreateKey(board);
-                if (profile != null) { profile.Keys++; profile.KeyTicks += Stopwatch.GetTimestamp() - start; }
-                return key;
-            }
+            get { return CreateProfiledKey(null); }
         }
         public bool IsSolved
         {
@@ -69,6 +63,15 @@ namespace NeonGrid.Simulation
             return true;
         }
 
+        internal PuzzleStateKey GetSuccessorKey(PuzzleAction action)
+        {
+            if (!board.IsActionValid(action))
+                throw new ArgumentException($"Cannot derive a successor key for invalid action: {action}.",
+                    nameof(action));
+
+            return CreateProfiledKey(action);
+        }
+
         private void EnsurePower()
         {
             // Legal actions and canonical identity depend only on persistent state.
@@ -93,22 +96,45 @@ namespace NeonGrid.Simulation
             if (profile != null) { profile.Powers++; profile.PowerTicks += Stopwatch.GetTimestamp() - start; }
         }
 
-        private static PuzzleStateKey CreateKey(BoardState source)
+        private PuzzleStateKey CreateProfiledKey(PuzzleAction? pendingAction)
+        {
+            long start = profile == null ? 0 : Stopwatch.GetTimestamp();
+            PuzzleStateKey key = CreateKey(board, pendingAction);
+            if (profile != null)
+            {
+                profile.Keys++;
+                profile.KeyTicks += Stopwatch.GetTimestamp() - start;
+            }
+            return key;
+        }
+
+        private static PuzzleStateKey CreateKey(BoardState source,
+            PuzzleAction? pendingAction)
         {
             var builder = new StringBuilder();
             foreach (CircuitTileState tile in source.AllTiles())
             {
                 if (tile.TileType == TileType.Switch)
                 {
-                    builder.Append(tile.IsSwitchOn ? '1' : '0');
+                    bool isOn = tile.IsSwitchOn;
+                    if (Targets(tile, pendingAction)) isOn = !isOn;
+                    builder.Append(isOn ? '1' : '0');
                 }
                 else if (tile.IsRotatable)
                 {
-                    builder.Append((char)('0' + tile.Rotation));
+                    int rotation = tile.Rotation;
+                    if (Targets(tile, pendingAction)) rotation = (rotation + 1) % 4;
+                    builder.Append((char)('0' + rotation));
                 }
             }
 
             return new PuzzleStateKey(builder.ToString());
+        }
+
+        private static bool Targets(CircuitTileState tile, PuzzleAction? pendingAction)
+        {
+            return pendingAction.HasValue &&
+                   pendingAction.Value.Position.Equals(tile.Position);
         }
     }
 }

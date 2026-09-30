@@ -524,7 +524,8 @@ namespace NeonGrid.Editor
         {
             return SuiteDefinition.ForTests("Hint Performance Focused",
                 "Hint_Performance_Focused", TestRunnerMode.EditMode,
-                "NeonGrid.Tests.HintPerformanceInstrumentationTests");
+                "NeonGrid.Tests.HintPerformanceInstrumentationTests",
+                "NeonGrid.Tests.PuzzleSolverTests");
         }
 
         private static SuiteDefinition B1Regression()

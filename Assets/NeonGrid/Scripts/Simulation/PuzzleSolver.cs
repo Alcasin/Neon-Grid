@@ -113,10 +113,7 @@ namespace NeonGrid.Simulation
                 foreach (PuzzleAction action in actions)
                 {
                     if (profile != null) profile.SuccessorsGenerated++;
-                    PuzzleSearchState nextState = current.State.CreateIndependentCopy();
-                    if (!nextState.ApplyAction(action))
-                        throw new InvalidOperationException($"Generated action became invalid: {action}.");
-                    PuzzleStateKey nextKey = nextState.Key;
+                    PuzzleStateKey nextKey = current.State.GetSuccessorKey(action);
                     if (visited.Contains(nextKey))
                     {
                         if (profile != null) profile.DuplicateSuccessorsRejected++;
@@ -126,6 +123,10 @@ namespace NeonGrid.Simulation
                     if (visited.Count >= options.MaximumExploredStates)
                         return Result(PuzzleSolverStatus.SearchLimitReached, null, visited.Count,
                             deepestDepth, profile, solverStart);
+
+                    PuzzleSearchState nextState = current.State.CreateIndependentCopy();
+                    if (!nextState.ApplyAction(action))
+                        throw new InvalidOperationException($"Generated action became invalid: {action}.");
 
                     visited.Add(nextKey);
                     PuzzleAction[] nextPath = Append(current.Path, action, profile);
@@ -176,10 +177,8 @@ namespace NeonGrid.Simulation
             foreach (PuzzleAction action in actions)
             {
                 if (profile != null) profile.SuccessorsGenerated++;
-                PuzzleSearchState successor = state.CreateIndependentCopy();
-                if (!successor.ApplyAction(action))
-                    throw new InvalidOperationException($"Generated action became invalid: {action}.");
-                if (!visited.Contains(successor.Key)) return true;
+                PuzzleStateKey successorKey = state.GetSuccessorKey(action);
+                if (!visited.Contains(successorKey)) return true;
                 if (profile != null) profile.DuplicateSuccessorsRejected++;
             }
 

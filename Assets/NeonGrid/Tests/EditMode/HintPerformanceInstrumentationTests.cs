@@ -61,6 +61,27 @@ namespace NeonGrid.Tests
         }
 
         [Test]
+        public void PreCloneDuplicateRejection_ProfilesOnlyCopiesActuallyPerformed()
+        {
+            var board = new BoardState(1, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), TileType.StraightWire, 0, true)
+            });
+            var profile = new SolverProfile();
+
+            PuzzleSolverResult result = new PuzzleSolver().SolveProfiled(board,
+                new PuzzleSolverOptions { MaximumExploredStates = 4, MaximumDepth = 64 },
+                profile);
+
+            Assert.That(result.Status, Is.EqualTo(PuzzleSolverStatus.Unsolvable));
+            Assert.That(profile.UniqueStatesVisited, Is.EqualTo(4));
+            Assert.That(profile.SuccessorsGenerated, Is.EqualTo(4));
+            Assert.That(profile.DuplicateSuccessorsRejected, Is.EqualTo(1));
+            Assert.That(profile.Copies, Is.EqualTo(profile.UniqueStatesVisited));
+            Assert.That(profile.Keys, Is.EqualTo(profile.SuccessorsGenerated + 1));
+        }
+
+        [Test]
         public void NonInstrumentedRunnerPreservesAuthoritativeHintSelection()
         {
             LevelDefinition level = Load("Levels/PowerStation/PS_01");
