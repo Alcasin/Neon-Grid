@@ -116,6 +116,12 @@ namespace NeonGrid.Editor
             StartSingle(FocusedD2());
         }
 
+        [MenuItem(MenuRoot + "M17 A1 - Focused")]
+        private static void RunM17A1Focused()
+        {
+            StartSingle(FocusedM17A1());
+        }
+
         [MenuItem(MenuRoot + "Hint Performance - Focused")]
         private static void RunHintPerformanceFocused()
         {
@@ -191,6 +197,7 @@ namespace NeonGrid.Editor
         [MenuItem(MenuRoot + "M16 C1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 D1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 D2 - Focused", true)]
+        [MenuItem(MenuRoot + "M17 A1 - Focused", true)]
         [MenuItem(MenuRoot + "Hint Performance - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
@@ -540,6 +547,13 @@ namespace NeonGrid.Editor
             return SuiteDefinition.ForTests("M16 D2 Focused", "M16_D2_Focused",
                 TestRunnerMode.EditMode,
                 "NeonGrid.Tests.M16ProductionGameplayFeedbackTests");
+        }
+
+        private static SuiteDefinition FocusedM17A1()
+        {
+            return SuiteDefinition.ForTests("M17 A1 Focused", "M17_A1_Focused",
+                TestRunnerMode.EditMode,
+                "NeonGrid.Tests.UserSettingsPersistenceTests");
         }
 
         private static SuiteDefinition HintPerformanceFocused()
