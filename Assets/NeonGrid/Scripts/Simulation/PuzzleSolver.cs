@@ -50,19 +50,19 @@ namespace NeonGrid.Simulation
         public int ExploredStateCount { get; }
         public int DeepestSearchDepth { get; }
 
-        internal PuzzleSolverResult(PuzzleSolverStatus status, IReadOnlyList<PuzzleAction> solution,
+        internal PuzzleSolverResult(PuzzleSolverStatus status, PuzzleAction[] solution,
             int exploredStateCount, int deepestSearchDepth)
         {
             Status = status;
-            if (solution == null || solution.Count == 0)
+            if (solution == null || solution.Length == 0)
             {
                 Solution = NoActions;
             }
             else
             {
-                var copy = new PuzzleAction[solution.Count];
-                for (int index = 0; index < solution.Count; index++) copy[index] = solution[index];
-                Solution = Array.AsReadOnly(copy);
+                // The solver owns this freshly reconstructed array. Expose it only through
+                // a read-only wrapper so no second solution array is required.
+                Solution = Array.AsReadOnly(solution);
             }
             MinimumMoveCount = status == PuzzleSolverStatus.Solved ? Solution.Count : -1;
             ExploredStateCount = exploredStateCount;
@@ -86,13 +86,12 @@ namespace NeonGrid.Simulation
             long solverStart = profile == null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
 
             PuzzleSearchState initialState = PuzzleSearchState.FromBoard(sourceBoard, profile);
-            var initialPath = Array.Empty<PuzzleAction>();
             if (initialState.IsSolved)
-                return Result(PuzzleSolverStatus.Solved, initialPath, 1, 0, profile,
+                return Result(PuzzleSolverStatus.Solved, Array.Empty<PuzzleAction>(), 1, 0, profile,
                     solverStart);
 
             var frontier = new Queue<SearchNode>();
-            frontier.Enqueue(new SearchNode(initialState, initialPath));
+            frontier.Enqueue(new SearchNode(initialState));
             var visited = new HashSet<PuzzleStateKey> { initialState.Key };
             if (profile != null) profile.MaximumFrontierSize = 1;
             int deepestDepth = 0;
@@ -103,7 +102,7 @@ namespace NeonGrid.Simulation
                 SearchNode current = frontier.Dequeue();
                 if (profile != null) profile.NodesExpanded++;
                 IReadOnlyList<PuzzleAction> actions = current.State.GetValidActions();
-                if (current.Path.Length >= options.MaximumDepth)
+                if (current.Depth >= options.MaximumDepth)
                 {
                     if (HasUnvisitedSuccessor(current.State, actions, visited, profile))
                         depthLimitPreventedExpansion = true;
@@ -129,13 +128,14 @@ namespace NeonGrid.Simulation
                         throw new InvalidOperationException($"Generated action became invalid: {action}.");
 
                     visited.Add(nextKey);
-                    PuzzleAction[] nextPath = Append(current.Path, action, profile);
-                    deepestDepth = Math.Max(deepestDepth, nextPath.Length);
+                    var nextNode = new SearchNode(nextState, current, action);
+                    deepestDepth = Math.Max(deepestDepth, nextNode.Depth);
                     if (nextState.IsSolved)
-                        return Result(PuzzleSolverStatus.Solved, nextPath, visited.Count,
+                        return Result(PuzzleSolverStatus.Solved,
+                            ReconstructSolution(nextNode, profile), visited.Count,
                             deepestDepth, profile, solverStart);
 
-                    frontier.Enqueue(new SearchNode(nextState, nextPath));
+                    frontier.Enqueue(nextNode);
                     if (profile != null)
                         profile.MaximumFrontierSize = Math.Max(profile.MaximumFrontierSize,
                             frontier.Count);
@@ -156,16 +156,21 @@ namespace NeonGrid.Simulation
                 throw new ArgumentOutOfRangeException(nameof(options.MaximumDepth));
         }
 
-        private static PuzzleAction[] Append(PuzzleAction[] path, PuzzleAction action,
+        private static PuzzleAction[] ReconstructSolution(SearchNode solvedNode,
             SolverProfile profile)
         {
-            var result = new PuzzleAction[path.Length + 1];
-            Array.Copy(path, result, path.Length);
-            result[path.Length] = action;
+            var result = new PuzzleAction[solvedNode.Depth];
+            SearchNode current = solvedNode;
+            for (int index = result.Length - 1; index >= 0; index--)
+            {
+                result[index] = current.ActionFromParent;
+                current = current.Parent;
+            }
+
             if (profile != null)
             {
                 profile.PathArraysAllocated++;
-                profile.PathElementsCopied += path.Length;
+                profile.PathElementsCopied += result.Length;
             }
             return result;
         }
@@ -185,7 +190,7 @@ namespace NeonGrid.Simulation
             return false;
         }
 
-        private static PuzzleSolverResult Result(PuzzleSolverStatus status, IReadOnlyList<PuzzleAction> solution,
+        private static PuzzleSolverResult Result(PuzzleSolverStatus status, PuzzleAction[] solution,
             int exploredStates, int deepestDepth, SolverProfile profile, long solverStart)
         {
             var result = new PuzzleSolverResult(status, solution, exploredStates, deepestDepth);
@@ -203,12 +208,25 @@ namespace NeonGrid.Simulation
         private sealed class SearchNode
         {
             public PuzzleSearchState State { get; }
-            public PuzzleAction[] Path { get; }
+            public SearchNode Parent { get; }
+            public PuzzleAction ActionFromParent { get; }
+            public int Depth { get; }
 
-            public SearchNode(PuzzleSearchState state, PuzzleAction[] path)
+            public SearchNode(PuzzleSearchState state)
             {
                 State = state;
-                Path = path;
+                Parent = null;
+                ActionFromParent = default;
+                Depth = 0;
+            }
+
+            public SearchNode(PuzzleSearchState state, SearchNode parent,
+                PuzzleAction actionFromParent)
+            {
+                State = state;
+                Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+                ActionFromParent = actionFromParent;
+                Depth = parent.Depth + 1;
             }
         }
     }

@@ -12,6 +12,8 @@ namespace NeonGrid.Simulation
         internal long NodesExpanded;
         internal long SuccessorsGenerated;
         internal long DuplicateSuccessorsRejected;
+        // With parent-linked BFS these count only the final solution reconstruction:
+        // one array and one element write per returned action for a successful non-zero path.
         internal long PathArraysAllocated;
         internal long PathElementsCopied;
         internal int MaximumFrontierSize;

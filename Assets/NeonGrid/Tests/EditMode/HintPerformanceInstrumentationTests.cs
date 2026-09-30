@@ -55,7 +55,8 @@ namespace NeonGrid.Tests
             Assert.That(profile.Keys, Is.GreaterThan(0));
             Assert.That(profile.Powers, Is.EqualTo(profile.UniqueStatesVisited));
             Assert.That(profile.ActionLists, Is.EqualTo(profile.NodesExpanded));
-            Assert.That(profile.PathArraysAllocated, Is.EqualTo(result.ExploredStateCount - 1));
+            Assert.That(profile.PathArraysAllocated, Is.EqualTo(1));
+            Assert.That(profile.PathElementsCopied, Is.EqualTo(result.Solution.Count));
             Assert.That(profile.MaximumFrontierSize, Is.GreaterThan(0));
             Assert.That(profile.SolverTicks, Is.GreaterThanOrEqualTo(0));
         }
@@ -79,6 +80,42 @@ namespace NeonGrid.Tests
             Assert.That(profile.DuplicateSuccessorsRejected, Is.EqualTo(1));
             Assert.That(profile.Copies, Is.EqualTo(profile.UniqueStatesVisited));
             Assert.That(profile.Keys, Is.EqualTo(profile.SuccessorsGenerated + 1));
+            Assert.That(profile.PathArraysAllocated, Is.Zero);
+            Assert.That(profile.PathElementsCopied, Is.Zero);
+        }
+
+        [Test]
+        public void ParentLinkedSearch_ReconstructsOnlySuccessfulNonZeroSolution()
+        {
+            LevelDefinition oneMove = Load("Levels/PowerStation/PS_01");
+            var solvedProfile = new SolverProfile();
+            PuzzleSolverResult solved = new PuzzleSolver().SolveProfiled(
+                oneMove.CreateBoardState(), PuzzleSolverProfiles.RuntimeHint, solvedProfile);
+            Assert.That(solved.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(solvedProfile.PathArraysAllocated, Is.EqualTo(1));
+            Assert.That(solvedProfile.PathElementsCopied, Is.EqualTo(1));
+
+            var depthLimitedProfile = new SolverProfile();
+            PuzzleSolverResult depthLimited = new PuzzleSolver().SolveProfiled(
+                oneMove.CreateBoardState(),
+                new PuzzleSolverOptions { MaximumExploredStates = 100, MaximumDepth = 0 },
+                depthLimitedProfile);
+            Assert.That(depthLimited.Status, Is.EqualTo(PuzzleSolverStatus.SearchLimitReached));
+            Assert.That(depthLimitedProfile.PathArraysAllocated, Is.Zero);
+            Assert.That(depthLimitedProfile.PathElementsCopied, Is.Zero);
+
+            var completeBoard = new BoardState(2, 1, new[]
+            {
+                new TileDefinition(new GridPosition(0, 0), TileType.PowerSource, 0, false),
+                new TileDefinition(new GridPosition(1, 0), TileType.OutputLamp, 0, false)
+            });
+            var completeProfile = new SolverProfile();
+            PuzzleSolverResult alreadyComplete = new PuzzleSolver().SolveProfiled(completeBoard,
+                PuzzleSolverProfiles.RuntimeHint, completeProfile);
+            Assert.That(alreadyComplete.Status, Is.EqualTo(PuzzleSolverStatus.Solved));
+            Assert.That(alreadyComplete.Solution, Is.Empty);
+            Assert.That(completeProfile.PathArraysAllocated, Is.Zero);
+            Assert.That(completeProfile.PathElementsCopied, Is.Zero);
         }
 
         [Test]
