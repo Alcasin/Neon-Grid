@@ -1,5 +1,6 @@
 using NeonGrid.Campaign;
 using NeonGrid.Data;
+using NeonGrid.Settings;
 using UnityEngine;
 
 namespace NeonGrid.Presentation
@@ -13,6 +14,7 @@ namespace NeonGrid.Presentation
         private CampaignEndingView endingView;
         private CityRestorationSequenceController restorationSequence;
         private ProductionGameplayFeedbackController gameplayFeedback;
+        private RuntimeUserSettingsController runtimeSettings;
         private GameObject boardRoot;
         private BoardController activeBoard;
         private CampaignNarrativeDefinition narrative;
@@ -24,6 +26,7 @@ namespace NeonGrid.Presentation
         public CampaignEndingView EndingView => endingView;
         public CampaignRuntimeView CampaignView => campaignView;
         public ProductionGameplayFeedbackController GameplayFeedback => gameplayFeedback;
+        public RuntimeUserSettingsController RuntimeSettings => runtimeSettings;
         public BoardController ActiveBoard => activeBoard;
 
         private void Awake()
@@ -35,18 +38,30 @@ namespace NeonGrid.Presentation
             }
 
             Initialize(campaign,
-                new CampaignSaveStore(CampaignSaveStore.GetDefaultSavePath(campaign.CampaignId)));
+                new CampaignSaveStore(CampaignSaveStore.GetDefaultSavePath(campaign.CampaignId)),
+                UserSettingsStore.CreateDefault());
         }
 
         public void Initialize(CampaignDefinition definition, ICampaignProgressStore store)
         {
+            Initialize(definition, store, null);
+        }
+
+        public void Initialize(CampaignDefinition definition, ICampaignProgressStore store,
+            IUserSettingsStore settingsStore)
+        {
             campaign = definition ?? throw new System.ArgumentNullException(nameof(definition));
+            runtimeSettings = settingsStore != null
+                ? new RuntimeUserSettingsController(settingsStore)
+                : RuntimeUserSettingsController.CreateDefaultsWithoutPersistence();
             Camera displayCamera = EnsureDisplayCamera();
             if (campaign.GameplayFeedback != null && campaign.GameplayFeedback.IsConfigured)
             {
                 gameplayFeedback = GetComponent<ProductionGameplayFeedbackController>() ??
                                    gameObject.AddComponent<ProductionGameplayFeedbackController>();
                 gameplayFeedback.Initialize(campaign.GameplayFeedback, displayCamera);
+                runtimeSettings.AttachServices(gameplayFeedback.AudioService,
+                    gameplayFeedback.HapticsService);
             }
 
             CampaignLoadResult load = store.Load(campaign);

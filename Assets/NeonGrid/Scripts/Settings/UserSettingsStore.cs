@@ -48,11 +48,19 @@ namespace NeonGrid.Settings
         }
     }
 
+    public interface IUserSettingsStore
+    {
+        string SettingsPath { get; }
+        UserSettingsLoadResult Load();
+        UserSettingsSaveResult Save(UserSettings settings);
+        UserSettingsSaveResult Delete();
+    }
+
     /// <summary>
     /// Persists preferences independently from campaign progress. The path-injectable
     /// constructor keeps tests and future tools away from the real player settings file.
     /// </summary>
-    public sealed class UserSettingsStore
+    public sealed class UserSettingsStore : IUserSettingsStore
     {
         public const int CurrentVersion = 1;
         public const string SettingsFileName = "neon_grid_settings.json";

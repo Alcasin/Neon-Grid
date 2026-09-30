@@ -11,7 +11,7 @@ using TestRunnerMode = UnityEditor.TestTools.TestRunner.Api.TestMode;
 namespace NeonGrid.Editor
 {
     /// <summary>
-    /// Manually runs the accepted M16 verification matrix inside a normally opened,
+    /// Manually runs Neon Grid verification suites inside a normally opened,
     /// licensed Unity Editor. Nothing runs automatically on import, compile, play, or build.
     /// </summary>
     [InitializeOnLoad]
@@ -25,6 +25,13 @@ namespace NeonGrid.Editor
             "NeonGrid.Verification.M16B2.AudioPlayMode.StartTicks";
         private const string PendingPlayModeSuiteKey =
             "NeonGrid.Verification.PlayMode.Suite";
+        private const string M17A2RegressionPackActiveKey =
+            "NeonGrid.Verification.M17A2.RegressionPack.Active";
+        private const string M17A2RegressionPackStateKey =
+            "NeonGrid.Verification.M17A2.RegressionPack.State";
+        private const string M17A2RegressionPackRelativePath =
+            ResultsDirectory + "/M17_A2_Full_Regression_Pack.txt";
+        private const int M17A2RegressionPackSuiteCount = 9;
         private const double ContinuationDelaySeconds = 0.5d;
         private const int RequiredStableEditorFrames = 5;
 
@@ -82,13 +89,16 @@ namespace NeonGrid.Editor
         private static DateTime currentStartUtc;
         private static bool isRunning;
         private static bool isCompleteVerification;
+        private static bool isM17A2RegressionPack;
         private static bool testRunActive;
         private static bool waitingForStableEditor;
         private static double continuationNotBefore;
         private static int stableEditorFrames;
+        private static DateTime m17A2RegressionPackStartUtc;
 
         static NeonGridVerificationRunner()
         {
+            RecoverM17A2RegressionPackState();
             RecoverPendingPlayModeRun();
         }
 
@@ -120,6 +130,35 @@ namespace NeonGrid.Editor
         private static void RunM17A1Focused()
         {
             StartSingle(FocusedM17A1());
+        }
+
+        [MenuItem(MenuRoot + "M17 A2 - Focused")]
+        private static void RunM17A2Focused()
+        {
+            StartSingle(FocusedM17A2());
+        }
+
+        [MenuItem(MenuRoot + "M17 A2 Runtime PlayMode")]
+        private static void RunM17A2RuntimePlayMode()
+        {
+            StartSingle(M17A2RuntimePlayMode());
+        }
+
+        [MenuItem(MenuRoot + "M17 A2 - Full Regression Pack")]
+        private static void RunM17A2FullRegressionPack()
+        {
+            StartWorkflow(new[]
+            {
+                FocusedM17A2(),
+                M17A2RuntimePlayMode(),
+                FullEditMode(),
+                FocusedB2(),
+                AudioPlayMode(),
+                FocusedC1(),
+                HapticsPlayMode(),
+                FocusedD1(),
+                M16D2AmbiencePlayMode()
+            }, false, true);
         }
 
         [MenuItem(MenuRoot + "Hint Performance - Focused")]
@@ -198,6 +237,9 @@ namespace NeonGrid.Editor
         [MenuItem(MenuRoot + "M16 D1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 D2 - Focused", true)]
         [MenuItem(MenuRoot + "M17 A1 - Focused", true)]
+        [MenuItem(MenuRoot + "M17 A2 - Focused", true)]
+        [MenuItem(MenuRoot + "M17 A2 Runtime PlayMode", true)]
+        [MenuItem(MenuRoot + "M17 A2 - Full Regression Pack", true)]
         [MenuItem(MenuRoot + "Hint Performance - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
@@ -221,7 +263,8 @@ namespace NeonGrid.Editor
             StartWorkflow(new[] { suite }, false);
         }
 
-        private static void StartWorkflow(IEnumerable<SuiteDefinition> suites, bool complete)
+        private static void StartWorkflow(IEnumerable<SuiteDefinition> suites, bool complete,
+            bool m17A2RegressionPack = false)
         {
             if (isRunning)
             {
@@ -232,17 +275,25 @@ namespace NeonGrid.Editor
 
             PendingSuites.Clear();
             CompletedSuites.Clear();
+            ClearM17A2RegressionPackState();
             foreach (SuiteDefinition suite in suites)
             {
                 PendingSuites.Enqueue(suite);
             }
 
             isCompleteVerification = complete;
+            isM17A2RegressionPack = m17A2RegressionPack;
+            m17A2RegressionPackStartUtc = DateTime.UtcNow;
             isRunning = true;
             EnsureResultsDirectory();
             if (complete)
             {
                 WriteCompleteRunningSummary();
+            }
+            if (isM17A2RegressionPack)
+            {
+                PersistM17A2RegressionPackState();
+                WriteM17A2RegressionPackSummary(false);
             }
             RunNextSuite();
         }
@@ -263,6 +314,10 @@ namespace NeonGrid.Editor
 
             currentSuite = PendingSuites.Dequeue();
             currentStartUtc = DateTime.UtcNow;
+            if (isM17A2RegressionPack)
+            {
+                PersistM17A2RegressionPackState();
+            }
             WriteRunningSummary(currentSuite, currentStartUtc);
 
             RegisterRunnerCallbacks();
@@ -332,6 +387,11 @@ namespace NeonGrid.Editor
                 {
                     ClearPendingPlayModeRun();
                 }
+                if (isM17A2RegressionPack)
+                {
+                    PersistM17A2RegressionPackState();
+                    WriteM17A2RegressionPackSummary(false);
+                }
                 ReleaseRunnerObjects();
                 ScheduleNextSuite();
             }
@@ -370,15 +430,33 @@ namespace NeonGrid.Editor
         {
             StopWaitingForStableEditor();
             bool completedEditModeChain = isCompleteVerification;
+            bool completedM17A2RegressionPack = isM17A2RegressionPack;
             if (completedEditModeChain)
             {
                 WriteCompleteSummary();
             }
+            if (completedM17A2RegressionPack)
+            {
+                WriteM17A2RegressionPackSummary(true);
+            }
 
             isRunning = false;
             isCompleteVerification = false;
-            Debug.Log("Neon Grid verification workflow complete. Results: " +
-                      ProjectAbsolutePath(ResultsDirectory));
+            isM17A2RegressionPack = false;
+            ClearM17A2RegressionPackState();
+            if (completedM17A2RegressionPack)
+            {
+                bool passed = CompletedSuites.Count == M17A2RegressionPackSuiteCount &&
+                              CompletedSuites.All(outcome => outcome.Status == "PASS");
+                Debug.Log("M17 A2 Full Regression Pack — " + (passed ? "PASS" : "FAIL") +
+                          ". Results: " +
+                          ProjectAbsolutePath(M17A2RegressionPackRelativePath));
+            }
+            else
+            {
+                Debug.Log("Neon Grid verification workflow complete. Results: " +
+                          ProjectAbsolutePath(ResultsDirectory));
+            }
             if (completedEditModeChain && CompletedSuites.Count > 0 &&
                 CompletedSuites.All(outcome => outcome.Status == "PASS"))
             {
@@ -464,6 +542,87 @@ namespace NeonGrid.Editor
                 currentStartUtc.Ticks.ToString());
         }
 
+        private static void PersistM17A2RegressionPackState()
+        {
+            if (!isM17A2RegressionPack) return;
+
+            var state = new SerializedRegressionPackState
+            {
+                startTicks = m17A2RegressionPackStartUtc.Ticks,
+                pendingSuiteFileStems = PendingSuites.Select(suite => suite.FileStem).ToArray(),
+                completedOutcomes = CompletedSuites.Select(SerializedSuiteOutcome.FromOutcome)
+                    .ToArray()
+            };
+            SessionState.SetBool(M17A2RegressionPackActiveKey, true);
+            SessionState.SetString(M17A2RegressionPackStateKey, JsonUtility.ToJson(state));
+        }
+
+        private static void RecoverM17A2RegressionPackState()
+        {
+            if (!SessionState.GetBool(M17A2RegressionPackActiveKey, false)) return;
+
+            if (!SessionState.GetBool(PendingPlayModeKey, false))
+            {
+                ClearM17A2RegressionPackState();
+                return;
+            }
+
+            string json = SessionState.GetString(M17A2RegressionPackStateKey, string.Empty);
+            SerializedRegressionPackState state;
+            try
+            {
+                state = JsonUtility.FromJson<SerializedRegressionPackState>(json);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("Could not recover the M17 A2 regression pack: " +
+                               exception.Message);
+                ClearM17A2RegressionPackState();
+                return;
+            }
+
+            if (state == null)
+            {
+                Debug.LogError("Could not recover the M17 A2 regression pack state.");
+                ClearM17A2RegressionPackState();
+                return;
+            }
+
+            PendingSuites.Clear();
+            CompletedSuites.Clear();
+            foreach (string fileStem in state.pendingSuiteFileStems ?? Array.Empty<string>())
+            {
+                if (!TryResolveSuite(fileStem, out SuiteDefinition suite))
+                {
+                    Debug.LogError("Could not recover M17 A2 regression suite '" + fileStem +
+                                   "'. The aggregate run was cancelled.");
+                    PendingSuites.Clear();
+                    CompletedSuites.Clear();
+                    ClearM17A2RegressionPackState();
+                    return;
+                }
+                PendingSuites.Enqueue(suite);
+            }
+
+            foreach (SerializedSuiteOutcome serialized in
+                     state.completedOutcomes ?? Array.Empty<SerializedSuiteOutcome>())
+            {
+                CompletedSuites.Add(serialized.ToOutcome());
+            }
+
+            m17A2RegressionPackStartUtc = state.startTicks > 0
+                ? new DateTime(state.startTicks, DateTimeKind.Utc)
+                : DateTime.UtcNow;
+            isM17A2RegressionPack = true;
+            isCompleteVerification = false;
+        }
+
+        private static void ClearM17A2RegressionPackState()
+        {
+            SessionState.SetBool(M17A2RegressionPackActiveKey, false);
+            SessionState.EraseString(M17A2RegressionPackStateKey);
+        }
+
         private static void RecoverPendingPlayModeRun()
         {
             if (!SessionState.GetBool(PendingPlayModeKey, false) ||
@@ -472,12 +631,16 @@ namespace NeonGrid.Editor
                 return;
             }
 
-            string fileStem = SessionState.GetString(PendingPlayModeSuiteKey,
-                "Audio_PlayMode");
-            currentSuite = fileStem == "Haptics_PlayMode" ? HapticsPlayMode() :
-                fileStem == "Production_Feedback_PlayMode" ? ProductionFeedbackPlayMode() :
-                fileStem == "M16_D2_Ambience_PlayMode" ? M16D2AmbiencePlayMode() :
-                AudioPlayMode();
+            string fileStem = SessionState.GetString(PendingPlayModeSuiteKey, string.Empty);
+            if (!TryResolveSuite(fileStem, out currentSuite) || !currentSuite.IsPlayMode)
+            {
+                Debug.LogError("Could not recover PlayMode verification suite '" + fileStem +
+                               "'. Pending runner state was cleared without starting a test.");
+                ClearPendingPlayModeRun();
+                ClearM17A2RegressionPackState();
+                isM17A2RegressionPack = false;
+                return;
+            }
             string serializedTicks = SessionState.GetString(PlayModeStartTicksKey, "");
             if (!long.TryParse(serializedTicks, out long ticks))
             {
@@ -556,6 +719,13 @@ namespace NeonGrid.Editor
                 "NeonGrid.Tests.UserSettingsPersistenceTests");
         }
 
+        private static SuiteDefinition FocusedM17A2()
+        {
+            return SuiteDefinition.ForTests("M17 A2 Focused", "M17_A2_Focused",
+                TestRunnerMode.EditMode,
+                "NeonGrid.Tests.RuntimeUserSettingsTests");
+        }
+
         private static SuiteDefinition HintPerformanceFocused()
         {
             return SuiteDefinition.ForTests("Hint Performance Focused",
@@ -614,6 +784,42 @@ namespace NeonGrid.Editor
             return SuiteDefinition.ForTests("M16 D2 Ambience PlayMode",
                 "M16_D2_Ambience_PlayMode", TestRunnerMode.PlayMode,
                 "NeonGrid.Tests.M16ProductionFeedbackRuntimeTests");
+        }
+
+        private static SuiteDefinition M17A2RuntimePlayMode()
+        {
+            return SuiteDefinition.ForTests("M17 A2 Runtime PlayMode",
+                "M17_A2_Runtime_PlayMode", TestRunnerMode.PlayMode,
+                "NeonGrid.Tests.M17RuntimeSettingsPlayModeTests");
+        }
+
+        private static bool TryResolveSuite(string fileStem, out SuiteDefinition suite)
+        {
+            switch (fileStem)
+            {
+                case "M16_B2_Focused": suite = FocusedB2(); return true;
+                case "M16_C1_Focused": suite = FocusedC1(); return true;
+                case "M16_D1_Focused": suite = FocusedD1(); return true;
+                case "M16_D2_Focused": suite = FocusedD2(); return true;
+                case "M17_A1_Focused": suite = FocusedM17A1(); return true;
+                case "M17_A2_Focused": suite = FocusedM17A2(); return true;
+                case "Hint_Performance_Focused": suite = HintPerformanceFocused(); return true;
+                case "M16_B1_Regression": suite = B1Regression(); return true;
+                case "M16_A1_A2_Regression": suite = A1A2Regression(); return true;
+                case "Broader_Regression": suite = BroaderRegression(); return true;
+                case "Full_EditMode": suite = FullEditMode(); return true;
+                case "Audio_PlayMode": suite = AudioPlayMode(); return true;
+                case "Haptics_PlayMode": suite = HapticsPlayMode(); return true;
+                case "Production_Feedback_PlayMode":
+                    suite = ProductionFeedbackPlayMode(); return true;
+                case "M16_D2_Ambience_PlayMode":
+                    suite = M16D2AmbiencePlayMode(); return true;
+                case "M17_A2_Runtime_PlayMode":
+                    suite = M17A2RuntimePlayMode(); return true;
+                default:
+                    suite = null;
+                    return false;
+            }
         }
 
         private static void EnsureResultsDirectory()
@@ -761,6 +967,69 @@ namespace NeonGrid.Editor
                 contents, new UTF8Encoding(false));
         }
 
+        private static void WriteM17A2RegressionPackSummary(bool final)
+        {
+            bool aborted = CompletedSuites.Any(outcome => outcome.IsAborted);
+            bool passed = final && !aborted &&
+                          CompletedSuites.Count == M17A2RegressionPackSuiteCount &&
+                          CompletedSuites.All(outcome => outcome.Status == "PASS");
+            string status = !final
+                ? "RUNNING"
+                : aborted
+                    ? "ABORTED / RUNNER ERROR"
+                    : passed ? "PASS" : "FAIL";
+
+            var builder = new StringBuilder();
+            builder.AppendLine("Neon Grid M17 A2 Full Regression Pack");
+            builder.AppendLine("Status: " + status);
+            builder.AppendLine("Start UTC: " + m17A2RegressionPackStartUtc.ToString("O"));
+            if (final)
+            {
+                DateTime endUtc = CompletedSuites.Count > 0
+                    ? CompletedSuites[CompletedSuites.Count - 1].EndUtc
+                    : DateTime.UtcNow;
+                builder.AppendLine("End UTC: " + endUtc.ToString("O"));
+            }
+            builder.AppendLine("Total suites: " + M17A2RegressionPackSuiteCount);
+            builder.AppendLine("Suites completed: " + CompletedSuites.Count);
+            builder.AppendLine("Passed suites: " +
+                               CompletedSuites.Count(outcome => outcome.Status == "PASS"));
+            builder.AppendLine("Failed suites: " +
+                               CompletedSuites.Count(outcome => outcome.Status != "PASS"));
+            builder.AppendLine("Suite results:");
+            if (CompletedSuites.Count == 0)
+            {
+                builder.AppendLine("- none completed");
+            }
+            else
+            {
+                foreach (SuiteOutcome outcome in CompletedSuites)
+                {
+                    builder.AppendLine("- " + outcome.DisplayName + ": " + outcome.Status +
+                                       " — " + outcome.Passed + "/" + outcome.Total +
+                                       " passed, failed " + outcome.Failed +
+                                       ", skipped " + outcome.Skipped +
+                                       ", inconclusive " + outcome.Inconclusive);
+                    foreach (string failedTest in outcome.FailedTests)
+                    {
+                        builder.AppendLine("  - " + failedTest);
+                    }
+                }
+            }
+
+            if (!final)
+            {
+                builder.AppendLine("Suites remaining: " + PendingSuites.Count);
+                foreach (SuiteDefinition pendingSuite in PendingSuites)
+                {
+                    builder.AppendLine("- " + pendingSuite.DisplayName);
+                }
+            }
+
+            File.WriteAllText(ProjectAbsolutePath(M17A2RegressionPackRelativePath),
+                builder.ToString(), new UTF8Encoding(false));
+        }
+
         private static List<string> CollectFailedLeafTests(ITestResultAdaptor root)
         {
             var failures = new List<string>();
@@ -813,6 +1082,53 @@ namespace NeonGrid.Editor
             public void OnError(string message)
             {
                 FinishWithRunnerError(message);
+            }
+        }
+
+        [Serializable]
+        private sealed class SerializedRegressionPackState
+        {
+            public long startTicks;
+            public string[] pendingSuiteFileStems = Array.Empty<string>();
+            public SerializedSuiteOutcome[] completedOutcomes =
+                Array.Empty<SerializedSuiteOutcome>();
+        }
+
+        [Serializable]
+        private sealed class SerializedSuiteOutcome
+        {
+            public string displayName;
+            public int passed;
+            public int failed;
+            public int skipped;
+            public int inconclusive;
+            public long startTicks;
+            public long endTicks;
+            public string[] failedTests = Array.Empty<string>();
+            public bool isAborted;
+
+            public static SerializedSuiteOutcome FromOutcome(SuiteOutcome outcome)
+            {
+                return new SerializedSuiteOutcome
+                {
+                    displayName = outcome.DisplayName,
+                    passed = outcome.Passed,
+                    failed = outcome.Failed,
+                    skipped = outcome.Skipped,
+                    inconclusive = outcome.Inconclusive,
+                    startTicks = outcome.StartUtc.Ticks,
+                    endTicks = outcome.EndUtc.Ticks,
+                    failedTests = outcome.FailedTests.ToArray(),
+                    isAborted = outcome.IsAborted
+                };
+            }
+
+            public SuiteOutcome ToOutcome()
+            {
+                return new SuiteOutcome(displayName, passed, failed, skipped, inconclusive,
+                    new DateTime(startTicks, DateTimeKind.Utc),
+                    new DateTime(endTicks, DateTimeKind.Utc),
+                    new List<string>(failedTests ?? Array.Empty<string>()), isAborted);
             }
         }
 

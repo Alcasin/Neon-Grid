@@ -34,11 +34,15 @@ namespace NeonGrid.Presentation
             new Dictionary<NeonGridAudioEvent, int>();
         private CircuitJuiceCoordinator coordinator;
         private int reuseCursor;
-        private readonly float[] ambienceStartVolumes = new float[2];
-        private readonly float[] ambienceTargetVolumes = new float[2];
+        private readonly float[] ambienceStartEnvelopes = new float[2];
+        private readonly float[] ambienceCurrentEnvelopes = new float[2];
+        private readonly float[] ambienceTargetEnvelopes = new float[2];
         private float ambienceFadeElapsed;
         private bool ambienceTransitioning;
         private int activeAmbienceVoice = -1;
+        private float userMasterVolume = 1f;
+        private float userSfxVolume = 1f;
+        private float userAmbienceVolume = 1f;
 
         public NeonGridAudioDefinition Definition { get; private set; }
         public int VoiceCount => voices.Count;
@@ -48,6 +52,11 @@ namespace NeonGrid.Presentation
         public NeonGridAudioPlayback? LastPlayback { get; private set; }
         public NeonGridAmbienceMode RequestedAmbienceMode { get; private set; }
         public bool IsAmbienceTransitioning => ambienceTransitioning;
+        public float UserMasterVolume => userMasterVolume;
+        public float UserSfxVolume => userSfxVolume;
+        public float UserAmbienceVolume => userAmbienceVolume;
+        public float EffectiveSfxMultiplier => userMasterVolume * userSfxVolume;
+        public float EffectiveAmbienceMultiplier => userMasterVolume * userAmbienceVolume;
 
         public void Initialize(NeonGridAudioDefinition definition,
             CircuitJuiceCoordinator eventSource = null)
@@ -64,7 +73,7 @@ namespace NeonGrid.Presentation
                     source.playOnAwake = false;
                     source.loop = false;
                     source.spatialBlend = 0f;
-                    source.volume = 1f;
+                    source.volume = EffectiveSfxMultiplier;
                     voices.Add(source);
                 }
             }
@@ -83,6 +92,26 @@ namespace NeonGrid.Presentation
                 }
             }
             Bind(eventSource);
+        }
+
+        public bool SetUserVolumeMultipliers(float masterVolume, float sfxVolume,
+            float ambienceVolume)
+        {
+            float sanitizedMaster = SanitizeVolume(masterVolume);
+            float sanitizedSfx = SanitizeVolume(sfxVolume);
+            float sanitizedAmbience = SanitizeVolume(ambienceVolume);
+            if (userMasterVolume.Equals(sanitizedMaster) &&
+                userSfxVolume.Equals(sanitizedSfx) &&
+                userAmbienceVolume.Equals(sanitizedAmbience))
+                return false;
+
+            userMasterVolume = sanitizedMaster;
+            userSfxVolume = sanitizedSfx;
+            userAmbienceVolume = sanitizedAmbience;
+            foreach (AudioSource voice in voices)
+                voice.volume = EffectiveSfxMultiplier;
+            ApplyAmbienceOutputVolumes();
+            return true;
         }
 
         private void Update()
@@ -128,14 +157,16 @@ namespace NeonGrid.Presentation
                 ? current
                 : 0;
             float pitch = DeterministicPitch(cue, playCount);
-            float gain = cue.Gain * Definition.MasterSfxMultiplier * Definition.SfxVolume;
+            float authoredGain = cue.Gain * Definition.MasterSfxMultiplier *
+                                 Definition.SfxVolume;
+            float effectiveGain = authoredGain * EffectiveSfxMultiplier;
             AudioSource voice = voices[voiceIndex];
             voice.pitch = pitch;
-            voice.PlayOneShot(cue.Clip, gain);
+            voice.PlayOneShot(cue.Clip, authoredGain);
             lastPlaybackTimes[eventType] = timestamp;
             playCounts[eventType] = playCount + 1;
             SuccessfulPlaybackCount++;
-            LastPlayback = new NeonGridAudioPlayback(eventType, cue.Clip, gain, pitch,
+            LastPlayback = new NeonGridAudioPlayback(eventType, cue.Clip, effectiveGain, pitch,
                 voiceIndex);
             return true;
         }
@@ -155,12 +186,12 @@ namespace NeonGrid.Presentation
 
             RequestedAmbienceMode = mode;
             for (int index = 0; index < 2; index++)
-                ambienceStartVolumes[index] = ambienceVoices[index].volume;
+                ambienceStartEnvelopes[index] = ambienceCurrentEnvelopes[index];
 
             if (mode == NeonGridAmbienceMode.None)
             {
-                ambienceTargetVolumes[0] = 0f;
-                ambienceTargetVolumes[1] = 0f;
+                ambienceTargetEnvelopes[0] = 0f;
+                ambienceTargetEnvelopes[1] = 0f;
                 BeginAmbienceTransition();
                 return true;
             }
@@ -182,7 +213,7 @@ namespace NeonGrid.Presentation
             activeAmbienceVoice = incoming;
             float target = Definition.GetAmbienceGain(mode) * Definition.AmbienceVolume;
             for (int index = 0; index < 2; index++)
-                ambienceTargetVolumes[index] = index == incoming ? target : 0f;
+                ambienceTargetEnvelopes[index] = index == incoming ? target : 0f;
             BeginAmbienceTransition();
             return true;
         }
@@ -196,16 +227,18 @@ namespace NeonGrid.Presentation
             float duration = Definition.AmbienceFadeDuration;
             float amount = duration <= 0f ? 1f : Mathf.Clamp01(ambienceFadeElapsed / duration);
             for (int index = 0; index < ambienceVoices.Count; index++)
-                ambienceVoices[index].volume = Mathf.Lerp(ambienceStartVolumes[index],
-                    ambienceTargetVolumes[index], amount);
+                ambienceCurrentEnvelopes[index] = Mathf.Lerp(
+                    ambienceStartEnvelopes[index], ambienceTargetEnvelopes[index], amount);
+            ApplyAmbienceOutputVolumes();
             if (amount < 1f) return;
 
             ambienceTransitioning = false;
             for (int index = 0; index < ambienceVoices.Count; index++)
             {
-                if (ambienceTargetVolumes[index] > 0f) continue;
+                if (ambienceTargetEnvelopes[index] > 0f) continue;
                 ambienceVoices[index].Stop();
                 ambienceVoices[index].clip = null;
+                ambienceCurrentEnvelopes[index] = 0f;
             }
             if (RequestedAmbienceMode == NeonGridAmbienceMode.None)
                 activeAmbienceVoice = -1;
@@ -221,9 +254,23 @@ namespace NeonGrid.Presentation
                 ambienceVoices[index].Stop();
                 ambienceVoices[index].clip = null;
                 ambienceVoices[index].volume = 0f;
-                ambienceStartVolumes[index] = 0f;
-                ambienceTargetVolumes[index] = 0f;
+                ambienceStartEnvelopes[index] = 0f;
+                ambienceCurrentEnvelopes[index] = 0f;
+                ambienceTargetEnvelopes[index] = 0f;
             }
+        }
+
+        private void ApplyAmbienceOutputVolumes()
+        {
+            for (int index = 0; index < ambienceVoices.Count; index++)
+                ambienceVoices[index].volume = ambienceCurrentEnvelopes[index] *
+                                                 EffectiveAmbienceMultiplier;
+        }
+
+        private static float SanitizeVolume(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value)) return 1f;
+            return Mathf.Clamp01(value);
         }
 
         private void BeginAmbienceTransition()
