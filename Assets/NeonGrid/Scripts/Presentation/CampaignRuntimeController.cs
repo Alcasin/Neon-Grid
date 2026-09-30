@@ -92,7 +92,7 @@ namespace NeonGrid.Presentation
         private void EnterPostIntroPresentation()
         {
             if (Flow.PeekPendingRestoration() == null && TryShowEnding()) return;
-            restorationSequence.EnterMap();
+            EnterMapPresentation();
         }
 
         private bool ShowEndingAfterFinalRestoration()
@@ -107,6 +107,7 @@ namespace NeonGrid.Presentation
                 return false;
 
             campaignView.SetVisible(false);
+            gameplayFeedback?.EnterNonMapPresentation();
             if (endingView == null)
             {
                 endingView = gameObject.AddComponent<CampaignEndingView>();
@@ -129,7 +130,7 @@ namespace NeonGrid.Presentation
             }
 
             endingView.SetVisible(false);
-            restorationSequence.EnterMap();
+            EnterMapPresentation();
             return true;
         }
 
@@ -157,9 +158,9 @@ namespace NeonGrid.Presentation
 
         public void ShowMap()
         {
-            DestroyBoard();
+            DestroyBoard(NeonGridAmbienceMode.City);
             Flow.ReturnToMap();
-            restorationSequence.EnterMap();
+            EnterMapPresentation();
         }
 
         public void ShowCurrentChapter()
@@ -191,7 +192,7 @@ namespace NeonGrid.Presentation
         private void ShowActiveGameplay()
         {
             restorationSequence.CancelStatusTail();
-            DestroyBoard();
+            DestroyBoard(NeonGridAmbienceMode.Gameplay);
             campaignView.SetVisible(false);
             ConfigureCamera();
             boardRoot = new GameObject($"Campaign Gameplay - {Flow.ActiveLevel.LevelId}");
@@ -248,9 +249,16 @@ namespace NeonGrid.Presentation
             return camera;
         }
 
-        private void DestroyBoard()
+        private void EnterMapPresentation()
         {
-            gameplayFeedback?.ExitGameplay();
+            restorationSequence.EnterMap();
+            gameplayFeedback?.EnterCityMap();
+        }
+
+        private void DestroyBoard(
+            NeonGridAmbienceMode destinationAmbience = NeonGridAmbienceMode.None)
+        {
+            gameplayFeedback?.ExitGameplayTo(destinationAmbience);
             activeBoard = null;
             if (boardRoot == null) return;
             boardRoot.SetActive(false);

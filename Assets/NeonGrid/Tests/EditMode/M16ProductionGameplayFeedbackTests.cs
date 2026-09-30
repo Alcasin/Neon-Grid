@@ -55,8 +55,92 @@ namespace NeonGrid.Tests
             Assert.That(feedback.AudioDefinition.SourcePoolSize, Is.EqualTo(6));
             Assert.That(feedback.AudioDefinition.GameplayAmbienceGain,
                 Is.EqualTo(.153f).Within(.0001f));
+            Assert.That(feedback.AudioDefinition.CityAmbienceGain,
+                Is.EqualTo(.18f).Within(.0001f));
             Assert.That(feedback.AudioDefinition.AmbienceFadeDuration,
                 Is.EqualTo(.8f).Within(.0001f));
+        }
+
+        [Test]
+        public void ProductionMapAndGameplayRouteCityGameplayCityWithoutGrowingServices()
+        {
+            CampaignProgressService progress = NarrativeQaStateBuilder.Build(campaign,
+                NarrativeQaPreset.FreshMap);
+            CampaignRuntimeController runtime = BuildRuntime(progress);
+            ProductionGameplayFeedbackController composition = runtime.GameplayFeedback;
+            NeonGridAudioService audio = composition.AudioService;
+            int[] sourceIds = composition.GetComponentsInChildren<AudioSource>(true)
+                .Select(source => source.GetInstanceID()).ToArray();
+
+            Assert.That(runtime.CampaignView.IsVisible, Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+            Assert.That(composition.ActiveBoard, Is.Null);
+            int cityPlaybackStarts = audio.AmbiencePlaybackStartCount;
+
+            runtime.ShowMap();
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+            Assert.That(audio.AmbiencePlaybackStartCount, Is.EqualTo(cityPlaybackStarts),
+                "Re-entering the active map must not restart City ambience.");
+
+            Assert.That(runtime.OpenChapter("power_station"), Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+            Assert.That(runtime.StartLevel("power_01"), Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.Gameplay));
+            Assert.That(composition.ActiveBoard, Is.SameAs(runtime.ActiveBoard));
+
+            runtime.ShowMap();
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+            Assert.That(composition.ActiveBoard, Is.Null);
+
+            Assert.That(runtime.OpenChapter("power_station"), Is.True);
+            Assert.That(runtime.StartLevel("power_01"), Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.Gameplay));
+            runtime.ActiveBoard.Restart();
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.Gameplay));
+            Assert.That(runtime.ActiveBoard.PerformPlayerAction(new GridPosition(1, 0)), Is.True);
+            Assert.That(runtime.ActiveBoard.Session.IsCompleted, Is.True);
+            runtime.ShowMap();
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+
+            Assert.That(composition.GetComponentsInChildren<AudioSource>(true)
+                    .Select(source => source.GetInstanceID()), Is.EquivalentTo(sourceIds));
+            Assert.That(runtime.GetComponents<NeonGridAudioService>(), Has.Length.EqualTo(1));
+            Assert.That(runtime.GetComponents<NeonGridHapticsService>(), Has.Length.EqualTo(1));
+        }
+
+        [Test]
+        public void IntroRemainsSilentUntilMapBecomesAuthoritativePresentation()
+        {
+            CampaignRuntimeController runtime = BuildRuntime();
+            NeonGridAudioService audio = runtime.GameplayFeedback.AudioService;
+
+            Assert.That(runtime.IntroView, Is.Not.Null);
+            Assert.That(runtime.IntroView.IsVisible, Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.None));
+
+            runtime.IntroView.PressSkip();
+            Assert.That(runtime.IntroView.IsVisible, Is.False);
+            Assert.That(runtime.CampaignView.IsVisible, Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
+        }
+
+        [Test]
+        public void EndingRemainsSilentAndReturnToCityStartsCityAmbience()
+        {
+            CampaignProgressService progress = NarrativeQaStateBuilder.Build(campaign,
+                NarrativeQaPreset.EndingPending);
+            CampaignRuntimeController runtime = BuildRuntime(progress);
+            NeonGridAudioService audio = runtime.GameplayFeedback.AudioService;
+
+            Assert.That(runtime.EndingView, Is.Not.Null);
+            Assert.That(runtime.EndingView.IsVisible, Is.True);
+            Assert.That(runtime.CampaignView.IsVisible, Is.False);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.None));
+
+            runtime.EndingView.PressReturnToCity();
+            Assert.That(runtime.EndingView.IsVisible, Is.False);
+            Assert.That(runtime.CampaignView.IsVisible, Is.True);
+            Assert.That(audio.RequestedAmbienceMode, Is.EqualTo(NeonGridAmbienceMode.City));
         }
 
         [Test]
@@ -220,14 +304,14 @@ namespace NeonGrid.Tests
                 Has.None.EqualTo("Assets/NeonGrid/Scenes/M15_GameplayVisualPrototype.unity"));
         }
 
-        private CampaignRuntimeController BuildRuntime()
+        private CampaignRuntimeController BuildRuntime(CampaignProgressService progress = null)
         {
             GameObject cameraObject = NewObject("M16 D1 Camera");
             cameraObject.tag = "MainCamera";
             cameraObject.AddComponent<Camera>().orthographic = true;
             GameObject root = NewObject("M16 D1 Production Runtime");
             CampaignRuntimeController runtime = root.AddComponent<CampaignRuntimeController>();
-            runtime.Initialize(campaign, new MemoryStore(campaign));
+            runtime.Initialize(campaign, new MemoryStore(campaign, progress));
             return runtime;
         }
 
@@ -241,16 +325,19 @@ namespace NeonGrid.Tests
         private sealed class MemoryStore : ICampaignProgressStore
         {
             private readonly CampaignDefinition campaign;
+            private readonly CampaignProgressService progress;
             public string SavePath => "memory://m16-d1";
 
-            public MemoryStore(CampaignDefinition campaign)
+            public MemoryStore(CampaignDefinition campaign,
+                CampaignProgressService progress = null)
             {
                 this.campaign = campaign;
+                this.progress = progress;
             }
 
             public CampaignLoadResult Load(CampaignDefinition definition) =>
                 new CampaignLoadResult(CampaignLoadStatus.NoSaveFound,
-                    new CampaignProgressService(campaign), Array.Empty<string>());
+                    progress ?? new CampaignProgressService(campaign), Array.Empty<string>());
             public CampaignSaveResult Save(CampaignProgressService progress) =>
                 new CampaignSaveResult(CampaignSaveStatus.Saved, SavePath);
             public CampaignSaveResult Delete() =>

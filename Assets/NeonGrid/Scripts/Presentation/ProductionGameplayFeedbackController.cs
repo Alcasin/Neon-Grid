@@ -57,13 +57,28 @@ namespace NeonGrid.Presentation
 
         public void ExitGameplay()
         {
+            ExitGameplayTo(NeonGridAmbienceMode.None);
+        }
+
+        internal void ExitGameplayTo(NeonGridAmbienceMode ambienceMode)
+        {
             if (activeBoard != null)
                 activeBoard.DetachFeedbackServices();
             activeBoard = null;
             AudioService?.Bind(null);
             AudioService?.StopAll();
-            AudioService?.RequestAmbience(NeonGridAmbienceMode.None);
+            AudioService?.RequestAmbience(ambienceMode);
             HapticsService?.Bind(null);
+        }
+
+        internal void EnterCityMap()
+        {
+            AudioService?.RequestAmbience(NeonGridAmbienceMode.City);
+        }
+
+        internal void EnterNonMapPresentation()
+        {
+            AudioService?.RequestAmbience(NeonGridAmbienceMode.None);
         }
 
         private void OnDestroy()

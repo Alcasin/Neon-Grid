@@ -110,6 +110,12 @@ namespace NeonGrid.Editor
             StartSingle(FocusedD1());
         }
 
+        [MenuItem(MenuRoot + "M16 D2 - Focused")]
+        private static void RunM16D2Focused()
+        {
+            StartSingle(FocusedD2());
+        }
+
         [MenuItem(MenuRoot + "Hint Performance - Focused")]
         private static void RunHintPerformanceFocused()
         {
@@ -158,6 +164,12 @@ namespace NeonGrid.Editor
             StartSingle(ProductionFeedbackPlayMode());
         }
 
+        [MenuItem(MenuRoot + "M16 D2 Ambience PlayMode")]
+        private static void RunM16D2AmbiencePlayMode()
+        {
+            StartSingle(M16D2AmbiencePlayMode());
+        }
+
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification")]
         private static void RunCompleteVerification()
         {
@@ -178,6 +190,7 @@ namespace NeonGrid.Editor
         [MenuItem(MenuRoot + "M16 B2 - Focused", true)]
         [MenuItem(MenuRoot + "M16 C1 - Focused", true)]
         [MenuItem(MenuRoot + "M16 D1 - Focused", true)]
+        [MenuItem(MenuRoot + "M16 D2 - Focused", true)]
         [MenuItem(MenuRoot + "Hint Performance - Focused", true)]
         [MenuItem(MenuRoot + "M16 B1 - Regression", true)]
         [MenuItem(MenuRoot + "M16 A1-A2 - Regression", true)]
@@ -186,6 +199,7 @@ namespace NeonGrid.Editor
         [MenuItem(MenuRoot + "Audio PlayMode", true)]
         [MenuItem(MenuRoot + "Haptics PlayMode", true)]
         [MenuItem(MenuRoot + "Production Feedback PlayMode", true)]
+        [MenuItem(MenuRoot + "M16 D2 Ambience PlayMode", true)]
         [MenuItem(MenuRoot + "M16 B2 - Complete Verification", true)]
         private static bool ValidateCommands()
         {
@@ -455,6 +469,7 @@ namespace NeonGrid.Editor
                 "Audio_PlayMode");
             currentSuite = fileStem == "Haptics_PlayMode" ? HapticsPlayMode() :
                 fileStem == "Production_Feedback_PlayMode" ? ProductionFeedbackPlayMode() :
+                fileStem == "M16_D2_Ambience_PlayMode" ? M16D2AmbiencePlayMode() :
                 AudioPlayMode();
             string serializedTicks = SessionState.GetString(PlayModeStartTicksKey, "");
             if (!long.TryParse(serializedTicks, out long ticks))
@@ -520,6 +535,13 @@ namespace NeonGrid.Editor
                 "NeonGrid.Tests.M16ProductionGameplayFeedbackTests");
         }
 
+        private static SuiteDefinition FocusedD2()
+        {
+            return SuiteDefinition.ForTests("M16 D2 Focused", "M16_D2_Focused",
+                TestRunnerMode.EditMode,
+                "NeonGrid.Tests.M16ProductionGameplayFeedbackTests");
+        }
+
         private static SuiteDefinition HintPerformanceFocused()
         {
             return SuiteDefinition.ForTests("Hint Performance Focused",
@@ -570,6 +592,13 @@ namespace NeonGrid.Editor
         {
             return SuiteDefinition.ForTests("Production Feedback PlayMode",
                 "Production_Feedback_PlayMode", TestRunnerMode.PlayMode,
+                "NeonGrid.Tests.M16ProductionFeedbackRuntimeTests");
+        }
+
+        private static SuiteDefinition M16D2AmbiencePlayMode()
+        {
+            return SuiteDefinition.ForTests("M16 D2 Ambience PlayMode",
+                "M16_D2_Ambience_PlayMode", TestRunnerMode.PlayMode,
                 "NeonGrid.Tests.M16ProductionFeedbackRuntimeTests");
         }
 
