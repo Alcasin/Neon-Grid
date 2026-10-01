@@ -40,6 +40,10 @@ namespace NeonGrid.Presentation
         public const int SettingsButtonFontSize = 34;
 
         public const float TopHudInset = 52f;
+        public const float GameplayHudTopRowDownOffset = 20f;
+        public const float GameplayBackButtonDownOffset = 10f;
+        public const float GameplayBackButtonTopInset =
+            TopHudInset + GameplayBackButtonDownOffset;
         public const float HudLevelIdentityTopInset = 48f;
         public const float HudLevelIdentityHeight = 62f;
         public const float HudTimeTopInset = 116f;
@@ -47,6 +51,9 @@ namespace NeonGrid.Presentation
         public const float HintStatusHeight = 72f;
         public const float BottomControlsCenterY = 96f;
         public const float TutorialCenterY = -226f;
+        public const float GameplayTutorialStatusDownOffset = 20f;
+        public const float GameplayTutorialStatusCenterY =
+            TutorialCenterY - GameplayTutorialStatusDownOffset;
         public const float TutorialPanelHeight = 104f;
         public const float CompletionResultFadeSeconds = 0.32f;
         public const float SelectorVerticalSpacing = 48f;
@@ -92,5 +99,10 @@ namespace NeonGrid.Presentation
         public const float SettingsSliderThumbHeight = 26f;
         public const float SettingsToggleWidth = 260f;
         public const float SettingsToggleHeight = 94f;
+
+        public static float GameplayHudTopRowY(float baselineTopInset)
+        {
+            return -(baselineTopInset + GameplayHudTopRowDownOffset);
+        }
     }
 }

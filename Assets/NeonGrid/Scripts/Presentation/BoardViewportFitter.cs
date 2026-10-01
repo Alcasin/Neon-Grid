@@ -8,7 +8,7 @@ namespace NeonGrid.Presentation
         public const float ReferenceWidth = 1080f;
         public const float ReferenceHeight = 1920f;
         public const float HorizontalReservedPixels = 64f;
-        public const float TopHudReservedPixels = 280f;
+        public const float TopHudReservedPixels = 300f;
         public const float BottomHudReservedPixels = 240f;
         public const float BoardPaddingWorld = 0.35f;
 

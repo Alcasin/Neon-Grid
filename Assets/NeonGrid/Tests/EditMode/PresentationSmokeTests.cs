@@ -120,6 +120,12 @@ namespace NeonGrid.Tests
                 Transform canvas = root.transform.Find("Gameplay HUD Canvas");
                 Text identity = canvas.Find("Level Identity").GetComponent<Text>();
                 Text timer = canvas.Find("Timer").GetComponent<Text>();
+                RectTransform moves = canvas.Find("Move Count").GetComponent<RectTransform>();
+                RectTransform back = canvas.Find("Back To Levels Button")
+                    .GetComponent<RectTransform>();
+                RectTransform undo = canvas.Find("Undo Button").GetComponent<RectTransform>();
+                RectTransform restart = canvas.Find("Restart Button").GetComponent<RectTransform>();
+                RectTransform hint = canvas.Find("Hint Button").GetComponent<RectTransform>();
                 Assert.That(identity.text, Is.EqualTo(expectedLabel));
                 Assert.That(identity.text, Does.Not.Match(@"LEVEL 0\d"));
                 Assert.That(canvas.Find("Move Count"), Is.Not.Null);
@@ -128,6 +134,25 @@ namespace NeonGrid.Tests
                 Assert.That(timer.rectTransform.anchorMin, Is.EqualTo(new Vector2(0.5f, 1f)));
                 Assert.That(identity.rectTransform.anchoredPosition.x, Is.Zero);
                 Assert.That(timer.rectTransform.anchoredPosition.x, Is.Zero);
+                Assert.That(identity.rectTransform.anchoredPosition.y,
+                    Is.EqualTo(-(ProgrammerUiMetrics.HudLevelIdentityTopInset +
+                                 ProgrammerUiMetrics.GameplayHudTopRowDownOffset)));
+                Assert.That(timer.rectTransform.anchoredPosition.y,
+                    Is.EqualTo(-(ProgrammerUiMetrics.HudTimeTopInset +
+                                 ProgrammerUiMetrics.GameplayHudTopRowDownOffset)));
+                Assert.That(moves.anchoredPosition.y,
+                    Is.EqualTo(-(ProgrammerUiMetrics.TopHudInset +
+                                 ProgrammerUiMetrics.GameplayHudTopRowDownOffset)));
+                Assert.That(back.anchoredPosition.y,
+                    Is.EqualTo(-(ProgrammerUiMetrics.TopHudInset +
+                                 ProgrammerUiMetrics.GameplayBackButtonDownOffset)),
+                    "The separate Levels control must move exactly 10 px below its baseline.");
+                Assert.That(undo.anchoredPosition.y,
+                    Is.EqualTo(ProgrammerUiMetrics.BottomControlsCenterY));
+                Assert.That(restart.anchoredPosition.y,
+                    Is.EqualTo(ProgrammerUiMetrics.BottomControlsCenterY));
+                Assert.That(hint.anchoredPosition.y,
+                    Is.EqualTo(ProgrammerUiMetrics.BottomControlsCenterY));
                 Assert.That(identity.fontSize, Is.GreaterThan(timer.fontSize));
                 Assert.That(timer.fontSize,
                     Is.GreaterThan(canvas.Find("Move Count").GetComponent<Text>().fontSize));
@@ -197,6 +222,10 @@ namespace NeonGrid.Tests
 
                 RectTransform tutorialRect = panel.GetComponent<RectTransform>();
                 RectTransform timerRect = canvas.Find("Timer").GetComponent<RectTransform>();
+                Assert.That(tutorialRect.anchoredPosition.y,
+                    Is.EqualTo(ProgrammerUiMetrics.TutorialCenterY -
+                               ProgrammerUiMetrics.GameplayTutorialStatusDownOffset),
+                    "The tutorial/status strip must move exactly 20 px below its baseline.");
                 float tutorialTop = tutorialRect.anchoredPosition.y +
                                     tutorialRect.sizeDelta.y * (1f - tutorialRect.pivot.y);
                 float timerBottom = timerRect.anchoredPosition.y -

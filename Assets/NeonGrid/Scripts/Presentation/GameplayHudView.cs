@@ -86,10 +86,12 @@ namespace NeonGrid.Presentation
             moveText = CreateText(canvasObject.transform, "Move Count", font,
                 ProgrammerUiMetrics.HudMovesFontSize, TextAnchor.MiddleRight,
                 new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-32f, -ProgrammerUiMetrics.TopHudInset), new Vector2(300f, 70f));
+                new Vector2(-32f, ProgrammerUiMetrics.GameplayHudTopRowY(
+                    ProgrammerUiMetrics.TopHudInset)), new Vector2(300f, 70f));
             moveText.rectTransform.pivot = new Vector2(1f, 1f);
             moveText.rectTransform.anchoredPosition =
-                new Vector2(-32f, -ProgrammerUiMetrics.TopHudInset);
+                new Vector2(-32f, ProgrammerUiMetrics.GameplayHudTopRowY(
+                    ProgrammerUiMetrics.TopHudInset));
 
             bool showLevelIdentity = levelOrdinal.HasValue && levelOrdinal.Value > 0;
             if (showLevelIdentity)
@@ -97,11 +99,13 @@ namespace NeonGrid.Presentation
                 levelIdentityText = CreateText(canvasObject.transform, "Level Identity", font,
                     ProgrammerUiMetrics.HudLevelIdentityFontSize, TextAnchor.MiddleCenter,
                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0f, -ProgrammerUiMetrics.HudLevelIdentityTopInset),
+                    new Vector2(0f, ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.HudLevelIdentityTopInset)),
                     new Vector2(360f, ProgrammerUiMetrics.HudLevelIdentityHeight));
                 levelIdentityText.rectTransform.pivot = new Vector2(0.5f, 1f);
                 levelIdentityText.rectTransform.anchoredPosition =
-                    new Vector2(0f, -ProgrammerUiMetrics.HudLevelIdentityTopInset);
+                    new Vector2(0f, ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.HudLevelIdentityTopInset));
                 levelIdentityText.text = $"LEVEL {levelOrdinal.Value}";
             }
 
@@ -109,14 +113,18 @@ namespace NeonGrid.Presentation
                 ProgrammerUiMetrics.HudPrimaryFontSize, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, showLevelIdentity
-                    ? -ProgrammerUiMetrics.HudTimeTopInset
-                    : -ProgrammerUiMetrics.TopHudInset),
+                    ? ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.HudTimeTopInset)
+                    : ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.TopHudInset)),
                 new Vector2(300f, showLevelIdentity ? 48f : 70f));
             timerText.rectTransform.pivot = new Vector2(0.5f, 1f);
             timerText.rectTransform.anchoredPosition = new Vector2(0f,
                 showLevelIdentity
-                    ? -ProgrammerUiMetrics.HudTimeTopInset
-                    : -ProgrammerUiMetrics.TopHudInset);
+                    ? ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.HudTimeTopInset)
+                    : ProgrammerUiMetrics.GameplayHudTopRowY(
+                        ProgrammerUiMetrics.TopHudInset));
             hintText = CreateText(canvasObject.transform, "Hint Status", font,
                 ProgrammerUiMetrics.HintStatusFontSize, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
@@ -136,7 +144,7 @@ namespace NeonGrid.Presentation
             if (resultActions != null)
                 backButton = CreateButton(canvasObject.transform, "Back To Levels Button", "< LEVELS", font,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(32f, -ProgrammerUiMetrics.TopHudInset),
+                    new Vector2(32f, -ProgrammerUiMetrics.GameplayBackButtonTopInset),
                     RequestLeave, new Vector2(240f, 90f));
             if (backButton != null)
                 backButton.GetComponent<RectTransform>().pivot = new Vector2(0f, 1f);
@@ -198,7 +206,7 @@ namespace NeonGrid.Presentation
             {
                 tutorialPanel = CreatePanel(canvasObject.transform, "Tutorial Panel",
                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0f, ProgrammerUiMetrics.TutorialCenterY),
+                    new Vector2(0f, ProgrammerUiMetrics.GameplayTutorialStatusCenterY),
                     new Vector2(960f, ProgrammerUiMetrics.TutorialPanelHeight));
                 tutorialPanel.GetComponent<Image>().raycastTarget = false;
                 Text tutorialText = CreateText(tutorialPanel.transform, "Tutorial Message", font,
