@@ -32,6 +32,12 @@ namespace NeonGrid.Presentation
         public const int EndingStatusTitleFontSize = 46;
         public const int EndingStatusBodyFontSize = 36;
         public const int EndingButtonFontSize = 44;
+        public const int SettingsTitleFontSize = 64;
+        public const int SettingsSectionFontSize = 32;
+        public const int SettingsControlLabelFontSize = 34;
+        public const int SettingsPercentageFontSize = 34;
+        public const int SettingsToggleFontSize = 38;
+        public const int SettingsButtonFontSize = 34;
 
         public const float TopHudInset = 52f;
         public const float HudLevelIdentityTopInset = 48f;
@@ -65,5 +71,26 @@ namespace NeonGrid.Presentation
         public const float CityMapHeaderHeight = 150f;
         public const float CityCompositionWidth = 1020f;
         public const float CityCompositionHeight = 1500f;
+        public const float SettingsEntryWidth = 260f;
+        public const float SettingsEntryHeight = 96f;
+        public const float SettingsEntryRightInset = 150f;
+        public const float SettingsEntryTopInset = 306f;
+        public const float SettingsPanelWidth = 900f;
+        public const float SettingsPanelHeight = 1400f;
+        public const float SettingsContentHorizontalPadding = 90f;
+        public const float SettingsContentWidth =
+            SettingsPanelWidth - SettingsContentHorizontalPadding * 2f;
+        public const float SettingsControlLabelWidth = 480f;
+        public const float SettingsPercentageWidth = 180f;
+        public const float SettingsAudioHeaderHeight = 58f;
+        public const float SettingsAudioLabelOffsetY = 10f;
+        public const float SettingsAudioSliderOffsetY = 76f;
+        public const float SettingsSliderWidth = SettingsContentWidth;
+        public const float SettingsSliderTouchHeight = 92f;
+        public const float SettingsSliderTrackHeight = 14f;
+        public const float SettingsSliderThumbSize = 44f;
+        public const float SettingsSliderThumbHeight = 26f;
+        public const float SettingsToggleWidth = 260f;
+        public const float SettingsToggleHeight = 94f;
     }
 }

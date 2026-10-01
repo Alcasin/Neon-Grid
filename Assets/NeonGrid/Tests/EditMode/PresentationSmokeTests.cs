@@ -40,8 +40,9 @@ namespace NeonGrid.Tests
 
             try
             {
+                var hintRunner = new ControlledHintSolverRunner();
                 var controller = root.AddComponent<BoardController>();
-                controller.Initialize(level);
+                controller.Initialize(new GameplaySession(level, 2, hintRunner), null);
                 Transform moveLabelTransform = root.transform.Find("Gameplay HUD Canvas/Move Count");
                 Assert.That(moveLabelTransform, Is.Not.Null);
                 Text moveLabel = moveLabelTransform.GetComponent<Text>();
@@ -75,6 +76,11 @@ namespace NeonGrid.Tests
 
                 controller.Session.AdvanceTime(GameplaySession.HintUnlockSeconds);
                 HintResult hint = controller.RequestHint();
+                Assert.That(hintRunner.StartCount, Is.EqualTo(1));
+                Assert.That(hintRunner.BoardSnapshot, Is.Not.Null);
+                Assert.That(hintRunner.Options, Is.Not.Null);
+                Assert.That(hintRunner.Completed, Is.Not.Null);
+                Assert.That(hintRunner.Failed, Is.Not.Null);
                 Assert.That(hint.Status, Is.EqualTo(HintStatus.HintSearching));
                 Text hintStatus = root.transform.Find("Gameplay HUD Canvas/Hint Status")
                     .GetComponent<Text>();
@@ -898,6 +904,26 @@ namespace NeonGrid.Tests
             Object.DestroyImmediate(sprite);
             Object.DestroyImmediate(texture);
             return result;
+        }
+
+        private sealed class ControlledHintSolverRunner : IHintSolverRunner
+        {
+            public int StartCount { get; private set; }
+            public BoardState BoardSnapshot { get; private set; }
+            public PuzzleSolverOptions Options { get; private set; }
+            public System.Action<PuzzleSolverResult> Completed { get; private set; }
+            public System.Action<System.Exception> Failed { get; private set; }
+
+            public void Start(BoardState boardSnapshot, PuzzleSolverOptions options,
+                System.Action<PuzzleSolverResult> completed,
+                System.Action<System.Exception> failed)
+            {
+                StartCount++;
+                BoardSnapshot = boardSnapshot;
+                Options = options;
+                Completed = completed;
+                Failed = failed;
+            }
         }
     }
 }

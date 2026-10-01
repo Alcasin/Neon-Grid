@@ -17,6 +17,7 @@ namespace NeonGrid.Settings
         public UserSettings CurrentSettings => current.CopySanitized();
         public UserSettingsLoadResult LastLoadResult { get; }
         public UserSettingsSaveResult LastSaveResult { get; private set; }
+        public bool HasUnpersistedChanges { get; private set; }
         public NeonGridAudioService AudioService => audioService;
         public NeonGridHapticsService HapticsService => hapticsService;
 
@@ -51,6 +52,7 @@ namespace NeonGrid.Settings
             float previous = current.MasterVolume;
             current.MasterVolume = value;
             if (current.MasterVolume.Equals(previous)) return false;
+            HasUnpersistedChanges = true;
             ApplyAudioSettings();
             return true;
         }
@@ -60,6 +62,7 @@ namespace NeonGrid.Settings
             float previous = current.SfxVolume;
             current.SfxVolume = value;
             if (current.SfxVolume.Equals(previous)) return false;
+            HasUnpersistedChanges = true;
             ApplyAudioSettings();
             return true;
         }
@@ -69,6 +72,7 @@ namespace NeonGrid.Settings
             float previous = current.AmbienceVolume;
             current.AmbienceVolume = value;
             if (current.AmbienceVolume.Equals(previous)) return false;
+            HasUnpersistedChanges = true;
             ApplyAudioSettings();
             return true;
         }
@@ -77,6 +81,7 @@ namespace NeonGrid.Settings
         {
             if (current.HapticsEnabled == enabled) return false;
             current.HapticsEnabled = enabled;
+            HasUnpersistedChanges = true;
             hapticsService?.SetHapticsEnabled(enabled);
             return true;
         }
@@ -91,6 +96,7 @@ namespace NeonGrid.Settings
             }
 
             LastSaveResult = store.Save(current.CopySanitized());
+            if (LastSaveResult.Succeeded) HasUnpersistedChanges = false;
             return LastSaveResult;
         }
 

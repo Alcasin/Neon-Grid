@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NeonGrid.Campaign;
 using NeonGrid.Data;
+using NeonGrid.Settings;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -44,12 +45,15 @@ namespace NeonGrid.Presentation
         private bool useCampaignBuildingArt;
         private bool useCampaignEnvironmentArt;
         private CityEnvironmentArtView cityEnvironmentView;
+        private ProductionSettingsView settingsView;
+        private bool mapInteractionBeforeSettings;
 
         public bool UsesCityMap => usesCityMap;
         public bool IsVisible => canvasObject != null && canvasObject.activeSelf;
         public bool IsMapInteractionEnabled => mapInteraction != null && mapInteraction.interactable &&
                                                mapInteraction.blocksRaycasts;
         public CityEnvironmentArtView CityEnvironmentView => cityEnvironmentView;
+        public ProductionSettingsView SettingsView => settingsView;
         internal bool HasVisibleChapterBriefing => chapterBriefingTitle != null &&
                                                     chapterBriefingTitle.gameObject.activeSelf;
         internal Text ChapterBriefingTitle => chapterBriefingTitle;
@@ -103,6 +107,27 @@ namespace NeonGrid.Presentation
                 new Vector2(0f, ProgrammerUiMetrics.SelectorBackButtonCenterY),
                 new Vector2(500f, 120f), onBackToMap,
                 ProgrammerUiMetrics.SelectorBackButtonFontSize);
+        }
+
+        public void ConfigureSettings(RuntimeUserSettingsController runtimeSettings)
+        {
+            if (!usesCityMap || runtimeSettings == null || settingsView != null) return;
+            settingsView = gameObject.AddComponent<ProductionSettingsView>();
+            settingsView.Build(canvasObject.transform, mapPanel.transform, runtimeSettings,
+                campaignUiTheme, OnSettingsModalVisibilityChanged);
+        }
+
+        private void OnSettingsModalVisibilityChanged(bool open)
+        {
+            if (open)
+            {
+                mapInteractionBeforeSettings = IsMapInteractionEnabled;
+                SetMapInteractionEnabled(false);
+            }
+            else
+            {
+                SetMapInteractionEnabled(mapInteractionBeforeSettings);
+            }
         }
 
         private void BuildFallbackMap(Font font)
@@ -385,11 +410,13 @@ namespace NeonGrid.Presentation
 
         public void SetVisible(bool visible)
         {
+            if (!visible) settingsView?.Close();
             canvasObject.SetActive(visible);
         }
 
         public void ShowMap()
         {
+            settingsView?.Close();
             PrepareMapSurface();
             if (usesCityMap)
                 PresentProductionCityMap();
@@ -575,6 +602,7 @@ namespace NeonGrid.Presentation
 
         public void ShowChapter(CampaignChapterDefinition chapter)
         {
+            settingsView?.Close();
             HideRestorationStatus();
             SetVisible(true);
             mapPanel.SetActive(false);

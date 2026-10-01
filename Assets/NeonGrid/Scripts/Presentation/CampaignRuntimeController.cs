@@ -75,6 +75,7 @@ namespace NeonGrid.Presentation
             campaignView = gameObject.AddComponent<CampaignRuntimeView>();
             campaignView.Build(campaign, load.Progress, id => OpenChapter(id),
                 id => StartLevel(id), ShowMap, campaign.CampaignUiTheme);
+            campaignView.ConfigureSettings(runtimeSettings);
             restorationSequence = gameObject.AddComponent<CityRestorationSequenceController>();
             restorationSequence.Initialize(campaignView, Flow, ShowEndingAfterFinalRestoration);
             narrative = CampaignNarrativeCatalog.LoadForCampaign(campaign.CampaignId);
