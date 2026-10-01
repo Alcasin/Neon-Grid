@@ -51,6 +51,7 @@ namespace NeonGrid.Campaign
         public LevelTutorialDefinition ActiveTutorial { get; private set; }
         public CampaignProgressUpdate LastProgressUpdate { get; private set; }
         public CampaignSaveResult LastSaveResult { get; private set; }
+        public bool HasUnpersistedProgress { get; private set; }
         public string PendingRestorationChapterId =>
             Progress.PendingRestoration?.RestoredChapterId;
         public CampaignResultNavigationState ResultNavigation { get; private set; }
@@ -157,8 +158,7 @@ namespace NeonGrid.Campaign
         {
             if (!Progress.TryDequeuePendingRestoration(out restorationEvent)) return false;
 
-            LastSaveResult = saveStore.Save(Progress);
-            if (LastSaveResult.Succeeded) return true;
+            if (SaveCurrentProgress()) return true;
 
             Progress.RestorePendingRestorationToFront(restorationEvent);
             restorationEvent = null;
@@ -170,8 +170,7 @@ namespace NeonGrid.Campaign
             if (Progress.IntroCompleted) return true;
 
             Progress.SetIntroCompleted(true);
-            LastSaveResult = saveStore.Save(Progress);
-            if (LastSaveResult.Succeeded) return true;
+            if (SaveCurrentProgress()) return true;
 
             Progress.SetIntroCompleted(false);
             return false;
@@ -183,8 +182,7 @@ namespace NeonGrid.Campaign
             if (!Progress.IsCampaignComplete) return false;
 
             Progress.SetEndingCompleted(true);
-            LastSaveResult = saveStore.Save(Progress);
-            if (LastSaveResult.Succeeded) return true;
+            if (SaveCurrentProgress()) return true;
 
             Progress.SetEndingCompleted(false);
             return false;
@@ -195,6 +193,11 @@ namespace NeonGrid.Campaign
             return TryConsumePendingRestoration(out ChapterRestorationEvent restorationEvent)
                 ? restorationEvent.RestoredChapterId
                 : null;
+        }
+
+        public bool RetryPendingSave()
+        {
+            return !HasUnpersistedProgress || SaveCurrentProgress();
         }
 
         private void StartAttempt(CampaignLevelEntry entry)
@@ -227,8 +230,17 @@ namespace NeonGrid.Campaign
             ResultNavigation = update.ChapterJustRestored
                 ? CampaignResultNavigationState.FirstChapterRestoration()
                 : CampaignResultNavigationState.Normal(CanStartNextLevel());
-            LastSaveResult = saveStore.Save(Progress);
+            HasUnpersistedProgress = true;
+            SaveCurrentProgress();
             ProgressRecorded?.Invoke(update);
+        }
+
+        private bool SaveCurrentProgress()
+        {
+            LastSaveResult = saveStore.Save(Progress);
+            if (LastSaveResult.Succeeded)
+                HasUnpersistedProgress = false;
+            return LastSaveResult.Succeeded;
         }
 
         private void DetachSession()

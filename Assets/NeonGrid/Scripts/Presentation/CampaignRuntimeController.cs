@@ -157,6 +157,37 @@ namespace NeonGrid.Presentation
                 Flow.ProgressRecorded -= OnProgressRecorded;
         }
 
+        private void OnApplicationPause(bool paused)
+        {
+            HandleApplicationPause(paused);
+        }
+
+        private void OnApplicationQuit()
+        {
+            HandleApplicationQuit();
+        }
+
+        internal void HandleApplicationPause(bool paused)
+        {
+            if (paused)
+                RetryPendingCampaignSave();
+        }
+
+        internal void HandleApplicationQuit()
+        {
+            RetryPendingCampaignSave();
+        }
+
+        internal bool RetryPendingCampaignSave()
+        {
+            if (Flow == null || !Flow.HasUnpersistedProgress) return true;
+            if (Flow.RetryPendingSave()) return true;
+
+            Debug.LogWarning(Flow.LastSaveResult?.Message ??
+                             "Could not persist pending campaign progress.", this);
+            return false;
+        }
+
         public bool OpenChapter(string chapterId)
         {
             if (!Flow.OpenChapter(chapterId)) return false;

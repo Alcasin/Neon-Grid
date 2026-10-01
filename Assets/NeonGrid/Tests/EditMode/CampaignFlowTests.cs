@@ -51,6 +51,7 @@ namespace NeonGrid.Tests
             Assert.That(progress.IsLevelUnlocked("power_02"), Is.True);
             Assert.That(store.SaveCount, Is.EqualTo(1));
             Assert.That(flow.LastSaveResult.Succeeded, Is.True);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
         }
 
         [Test]
@@ -243,6 +244,166 @@ namespace NeonGrid.Tests
 
             Assert.That(flow.LastSaveResult.Status, Is.EqualTo(CampaignSaveStatus.Failed));
             Assert.That(progress.GetLevelProgress("power_01").Completed, Is.True);
+            Assert.That(progress.GetLevelProgress("power_01").BestStars, Is.EqualTo(3));
+            Assert.That(progress.GetLevelProgress("power_01").BestMoves, Is.EqualTo(1));
+            Assert.That(progress.GetLevelProgress("power_01").BestTimeSeconds,
+                Is.GreaterThanOrEqualTo(0f));
+            Assert.That(flow.HasUnpersistedProgress, Is.True);
+        }
+
+        [Test]
+        public void SuccessfulRetryPersistsCurrentProgressWithoutReplayingCompletion()
+        {
+            int progressRecordedCount = 0;
+            flow.ProgressRecorded += _ => progressRecordedCount++;
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_01");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+            LevelProgress level = progress.GetLevelProgress("power_01");
+            int stars = level.BestStars;
+            int moves = level.BestMoves;
+            float seconds = level.BestTimeSeconds;
+
+            store.FailSaves = false;
+            Assert.That(flow.RetryPendingSave(), Is.True);
+
+            Assert.That(store.SaveCount, Is.EqualTo(2));
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+            Assert.That(progressRecordedCount, Is.EqualTo(1));
+            Assert.That(level.Completed, Is.True);
+            Assert.That(level.BestStars, Is.EqualTo(stars));
+            Assert.That(level.BestMoves, Is.EqualTo(moves));
+            Assert.That(level.BestTimeSeconds, Is.EqualTo(seconds));
+        }
+
+        [Test]
+        public void FailedRetryKeepsDirtyProgressWithoutMutation()
+        {
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_01");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+            LevelProgress level = progress.GetLevelProgress("power_01");
+            int stars = level.BestStars;
+            int moves = level.BestMoves;
+            float seconds = level.BestTimeSeconds;
+
+            Assert.That(flow.RetryPendingSave(), Is.False);
+
+            Assert.That(store.SaveCount, Is.EqualTo(2));
+            Assert.That(flow.HasUnpersistedProgress, Is.True);
+            Assert.That(level.BestStars, Is.EqualTo(stars));
+            Assert.That(level.BestMoves, Is.EqualTo(moves));
+            Assert.That(level.BestTimeSeconds, Is.EqualTo(seconds));
+        }
+
+        [Test]
+        public void CleanRetryPerformsNoSave()
+        {
+            Assert.That(flow.RetryPendingSave(), Is.True);
+            Assert.That(store.SaveCount, Is.Zero);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+        }
+
+        [Test]
+        public void RestorationCompletionRetryDoesNotDuplicatePendingEvent()
+        {
+            Record("power_01");
+            Record("power_02");
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_03");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+
+            Assert.That(progress.PendingRestorationCount, Is.EqualTo(1));
+            Assert.That(progress.PendingRestoration.RestoredChapterId,
+                Is.EqualTo("power_station"));
+
+            store.FailSaves = false;
+            Assert.That(flow.RetryPendingSave(), Is.True);
+
+            Assert.That(progress.PendingRestorationCount, Is.EqualTo(1));
+            Assert.That(progress.PendingRestoration.RestoredChapterId,
+                Is.EqualTo("power_station"));
+            Assert.That(progress.GetLevelProgress("power_03").Completed, Is.True);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+        }
+
+        [Test]
+        public void ReplayImprovementRetryPreservesSingleBestResult()
+        {
+            Assert.That(progress.RecordCompletion("power_01",
+                CampaignTestFixture.Result(fixture.Level("power_01"), 8, 20f, 1)).Accepted,
+                Is.True);
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_01");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+            LevelProgress level = progress.GetLevelProgress("power_01");
+
+            Assert.That(level.BestStars, Is.EqualTo(3));
+            Assert.That(level.BestMoves, Is.EqualTo(1));
+            float improvedTime = level.BestTimeSeconds;
+
+            store.FailSaves = false;
+            Assert.That(flow.RetryPendingSave(), Is.True);
+
+            Assert.That(level.BestStars, Is.EqualTo(3));
+            Assert.That(level.BestMoves, Is.EqualTo(1));
+            Assert.That(level.BestTimeSeconds, Is.EqualTo(improvedTime));
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+        }
+
+        [Test]
+        public void ProvisionalFailuresFromCleanStateRollbackWithoutBecomingDirty()
+        {
+            store.FailSaves = true;
+            Assert.That(flow.TryCompleteIntro(), Is.False);
+            Assert.That(progress.IntroCompleted, Is.False);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+
+            CompleteCampaignProgress();
+            Assert.That(flow.TryCompleteEnding(), Is.False);
+            Assert.That(progress.EndingCompleted, Is.False);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+
+            progress.QueuePendingRestoration("power_station");
+            Assert.That(flow.TryConsumePendingRestoration(out _), Is.False);
+            Assert.That(progress.PendingRestorationCount, Is.EqualTo(1));
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
+        }
+
+        [Test]
+        public void ProvisionalFailurePreservesPreExistingDirtyState()
+        {
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_01");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+            Assert.That(flow.HasUnpersistedProgress, Is.True);
+
+            Assert.That(flow.TryCompleteIntro(), Is.False);
+
+            Assert.That(progress.IntroCompleted, Is.False);
+            Assert.That(flow.HasUnpersistedProgress, Is.True);
+        }
+
+        [Test]
+        public void SuccessfulSaveFromAnotherPathClearsPreExistingDirtyState()
+        {
+            store.FailSaves = true;
+            flow.OpenChapter("power_station");
+            flow.StartLevel("power_01");
+            CampaignTestFixture.Solve(flow.ActiveSession);
+            Assert.That(flow.HasUnpersistedProgress, Is.True);
+
+            store.FailSaves = false;
+            Assert.That(flow.TryCompleteIntro(), Is.True);
+
+            Assert.That(progress.IntroCompleted, Is.True);
+            Assert.That(progress.GetLevelProgress("power_01").Completed, Is.True);
+            Assert.That(flow.HasUnpersistedProgress, Is.False);
         }
 
         private void Record(string levelId)
@@ -250,6 +411,15 @@ namespace NeonGrid.Tests
             CampaignProgressUpdate update = progress.RecordCompletion(levelId,
                 CampaignTestFixture.Result(fixture.Level(levelId), 1, 1f, 1));
             Assert.That(update.Accepted, Is.True);
+        }
+
+        private void CompleteCampaignProgress()
+        {
+            foreach (CampaignChapterDefinition chapter in fixture.Campaign.Chapters)
+            foreach (CampaignLevelEntry level in chapter.Levels)
+                Assert.That(progress.RecordCompletion(level.LevelId,
+                    CampaignTestFixture.Result(level.LevelDefinition, 1, 1f, 1)).Accepted,
+                    Is.True, level.LevelId);
         }
 
         private sealed class MemoryStore : ICampaignProgressStore
